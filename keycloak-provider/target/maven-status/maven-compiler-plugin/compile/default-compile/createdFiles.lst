@@ -1,0 +1,6 @@
+com\booking\keycloak\provider\RemoteUserStorageProvider.class
+com\booking\keycloak\factory\BookingUserStorageProviderFactory.class
+com\booking\keycloak\provider\RemoteUserStorageProvider$RemoteUserInfo.class
+com\booking\keycloak\provider\BookingUserStorageProvider.class
+com\booking\keycloak\factory\RemoteUserStorageProviderFactory.class
+com\booking\keycloak\provider\BookingUserModel.class

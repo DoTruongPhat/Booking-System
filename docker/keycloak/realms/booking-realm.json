@@ -1,0 +1,45 @@
+{
+  "realm": "booking",
+  "displayName": "Booking System",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "accessTokenLifespan": 300,
+  "clients": [
+    {
+      "clientId": "booking-backend",
+      "name": "Booking Backend",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "CHANGE_ME_AFTER_KC_SETUP",
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "booking-frontend",
+      "name": "Booking Angular",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "protocol": "openid-connect"
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "ADMIN",   "description": "System Administrator" },
+      { "name": "MANAGER", "description": "Booking Manager" },
+      { "name": "STAFF",   "description": "Booking Staff" },
+      { "name": "USER",    "description": "Regular User" }
+    ]
+  }
+}

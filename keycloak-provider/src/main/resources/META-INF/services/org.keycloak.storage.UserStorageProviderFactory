@@ -1,0 +1,2 @@
+com.booking.keycloak.factory.BookingUserStorageProviderFactory
+com.booking.keycloak.factory.RemoteUserStorageProviderFactory

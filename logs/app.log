@@ -1,0 +1,208 @@
+2026-06-02 13:45:07.952 ICT [main] INFO  [] [] com.booking.BackendApplication - Starting BackendApplication using Java 21.0.9 with PID 4028 (C:\Users\tphat\booking-system\auth-service\target\classes started by tphat in C:\Users\tphat\booking-system)
+2026-06-02 13:45:07.966 ICT [main] DEBUG [] [] com.booking.BackendApplication - Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-06-02 13:45:07.968 ICT [main] INFO  [] [] com.booking.BackendApplication - The following 1 profile is active: "dev"
+2026-06-02 13:45:10.160 ICT [main] INFO  [] [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8081"]
+2026-06-02 13:45:10.162 ICT [main] INFO  [] [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2026-06-02 13:45:10.162 ICT [main] INFO  [] [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-06-02 13:45:10.229 ICT [main] INFO  [] [] org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2026-06-02 13:45:10.847 ICT [main] INFO  [] [] com.zaxxer.hikari.HikariDataSource - BookingHikariPool - Starting...
+2026-06-02 13:45:10.994 ICT [main] INFO  [] [] com.zaxxer.hikari.pool.HikariPool - BookingHikariPool - Added connection org.postgresql.jdbc.PgConnection@6d946eee
+2026-06-02 13:45:10.996 ICT [main] INFO  [] [] com.zaxxer.hikari.HikariDataSource - BookingHikariPool - Start completed.
+2026-06-02 13:45:11.024 ICT [main] INFO  [] [] org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/booking_db (PostgreSQL 16.13)
+2026-06-02 13:45:11.123 ICT [main] INFO  [] [] org.flywaydb.core.internal.command.DbValidate - Successfully validated 7 migrations (execution time 00:00.052s)
+2026-06-02 13:45:11.150 ICT [main] INFO  [] [] org.flywaydb.core.internal.command.DbMigrate - Current version of schema "auth": 7
+2026-06-02 13:45:11.154 ICT [main] INFO  [] [] org.flywaydb.core.internal.command.DbMigrate - Schema "auth" is up to date. No migration necessary.
+2026-06-02 13:45:11.736 ICT [main] WARN  [] [] org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-06-02 13:45:13.652 ICT [main] DEBUG [] [] com.booking.infrastructure.security.filter.TokenAuthFilter - Filter 'tokenAuthFilter' configured for use
+2026-06-02 13:45:13.652 ICT [main] DEBUG [] [] com.booking.infrastructure.security.filter.TraceFilter - Filter 'traceFilter' configured for use
+2026-06-02 13:45:13.653 ICT [main] DEBUG [] [] com.booking.infrastructure.security.filter.ApiKeyFilter - Filter 'apiKeyFilter' configured for use
+2026-06-02 13:45:13.653 ICT [main] DEBUG [] [] com.booking.infrastructure.security.filter.IdempotencyFilter - Filter 'idempotencyFilter' configured for use
+2026-06-02 13:45:14.385 ICT [main] WARN  [] [] org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: dfb5c6ad-9314-49a7-aab5-46f24fe728f2
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-06-02 13:45:15.012 ICT [main] INFO  [] [] org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8081"]
+2026-06-02 13:45:15.021 ICT [main] WARN  [] [] org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-06-02 13:45:15.031 ICT [main] INFO  [] [] com.zaxxer.hikari.HikariDataSource - BookingHikariPool - Shutdown initiated...
+2026-06-02 13:45:15.033 ICT [main] INFO  [] [] com.zaxxer.hikari.HikariDataSource - BookingHikariPool - Shutdown completed.
+2026-06-02 13:45:15.070 ICT [main] ERROR [] [] org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8081 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8081 or configure this application to listen on another port.
+
+2026-06-02 13:45:26.722 ICT [main] INFO  [] [] com.booking.BackendApplication - Starting BackendApplication using Java 21.0.9 with PID 5576 (C:\Users\tphat\booking-system\auth-service\target\classes started by tphat in C:\Users\tphat\booking-system)
+2026-06-02 13:45:26.722 ICT [main] DEBUG [] [] com.booking.BackendApplication - Running with Spring Boot v3.5.14, Spring v6.2.18
+2026-06-02 13:45:26.722 ICT [main] INFO  [] [] com.booking.BackendApplication - The following 1 profile is active: "dev"
+2026-06-02 13:45:28.517 ICT [main] INFO  [] [] org.apache.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8081"]
+2026-06-02 13:45:28.518 ICT [main] INFO  [] [] org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2026-06-02 13:45:28.519 ICT [main] INFO  [] [] org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.54]
+2026-06-02 13:45:28.576 ICT [main] INFO  [] [] org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2026-06-02 13:45:29.107 ICT [main] INFO  [] [] com.zaxxer.hikari.HikariDataSource - BookingHikariPool - Starting...
+2026-06-02 13:45:29.238 ICT [main] INFO  [] [] com.zaxxer.hikari.pool.HikariPool - BookingHikariPool - Added connection org.postgresql.jdbc.PgConnection@4d3990a5
+2026-06-02 13:45:29.239 ICT [main] INFO  [] [] com.zaxxer.hikari.HikariDataSource - BookingHikariPool - Start completed.
+2026-06-02 13:45:29.269 ICT [main] INFO  [] [] org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5432/booking_db (PostgreSQL 16.13)
+2026-06-02 13:45:29.332 ICT [main] INFO  [] [] org.flywaydb.core.internal.command.DbValidate - Successfully validated 7 migrations (execution time 00:00.036s)
+2026-06-02 13:45:29.378 ICT [main] INFO  [] [] org.flywaydb.core.internal.command.DbMigrate - Current version of schema "auth": 7
+2026-06-02 13:45:29.382 ICT [main] INFO  [] [] org.flywaydb.core.internal.command.DbMigrate - Schema "auth" is up to date. No migration necessary.
+2026-06-02 13:45:29.835 ICT [main] WARN  [] [] org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-06-02 13:45:31.536 ICT [main] DEBUG [] [] com.booking.infrastructure.security.filter.TokenAuthFilter - Filter 'tokenAuthFilter' configured for use
+2026-06-02 13:45:31.536 ICT [main] DEBUG [] [] com.booking.infrastructure.security.filter.TraceFilter - Filter 'traceFilter' configured for use
+2026-06-02 13:45:31.536 ICT [main] DEBUG [] [] com.booking.infrastructure.security.filter.ApiKeyFilter - Filter 'apiKeyFilter' configured for use
+2026-06-02 13:45:31.536 ICT [main] DEBUG [] [] com.booking.infrastructure.security.filter.IdempotencyFilter - Filter 'idempotencyFilter' configured for use
+2026-06-02 13:45:32.245 ICT [main] WARN  [] [] org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 07d37502-469c-48bb-a84d-4cd4b1e38fb7
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-06-02 13:45:32.815 ICT [main] INFO  [] [] org.apache.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8081"]
+2026-06-02 13:45:32.883 ICT [main] INFO  [] [] org.apache.kafka.clients.consumer.ConsumerConfig - ConsumerConfig values: 
+	allow.auto.create.topics = true
+	auto.commit.interval.ms = 5000
+	auto.include.jmx.reporter = true
+	auto.offset.reset = latest
+	bootstrap.servers = [localhost:29092]
+	check.crcs = true
+	client.dns.lookup = use_all_dns_ips
+	client.id = consumer-booking-group-1
+	client.rack = 
+	connections.max.idle.ms = 540000
+	default.api.timeout.ms = 60000
+	enable.auto.commit = false
+	enable.metrics.push = true
+	exclude.internal.topics = true
+	fetch.max.bytes = 52428800
+	fetch.max.wait.ms = 500
+	fetch.min.bytes = 1
+	group.id = booking-group
+	group.instance.id = null
+	group.protocol = classic
+	group.remote.assignor = null
+	heartbeat.interval.ms = 3000
+	interceptor.classes = []
+	internal.leave.group.on.close = true
+	internal.throw.on.fetch.stable.offset.unsupported = false
+	isolation.level = read_uncommitted
+	key.deserializer = class org.apache.kafka.common.serialization.StringDeserializer
+	max.partition.fetch.bytes = 1048576
+	max.poll.interval.ms = 300000
+	max.poll.records = 500
+	metadata.max.age.ms = 300000
+	metadata.recovery.strategy = none
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partition.assignment.strategy = [class org.apache.kafka.clients.consumer.RangeAssignor, class org.apache.kafka.clients.consumer.CooperativeStickyAssignor]
+	receive.buffer.bytes = 65536
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 30000
+	retry.backoff.max.ms = 1000
+	retry.backoff.ms = 100
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = null
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = null
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = GSSAPI
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.header.urlencode = false
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = PLAINTEXT
+	security.providers = null
+	send.buffer.bytes = 131072
+	session.timeout.ms = 45000
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = null
+	ssl.truststore.password = null
+	ssl.truststore.type = JKS
+	value.deserializer = class org.springframework.kafka.support.serializer.JsonDeserializer
+
+2026-06-02 13:45:32.945 ICT [main] INFO  [] [] org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector - initializing Kafka metrics collector
+2026-06-02 13:45:33.059 ICT [main] INFO  [] [] org.apache.kafka.common.utils.AppInfoParser - Kafka version: 3.9.2
+2026-06-02 13:45:33.060 ICT [main] INFO  [] [] org.apache.kafka.common.utils.AppInfoParser - Kafka commitId: 5e9866f43ab8e7e4
+2026-06-02 13:45:33.060 ICT [main] INFO  [] [] org.apache.kafka.common.utils.AppInfoParser - Kafka startTimeMs: 1780382733057
+2026-06-02 13:45:33.074 ICT [main] INFO  [] [] org.apache.kafka.clients.consumer.internals.ClassicKafkaConsumer - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Subscribed to topic(s): email-notifications
+2026-06-02 13:45:33.096 ICT [main] INFO  [] [] com.booking.BackendApplication - Started BackendApplication in 6.688 seconds (process running for 7.49)
+2026-06-02 13:45:33.104 ICT [main] INFO  [] [] com.booking.application.service.serviceimpl.SystemParamServiceImpl - [SysParam] Loading all params into cache...
+2026-06-02 13:45:33.431 ICT [RMI TCP Connection(2)-169.254.83.107] INFO  [] [] org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/api] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-02 13:45:33.655 ICT [main] DEBUG [] [] com.booking.infrastructure.external.cache.SystemParamCacheService - [SysParam] Cached: LOCK_DURATION_MINUTES=15
+2026-06-02 13:45:33.660 ICT [main] DEBUG [] [] com.booking.infrastructure.external.cache.SystemParamCacheService - [SysParam] Cached: TOKEN_TTL_HOURS=720
+2026-06-02 13:45:33.663 ICT [main] DEBUG [] [] com.booking.infrastructure.external.cache.SystemParamCacheService - [SysParam] Cached: MFA_SESSION_TTL_MINUTES=5
+2026-06-02 13:45:33.665 ICT [main] DEBUG [] [] com.booking.infrastructure.external.cache.SystemParamCacheService - [SysParam] Cached: RESET_TOKEN_TTL_MINUTES=15
+2026-06-02 13:45:33.666 ICT [main] DEBUG [] [] com.booking.infrastructure.external.cache.SystemParamCacheService - [SysParam] Cached: MAX_LOGIN_ATTEMPTS=3
+2026-06-02 13:45:33.666 ICT [main] INFO  [] [] com.booking.application.service.serviceimpl.SystemParamServiceImpl - [SysParam] Loaded 5 params into cache
+2026-06-02 13:45:33.681 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.Metadata - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Cluster ID: G5d2NuoBRDa4xyzHqaNEPg
+2026-06-02 13:45:33.683 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Discovered group coordinator 172.27.176.1:29092 (id: 2147483646 rack: null)
+2026-06-02 13:45:33.685 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] (Re-)joining group
+2026-06-02 13:45:33.709 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Request joining group due to: need to re-join with the given member-id: consumer-booking-group-1-7a1745a7-7ebd-41f3-b5ac-b5baecee4e41
+2026-06-02 13:45:33.710 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] (Re-)joining group
+2026-06-02 13:45:35.762 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Successfully joined group with generation Generation{generationId=8, memberId='consumer-booking-group-1-7a1745a7-7ebd-41f3-b5ac-b5baecee4e41', protocol='range'}
+2026-06-02 13:45:35.773 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Successfully synced group in generation Generation{generationId=8, memberId='consumer-booking-group-1-7a1745a7-7ebd-41f3-b5ac-b5baecee4e41', protocol='range'}
+2026-06-02 13:45:35.777 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Notifying assignor about the new Assignment(partitions=[])
+2026-06-02 13:45:35.779 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerRebalanceListenerInvoker - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Adding newly assigned partitions: 
+2026-06-02 13:47:59.383 ICT [http-nio-8081-exec-2] DEBUG [c3e67699-8916-4e] [793cf6e9-f015-46] com.booking.infrastructure.security.filter.ApiKeyFilter - [ApiKey] No origin header - allowing (dev mode)
+2026-06-02 13:47:59.524 ICT [http-nio-8081-exec-2] WARN  [c3e67699-8916-4e] [793cf6e9-f015-46] com.booking.application.service.serviceimpl.JwtServiceImpl - [JWT] Invalid token: Compact JWT strings may not contain whitespace.
+2026-06-02 13:47:59.525 ICT [http-nio-8081-exec-2] WARN  [c3e67699-8916-4e] [793cf6e9-f015-46] com.booking.infrastructure.security.filter.TokenAuthFilter - [Token] Invalid JWT signature from IP: 0:0:0:0:0:0:0:1
+2026-06-02 13:48:18.978 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Member consumer-booking-group-1-7a1745a7-7ebd-41f3-b5ac-b5baecee4e41 sending LeaveGroup request to coordinator 172.27.176.1:29092 (id: 2147483646 rack: null) due to the consumer unsubscribed from all topics
+2026-06-02 13:48:18.978 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Resetting generation and member id due to: consumer pro-actively leaving the group
+2026-06-02 13:48:18.978 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Request joining group due to: consumer pro-actively leaving the group
+2026-06-02 13:48:18.978 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ClassicKafkaConsumer - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Unsubscribed all topics or patterns and assigned partitions
+2026-06-02 13:48:18.978 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Resetting generation and member id due to: consumer pro-actively leaving the group
+2026-06-02 13:48:18.978 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.clients.consumer.internals.ConsumerCoordinator - [Consumer clientId=consumer-booking-group-1, groupId=booking-group] Request joining group due to: consumer pro-actively leaving the group
+2026-06-02 13:48:18.990 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.common.metrics.Metrics - Metrics scheduler closed
+2026-06-02 13:48:18.990 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.common.metrics.Metrics - Closing reporter org.apache.kafka.common.metrics.JmxReporter
+2026-06-02 13:48:18.991 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.common.metrics.Metrics - Closing reporter org.apache.kafka.common.telemetry.internals.ClientTelemetryReporter
+2026-06-02 13:48:18.991 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.common.metrics.Metrics - Metrics reporters closed
+2026-06-02 13:48:18.995 ICT [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] INFO  [] [] org.apache.kafka.common.utils.AppInfoParser - App info kafka.consumer for consumer-booking-group-1 unregistered
+2026-06-02 13:48:19.022 ICT [SpringApplicationShutdownHook] INFO  [] [] com.zaxxer.hikari.HikariDataSource - BookingHikariPool - Shutdown initiated...
+2026-06-02 13:48:19.026 ICT [SpringApplicationShutdownHook] INFO  [] [] com.zaxxer.hikari.HikariDataSource - BookingHikariPool - Shutdown completed.

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+
+        <!-- Console output -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS z} [%t] %-5level [%X{traceId}] [%X{requestId}] %logger{36} - %msg%n"/>
+        </Console>
+
+        <!-- Rolling file output -->
+        <RollingFile name="File"
+                     fileName="logs/app.log"
+                     filePattern="logs/app-%d{yyyy-MM-dd}.log.gz">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS z} [%t] %-5level [%X{traceId}] [%X{requestId}] %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+            </Policies>
+        </RollingFile>
+
+    </Appenders>
+
+    <Loggers>
+        <!-- Giảm noise từ Hibernate và Spring -->
+        <Logger name="org.hibernate" level="WARN"/>
+        <Logger name="org.springframework" level="WARN"/>
+        <Logger name="com.zaxxer.hikari" level="INFO"/>
+
+        <!-- Log đầy đủ cho code của mình -->
+        <Logger name="com.booking" level="DEBUG"/>
+
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
+        </Root>
+    </Loggers>
+</Configuration>
