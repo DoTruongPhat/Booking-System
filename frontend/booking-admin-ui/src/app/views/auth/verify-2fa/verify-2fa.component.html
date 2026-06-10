@@ -1,0 +1,43 @@
+<div class="verify-2fa-page">
+  <div class="verify-2fa-card">
+    <h1>Two-Factor Authentication</h1>
+    <p class="subtitle">
+      Enter the 6-digit code from your authenticator app
+      <span *ngIf="username"> for <strong>{{ username }}</strong></span>
+    </p>
+
+    <form [formGroup]="otpForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label>Authentication code</label>
+        <input
+          type="text"
+          inputmode="numeric"
+          maxlength="6"
+          formControlName="otp"
+          placeholder="000000"
+          autocomplete="one-time-code"
+          class="otp-input"
+        />
+        @if (
+          otpForm.get('otp')?.errors?.['required'] && otpForm.get('otp')?.touched
+        ) {
+          <span class="error">OTP is required</span>
+        }
+        @if (
+          otpForm.get('otp')?.errors?.['pattern'] && otpForm.get('otp')?.touched
+        ) {
+          <span class="error">OTP must be 6 digits</span>
+        }
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn-secondary" (click)="cancel()">
+          Cancel
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Verifying...' : 'Verify' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

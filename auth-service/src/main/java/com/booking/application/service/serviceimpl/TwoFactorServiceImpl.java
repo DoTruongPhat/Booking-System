@@ -1,8 +1,6 @@
 package com.booking.application.service.serviceimpl;
 
-import com.booking.application.port.in.Disable2faUseCase;
-import com.booking.application.port.in.Enable2faUseCase;
-import com.booking.application.port.in.Setup2faUseCase;
+import com.booking.application.port.in.Manage2faUseCase;
 import com.booking.application.port.out.UserRepositoryPort;
 import com.booking.application.service.TwoFactorService;
 import com.booking.domain.exception.AuthException;
@@ -30,9 +28,7 @@ import static dev.samstevens.totp.util.Utils.getDataUriForImage;
 @Log4j2
 public class TwoFactorServiceImpl implements
         TwoFactorService,
-        Setup2faUseCase,
-        Enable2faUseCase,
-        Disable2faUseCase {
+        Manage2faUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
 
@@ -156,19 +152,4 @@ public class TwoFactorServiceImpl implements
         return user.getTotpSecret();
     }
 
-    @Override
-    public TwoFactorResponse setup2fa(String username) {
-        return setup(username);
-    }
-
-    @Override
-    public void disable2fa(String username) {
-        disable(username);
-    }
-
-    @Override
-    public void enable2fa(String username, String otp) {
-        enable(username, otp);
-
-    }
 }

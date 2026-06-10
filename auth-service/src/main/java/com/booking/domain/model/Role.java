@@ -1,5 +1,6 @@
 package com.booking.domain.model;
 
+
 import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Set;

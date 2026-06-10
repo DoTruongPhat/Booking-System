@@ -1,0 +1,74 @@
+<nz-layout class="app-layout">
+  <!--Side Bar-->
+  <nz-sider
+    class="sidebar"
+    [nzCollapsible]="true"
+    [(nzCollapsed)]="isCollapsed"
+    [nzBreakpoint]="'lg'"
+    [nzCollapsedWidth]="0"
+  >
+    <div class="sidebar-logo">
+      <span *ngIf="!isCollapsed">SmartBooking</span>
+      <span *ngIf="isCollapsed">SB</span>
+    </div>
+
+    <ul nz-menu nzMode="inline" nzTheme="dark" class="sidebar-menu">
+      <li nz-menu-item routerLink="/admin/dashboard" routerLinkActive="ant-menu-item-selected">
+        <span nz-icon nzType="dashboard"></span>
+        <span *ngIf="!isCollapsed">DashBoard</span>
+      </li>
+      <li nz-menu-item routerLink="/admin/users" routerLinkActive="ant-menu-item-selected">
+        <span nz-icon nzType="user"></span>
+        <span *ngIf="!isCollapsed">Users</span>
+      </li>
+
+      <li nz-menu-item routerLink="/admin/bookings" routerLinkActive="ant-menu-item-selected">
+        <span nz-icon nzType="calendar"></span>
+        <span *ngIf="!isCollapsed">Bookings</span>
+      </li>
+
+      <li nz-menu-item routerLink="/admin/rooms" routerLinkActive="ant-menu-item-selected">
+        <span nz-icon nzType="home"></span>
+        <span *ngIf="!isCollapsed">Rooms</span>
+      </li>
+
+      <li nz-menu-item routerLink="/admin/payments" routerLinkActive="ant-menu-item-selected">
+        <span nz-icon nzType="credit-card"></span>
+        <span *ngIf="!isCollapsed">Payments</span>
+      </li>
+
+      <li nz-menu-divider></li>
+
+      <li nz-menu-item routerLink="/admin/staff/tickets" routerLinkActive="ant-menu-item-selected">
+        <span nz-icon nzType="inbox"></span>
+        <span *ngIf="!isCollapsed">My Tickets</span>
+      </li>
+
+      <li nz-menu-divider></li>
+
+      <li nz-menu-item (click)="logout()">
+        <span nz-icon nzType="logout"></span>
+        <span *ngIf="!isCollapsed">Logout</span>
+      </li>
+    </ul>
+  </nz-sider>
+
+  <!--Maincontent-->
+  <nz-layout class="main-wrapper">
+    <!--HEADER-->
+    <nz-header class="header">
+      <span class="trigger" (click)="toggleSidebar()">
+        <span nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
+      </span>
+
+      <div class="header-right">
+        <span class="user-name">Admin</span>
+      </div>
+    </nz-header>
+
+    <!--Content-->
+    <nz-content class="content">
+      <router-outlet></router-outlet>
+    </nz-content>
+  </nz-layout>
+</nz-layout>

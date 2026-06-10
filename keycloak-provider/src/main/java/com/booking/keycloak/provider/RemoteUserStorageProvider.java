@@ -14,6 +14,7 @@ import org.keycloak.storage.user.UserLookupProvider;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -183,18 +184,20 @@ public class RemoteUserStorageProvider implements
     /**
      * Lấy user info từ API
      * → Dùng để build UserModel
+     *
+     * Fix #1.1: KHÔNG dùng /verify với empty password nữa
+     * → Đổi sang GET /api/internal/users/{username} (lookup thuần)
+     * → Trả 404 nếu user không tồn tại → null
+     * → Trả 200 + JSON nếu tồn tại → parse userId/email
      */
     private RemoteUserInfo fetchUserInfo(String username) throws Exception {
-        // Gọi verify với empty password chỉ để lấy user info
-        // → Nếu user tồn tại thì KC biết
-        // → Password sẽ được verify sau bởi isValid()
-        String url = authServiceUrl + "/api/internal/users/verify";
-        String body = String.format(
-                "{\"username\":\"%s\",\"password\":\"%s\"}",
-                escapeJson(username), ""
-        );
+        // URL-encode username để tránh ký tự đặc biệt phá vỡ path
+        String encoded = URLEncoder.encode(
+                username, StandardCharsets.UTF_8);
+        String url = authServiceUrl
+                + "/api/internal/users/" + encoded;
 
-        String response = httpPost(url, body);
+        String response = httpGet(url);
         if (response == null) return null;
 
         // Parse userId và email từ response
@@ -249,10 +252,46 @@ public class RemoteUserStorageProvider implements
     }
 
     /**
+     * HTTP GET helper
+     * → Dùng cho lookup endpoint (GET /api/internal/users/{username})
+     * → Gửi X-Internal-Key header
+     * → Trả null nếu status != 200 (gồm cả 404 khi user không tồn tại)
+     */
+    private String httpGet(String urlStr) throws Exception {
+        URL url = new URL(urlStr);
+        HttpURLConnection conn =
+                (HttpURLConnection) url.openConnection();
+
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Accept", "application/json");
+        // Gửi internal key → Auth Service verify
+        conn.setRequestProperty("X-Internal-Key", internalKey);
+        conn.setConnectTimeout(5000);
+        conn.setReadTimeout(5000);
+
+        int status = conn.getResponseCode();
+        if (status != 200) {
+            // 404 (user not found) hoặc 401 (key sai) đều coi như null
+            log.infof(
+                    "[KC-Remote] Lookup API returned status: %d (url=%s)",
+                    status, urlStr);
+            return null;
+        }
+
+        try (java.io.InputStream is = conn.getInputStream()) {
+            return new String(is.readAllBytes(),
+                    StandardCharsets.UTF_8);
+        }
+    }
+
+    /**
      * Parse JSON value đơn giản
      * → Không dùng thư viện JSON
+     *
+     * Package-private + static để test trực tiếp (fix #3.2).
      */
-    private String extractJsonValue(String json, String key) {
+    static String extractJsonValue(String json, String key) {
+        if (json == null) return null;
         String search = "\"" + key + "\":\"";
         int start = json.indexOf(search);
         if (start == -1) return null;
@@ -264,8 +303,10 @@ public class RemoteUserStorageProvider implements
 
     /**
      * Escape special chars trong JSON string
+     *
+     * Package-private + static để test trực tiếp (fix #3.2).
      */
-    private String escapeJson(String input) {
+    static String escapeJson(String input) {
         if (input == null) return "";
         return input
                 .replace("\\", "\\\\")

@@ -1,0 +1,312 @@
+<div class="users-page">
+  <!-- ═══ HEADER ═══ -->
+  <div class="page-header">
+    <div>
+      <h1>User Management</h1>
+      <p class="subtitle">Quản lý tài khoản, phân quyền và phiên đăng nhập</p>
+    </div>
+  </div>
+
+  <!-- ═══ FILTER BAR ═══ -->
+  <nz-card class="filter-card">
+    <div class="filter-bar">
+      <nz-input-group [nzPrefix]="searchPrefix" class="search-input">
+        <input
+          nz-input
+          placeholder="Search by username or email..."
+          [(ngModel)]="keyword"
+          (keyup.enter)="onSearch()"
+        />
+        <ng-template #searchPrefix><span nz-icon nzType="search"></span></ng-template>
+      </nz-input-group>
+
+      <nz-select
+        [(ngModel)]="statusFilter"
+        (ngModelChange)="onStatusFilterChange()"
+        nzPlaceHolder="Filter status"
+        class="status-select"
+      >
+        <nz-option nzValue="all" nzLabel="All status"></nz-option>
+        <nz-option nzValue="active" nzLabel="Active"></nz-option>
+        <nz-option nzValue="inactive" nzLabel="Inactive"></nz-option>
+        <nz-option nzValue="locked" nzLabel="Locked"></nz-option>
+      </nz-select>
+
+      <button nz-button nzType="primary" (click)="onSearch()">
+        <span nz-icon nzType="search"></span> Search
+      </button>
+
+      <button nz-button (click)="resetFilter()">
+        <span nz-icon nzType="reload"></span> Reset
+      </button>
+
+      <button nz-button (click)="loadUsers()" nz-tooltip="Reload data">
+        <span nz-icon nzType="sync"></span>
+      </button>
+    </div>
+  </nz-card>
+
+  <!-- ═══ TABLE ═══ -->
+  <nz-card class="table-card">
+    <nz-table
+      #userTable
+      [nzData]="users"
+      [nzLoading]="isLoading"
+      [nzShowPagination]="false"
+      nzSize="middle"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="60px"></th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Roles</th>
+          <th>2FA</th>
+          <th>Timezone</th>
+          <th>Created</th>
+          <th nzWidth="320px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users">
+          <td>
+            <nz-avatar
+              [nzText]="user.username.charAt(0).toUpperCase()"
+              [style.background-color]="
+                getStatus(user) === 'active' ? '#1890ff' : '#bfbfbf'
+              "
+            ></nz-avatar>
+          </td>
+          <td>
+            <a (click)="viewDetail(user)" class="username-link">
+              {{ user.username }}
+            </a>
+          </td>
+          <td>{{ user.email }}</td>
+          <td>
+            <nz-tag [nzColor]="getStatusColor(getStatus(user))">
+              {{ getStatus(user) | uppercase }}
+            </nz-tag>
+          </td>
+          <td>
+            <nz-tag
+              *ngFor="let role of user.roles"
+              [nzColor]="role.code === 'ADMIN_ALL' ? 'red' : 'blue'"
+            >
+              {{ role.code }}
+            </nz-tag>
+            <span *ngIf="!user.roles.length" class="text-muted">—</span>
+          </td>
+          <td>
+            <span
+              nz-icon
+              [nzType]="user.twoFactorEnabled ? 'check-circle' : 'close-circle'"
+              [nzTheme]="user.twoFactorEnabled ? 'twotone' : 'outline'"
+              [style.color]="user.twoFactorEnabled ? '#52c41a' : '#bfbfbf'"
+              [nz-tooltip]="user.twoFactorEnabled ? 'Enabled' : 'Disabled'"
+            ></span>
+          </td>
+          <td>{{ user.timezone || '—' }}</td>
+          <td>
+            <span class="text-muted">{{ user.createdAt | date: 'short' }}</span>
+          </td>
+          <td>
+            <nz-space nzSize="small">
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="View detail"
+                (click)="viewDetail(user)"
+              >
+                <span nz-icon nzType="eye"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Edit info"
+                (click)="openEditModal(user)"
+              >
+                <span nz-icon nzType="edit"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Assign role"
+                (click)="openRoleModal(user)"
+              >
+                <span nz-icon nzType="team"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Reset password"
+                (click)="openPasswordModal(user)"
+              >
+                <span nz-icon nzType="key"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nzDanger
+                nz-tooltip="Revoke all sessions"
+                nz-popconfirm
+                nzPopconfirmTitle="Revoke all sessions of this user?"
+                (nzOnConfirm)="revokeSessions(user)"
+              >
+                <span nz-icon nzType="disconnect"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nzDanger
+                nzType="primary"
+                nz-tooltip="Deactivate"
+                nz-popconfirm
+                nzPopconfirmTitle="Deactivate this user?"
+                nzOkText="Deactivate"
+                nzOkType="danger"
+                (nzOnConfirm)="deactivate(user)"
+              >
+                <span nz-icon nzType="stop"></span>
+              </button>
+            </nz-space>
+          </td>
+        </tr>
+
+        <tr *ngIf="!isLoading && !users.length">
+          <td colspan="9" class="empty-row">
+            <nz-empty nzNotFoundContent="No users found"></nz-empty>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+
+    <!-- ═══ PAGINATION ═══ -->
+    <div class="pagination-wrapper">
+      <nz-pagination
+        [nzPageIndex]="pageIndex"
+        [nzTotal]="total"
+        [nzPageSize]="pageSize"
+        [nzShowSizeChanger]="true"
+        [nzPageSizeOptions]="[10, 20, 50, 100]"
+        (nzPageIndexChange)="onPageChange($event)"
+        (nzPageSizeChange)="onPageSizeChange($event)"
+        [nzShowTotal]="totalTemplate"
+      ></nz-pagination>
+      <ng-template #totalTemplate let-total let-range="range">
+        {{ range[0] }}-{{ range[1] }} of {{ total }} users
+      </ng-template>
+    </div>
+  </nz-card>
+</div>
+
+<!-- ═══ EDIT MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isEditModalOpen"
+  nzTitle="Edit User"
+  [nzOkLoading]="isSubmitting"
+  (nzOnCancel)="isEditModalOpen = false"
+  (nzOnOk)="submitEdit()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="editForm" nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label nzRequired>Email</nz-form-label>
+        <nz-form-control nzErrorTip="Invalid email">
+          <input nz-input formControlName="email" placeholder="user@example.com" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Timezone</nz-form-label>
+        <nz-form-control>
+          <input nz-input formControlName="timezone" placeholder="UTC, Asia/Ho_Chi_Minh, ..." />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Active</nz-form-label>
+        <nz-form-control>
+          <nz-switch formControlName="active"></nz-switch>
+          <span class="switch-hint">
+            {{ editForm.value.active ? 'User can login' : 'User is blocked from login' }}
+          </span>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal>
+
+<!-- ═══ ASSIGN ROLE MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isRoleModalOpen"
+  [nzTitle]="'Assign Role to ' + (selectedUser?.username || '')"
+  [nzOkLoading]="isSubmitting"
+  (nzOnCancel)="isRoleModalOpen = false"
+  (nzOnOk)="submitRole()"
+>
+  <ng-container *nzModalContent>
+    <nz-alert
+      nzType="warning"
+      nzMessage="Note: Backend sẽ REPLACE toàn bộ roles của user bằng role được chọn. Role cũ sẽ bị xóa."
+      nzShowIcon
+      style="margin-bottom: 16px;"
+    ></nz-alert>
+
+    <nz-spin [nzSpinning]="isLoadingRoles">
+      <form nz-form [formGroup]="roleForm" nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzRequired>Role</nz-form-label>
+          <nz-form-control>
+            <nz-select formControlName="roleCode" nzPlaceHolder="Select a role">
+              <nz-option
+                *ngFor="let r of availableRoles"
+                [nzValue]="r.code"
+                [nzLabel]="r.name + ' (' + r.code + ')'"
+              ></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </nz-spin>
+  </ng-container>
+</nz-modal>
+
+<!-- ═══ RESET PASSWORD MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isPasswordModalOpen"
+  [nzTitle]="'Reset Password for ' + (selectedUser?.username || '')"
+  [nzOkLoading]="isSubmitting"
+  nzOkText="Reset"
+  nzOkType="primary"
+  (nzOnCancel)="isPasswordModalOpen = false"
+  (nzOnOk)="submitPassword()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="passwordForm" nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label nzRequired>New password</nz-form-label>
+        <nz-form-control nzErrorTip="Min 8 characters">
+          <input nz-input type="password" formControlName="newPassword" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzRequired>Confirm password</nz-form-label>
+        <nz-form-control [nzErrorTip]="confirmTpl">
+          <input nz-input type="password" formControlName="confirmPassword" />
+          <ng-template #confirmTpl let-control>
+            <span *ngIf="control.errors?.['required']">Please confirm password</span>
+          </ng-template>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal>

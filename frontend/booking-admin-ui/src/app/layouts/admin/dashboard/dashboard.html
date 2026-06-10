@@ -1,0 +1,81 @@
+<div class="dashboard">
+  <!-- TITLE -->
+  <div class="dashboard-header">
+    <h1>Dashboard</h1>
+    <p>Welcome back, {{ currentUser?.username }}!</p>
+  </div>
+
+  <!-- STATS CARDS -->
+  <div nz-row [nzGutter]="16" class="stats-row">
+    <div nz-col [nzSpan]="6">
+      <nz-card class="stat-card">
+        <nz-statistic
+          [nzValue]="stats.totalUsers"
+          [nzTitle]="'Total Users'"
+          [nzPrefix]="userPrefix"
+        >
+        </nz-statistic>
+        <ng-template #userPrefix>
+          <span nz-icon nzType="user"></span>
+        </ng-template>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzSpan]="6">
+      <nz-card class="stat-card">
+        <nz-statistic
+          [nzValue]="stats.totalBookings"
+          [nzTitle]="'Total Bookings'"
+          [nzPrefix]="bookingPrefix"
+        >
+        </nz-statistic>
+        <ng-template #bookingPrefix>
+          <span nz-icon nzType="calendar"></span>
+        </ng-template>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzSpan]="6">
+      <nz-card class="stat-card">
+        <nz-statistic
+          [nzValue]="stats.totalRooms"
+          [nzTitle]="'Total Rooms'"
+          [nzPrefix]="roomPrefix"
+        >
+        </nz-statistic>
+        <ng-template #roomPrefix>
+          <span nz-icon nzType="home"></span>
+        </ng-template>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzSpan]="6">
+      <nz-card class="stat-card">
+        <nz-statistic
+          [nzValue]="stats.totalRevenue"
+          [nzTitle]="'Revenue (VND)'"
+          [nzPrefix]="revenuePrefix"
+        >
+        </nz-statistic>
+        <ng-template #revenuePrefix>
+          <span nz-icon nzType="dollar"></span>
+        </ng-template>
+      </nz-card>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div nz-row [nzGutter]="16" class="content-row">
+    <div nz-col [nzSpan]="16">
+      <nz-card nzTitle="Recent Bookings" class="content-card">
+        <p>Chart or table sẽ hiển thị ở đây</p>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzSpan]="8">
+      <nz-card nzTitle="Quick Actions" class="content-card">
+        <p>Quick actions sẽ hiển thị ở đây</p>
+      </nz-card>
+    </div>
+  </div>
+</div>

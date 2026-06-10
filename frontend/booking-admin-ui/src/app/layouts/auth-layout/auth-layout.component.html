@@ -1,0 +1,22 @@
+<nz-layout class="auth-layout">
+  <!-- HEADER -->
+  <nz-header class="auth-header">
+    <div class="logo">
+      <a routerLink="/">SmartBooking</a>
+    </div>
+    <div class="nav">
+      <a routerLink="/auth/login">Login</a>
+      <a routerLink="/auth/register">Register</a>
+    </div>
+  </nz-header>
+
+  <!-- CONTENT -->
+  <nz-content class="auth-content">
+    <div class="auth-container">
+      <router-outlet></router-outlet>
+    </div>
+  </nz-content>
+
+  <!-- FOOTER -->
+  <nz-footer class="auth-footer"> SmartBooking ©2024 </nz-footer>
+</nz-layout>

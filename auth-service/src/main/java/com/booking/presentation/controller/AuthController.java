@@ -35,9 +35,7 @@ public class AuthController {
     private final ResetPasswordUseCase resetPasswordUseCase;
     private final RegisterUseCase registerUseCase;
     private final Verify2faUseCase verify2faUseCase;
-    private final Setup2faUseCase setup2faUseCase;
-    private final Enable2faUseCase enable2faUseCase;
-    private final Disable2faUseCase disable2faUseCase;
+    private final Manage2faUseCase manage2faUseCase;
 
     // TwoFactorService và JwtService giữ nguyên
     // → Chưa có Use Case riêng cho 2FA setup/enable/disable
@@ -145,7 +143,7 @@ public class AuthController {
                 MaskUtil.maskUsername(username));
 
         TwoFactorResponse response =
-                setup2faUseCase.setup2fa(username);
+                manage2faUseCase.setup(username);
 
         return  ResponseEntity.ok(response);
     }
@@ -165,7 +163,7 @@ public class AuthController {
         log.info("[CONTROLLER] 2FA enable: {}",
                 MaskUtil.maskUsername(username));
 
-        enable2faUseCase.enable2fa(username, request.getOtp());
+        manage2faUseCase.enable(username, request.getOtp());
 
         return ResponseEntity.ok().build();
     }
@@ -183,7 +181,7 @@ public class AuthController {
         log.info("[CONTROLLER] 2FA disable: {}",
                 MaskUtil.maskUsername(username));
 
-        disable2faUseCase.disable2fa(username);
+        manage2faUseCase.disable(username);
         return ResponseEntity.ok().build();
     }
 

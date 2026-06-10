@@ -1,0 +1,52 @@
+// ═══════════════════════════════════════════════════════════
+// VARIABLES - Khai báo biến dùng chung
+// ═══════════════════════════════════════════════════════════
+
+// Colors
+$primary: #1890ff;
+$primary-hover: #40a9ff;
+$success: #52c41a;
+$warning: #faad14;
+$error: #ff4d4f;
+
+$white: #ffffff;
+$black: #000000;
+$gray-100: #f7f8fa;
+$gray-200: #eceef2;
+$gray-300: #d9dde3;
+$gray-600: #6b7280;
+$gray-800: #1f2328;
+
+// Text
+$text-primary: #1f2328;
+$text-secondary: #6b7280;
+$text-disabled: #b4b9c2;
+
+// Fonts
+$font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-size-xs: 12px;
+$font-size-sm: 14px;
+$font-size-base: 16px;
+$font-size-lg: 18px;
+$font-size-xl: 20px;
+$font-size-2xl: 24px;
+
+// Spacing
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 12px;
+$spacing-base: 16px;
+$spacing-lg: 20px;
+$spacing-xl: 24px;
+$spacing-2xl: 32px;
+
+// Border
+$radius-sm: 4px;
+$radius-base: 6px;
+$radius-lg: 8px;
+$radius-xl: 12px;
+
+// Shadow
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-base: 0 2px 8px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);

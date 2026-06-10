@@ -1,0 +1,82 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 40px 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+
+  .brand {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1890ff;
+    margin: 0 0 8px 0;
+  }
+
+  .subtitle {
+    color: #6b7280;
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+.login-alert {
+  margin-bottom: 16px;
+}
+
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  .forgot-link {
+    color: #1890ff;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+button[type='submit'] {
+  height: 44px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.login-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+
+  a {
+    color: #1890ff;
+    margin-left: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

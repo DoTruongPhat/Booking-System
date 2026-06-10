@@ -1,7 +1,6 @@
 package com.booking.application.service.serviceimpl;
 
-import com.booking.application.port.in.RevokeAllSessionsUseCase;
-import com.booking.application.port.in.RevokeSessionUseCase;
+import com.booking.application.port.in.ManageSessionUseCase;
 import com.booking.application.port.out.TokenRepositoryPort;
 import com.booking.application.service.JwtService;
 import com.booking.application.service.SessionService;
@@ -35,8 +34,7 @@ import java.util.UUID;
 @Log4j2
 public class SessionServiceImpl implements
         SessionService,
-        RevokeAllSessionsUseCase,
-        RevokeSessionUseCase {
+        ManageSessionUseCase {
 
     // Cần TokenRepositoryPort để:
     // → Tìm token active của user (lấy JTI)

@@ -1,0 +1,50 @@
+.dashboard {
+  padding: 0;
+}
+
+.dashboard-header {
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1f2328;
+    margin-bottom: 4px;
+  }
+
+  p {
+    color: #6b7280;
+    font-size: 14px;
+  }
+}
+
+.stats-row {
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  :host ::ng-deep {
+    .ant-statistic-title {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .ant-statistic-content {
+      font-size: 28px;
+      font-weight: 600;
+    }
+  }
+}
+
+.content-row {
+  margin-bottom: 24px;
+}
+
+.content-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-height: 400px;
+}

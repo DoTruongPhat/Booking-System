@@ -1,6 +1,7 @@
 package com.booking.domain.model;
 
 import com.booking.domain.enums.UserStatus;
+
 import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Set;

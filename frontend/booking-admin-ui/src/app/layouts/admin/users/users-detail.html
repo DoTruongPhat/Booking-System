@@ -1,0 +1,150 @@
+<div class="users-detail">
+  <div class="page-header">
+    <button nz-button (click)="goBack()">
+      <span nz-icon nzType="arrow-left"></span> Back
+    </button>
+  </div>
+
+  <nz-spin [nzSpinning]="isLoading">
+    <ng-container *ngIf="user">
+      <!-- ═══ PROFILE CARD ═══ -->
+      <nz-card class="profile-card">
+        <div class="profile-header">
+          <nz-avatar
+            [nzSize]="80"
+            [nzText]="user.username.charAt(0).toUpperCase()"
+            [style.background-color]="
+              getStatus(user) === 'active' ? '#1890ff' : '#bfbfbf'
+            "
+          ></nz-avatar>
+          <div class="profile-info">
+            <h2>{{ user.username }}</h2>
+            <p class="email">{{ user.email }}</p>
+            <nz-tag [nzColor]="getStatusColor(getStatus(user))">
+              {{ getStatus(user) | uppercase }}
+            </nz-tag>
+          </div>
+          <div class="profile-actions">
+            <nz-space>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzDanger
+                nz-popconfirm
+                nzPopconfirmTitle="Deactivate this user?"
+                (nzOnConfirm)="deactivate()"
+                [disabled]="!user.isActive"
+              >
+                <span nz-icon nzType="stop"></span> Deactivate
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzDanger
+                nz-popconfirm
+                nzPopconfirmTitle="Revoke all sessions?"
+                (nzOnConfirm)="revokeSessions()"
+              >
+                <span nz-icon nzType="disconnect"></span> Revoke sessions
+              </button>
+            </nz-space>
+          </div>
+        </div>
+      </nz-card>
+
+      <!-- ═══ DETAILS ═══ -->
+      <nz-card nzTitle="Account Information" style="margin-top: 16px;">
+        <nz-descriptions
+          [nzColumn]="{ xs: 1, sm: 2, md: 2, lg: 3 }"
+          nzBordered
+          nzSize="small"
+        >
+          <nz-descriptions-item nzTitle="User ID">
+            <code>{{ user.id }}</code>
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Username">
+            {{ user.username }}
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Email">
+            {{ user.email }}
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Status">
+            <nz-tag [nzColor]="getStatusColor(getStatus(user))">
+              {{ getStatus(user) | uppercase }}
+            </nz-tag>
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Timezone">
+            {{ user.timezone || '—' }}
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="2FA">
+            <span
+              nz-icon
+              [nzType]="user.twoFactorEnabled ? 'check-circle' : 'close-circle'"
+              [nzTheme]="user.twoFactorEnabled ? 'twotone' : 'outline'"
+              [style.color]="user.twoFactorEnabled ? '#52c41a' : '#bfbfbf'"
+            ></span>
+            {{ user.twoFactorEnabled ? 'Enabled' : 'Disabled' }}
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Failed attempts">
+            <nz-tag [nzColor]="user.failedAttempts > 0 ? 'orange' : 'default'">
+              {{ user.failedAttempts }}
+            </nz-tag>
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Locked until">
+            {{ user.lockedUntil ? (user.lockedUntil | date: 'medium') : '—' }}
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Created at">
+            {{ user.createdAt | date: 'medium' }}
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Updated at">
+            {{ user.updatedAt | date: 'medium' }}
+          </nz-descriptions-item>
+        </nz-descriptions>
+      </nz-card>
+
+      <!-- ═══ ROLES ═══ -->
+      <nz-card nzTitle="Roles & Permissions" style="margin-top: 16px;">
+        <ng-container *ngIf="user.roles.length; else noRoles">
+          <div *ngFor="let role of user.roles" class="role-block">
+            <div class="role-header">
+              <nz-tag
+                [nzColor]="role.code === 'ADMIN_ALL' ? 'red' : 'blue'"
+                style="font-size: 14px; padding: 4px 12px;"
+              >
+                {{ role.code }}
+              </nz-tag>
+              <strong>{{ role.name }}</strong>
+              <span class="text-muted" *ngIf="role.description">
+                — {{ role.description }}
+              </span>
+            </div>
+
+            <div class="permissions" *ngIf="role.permissions && role.permissions.length">
+              <nz-tag
+                *ngFor="let perm of role.permissions"
+                nzColor="default"
+              >
+                {{ perm.code }}
+              </nz-tag>
+            </div>
+            <div *ngIf="!role.permissions || !role.permissions.length" class="text-muted">
+              No explicit permissions
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #noRoles>
+          <p class="text-muted">This user has no roles assigned.</p>
+        </ng-template>
+      </nz-card>
+    </ng-container>
+  </nz-spin>
+</div>

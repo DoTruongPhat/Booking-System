@@ -1,0 +1,52 @@
+# ============================================
+# Git ignore cho booking-system
+# ============================================
+
+# Environment files (NEVER commit real secrets)
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+.factorypath
+
+# Build outputs
+**/target/
+**/build/
+**/out/
+**/*.jar
+!**/keycloak-provider-*.jar
+
+# Logs
+logs/
+*.log
+**/*.log
+**/logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# Test output
+**/test-output/
+**/reports/
+**/.pytest_cache/
+**/coverage/
+
+# Spring Boot devtools
+**/spring-boot-devtools.properties
+
+# Local-only config overrides
+**/application-local.properties
+**/application-local.yml

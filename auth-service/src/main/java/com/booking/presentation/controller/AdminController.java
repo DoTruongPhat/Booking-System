@@ -26,8 +26,7 @@ import java.util.UUID;
 public class AdminController {
 
     // Session
-    private final RevokeAllSessionsUseCase revokeAllSessionsUseCase;
-    private final RevokeSessionUseCase revokeSessionUseCase;
+    private final ManageSessionUseCase manageSessionUseCase;
 
     // User Management
     private final GetAllUsersUseCase getAllUsersUseCase;
@@ -103,7 +102,7 @@ public class AdminController {
     @PreAuthorize("hasAuthority('ADMIN_ALL')")
     public ResponseEntity<Void> revokeUserSessions(
             @PathVariable UUID userId) {
-        revokeAllSessionsUseCase.revokeAllSessions(userId);
+        manageSessionUseCase.revokeAllSessions(userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -111,7 +110,7 @@ public class AdminController {
     @PreAuthorize("hasAuthority('ADMIN_ALL')")
     public ResponseEntity<Void> revokeSession(
             @PathVariable String jti) {
-        revokeSessionUseCase.revokeSession(jti);
+        manageSessionUseCase.revokeSession(jti);
         return ResponseEntity.noContent().build();
     }
 

@@ -3,7 +3,6 @@ package com.booking.infrastructure.persistence.mapper;
 import com.booking.domain.model.User;
 import com.booking.infrastructure.persistence.entity.UserEntity;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 /**
  * UserEntityMapper

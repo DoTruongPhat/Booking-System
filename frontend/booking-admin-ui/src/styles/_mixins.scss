@@ -1,0 +1,71 @@
+// ═══════════════════════════════════════════════════════════
+// MIXINS - Hàm SCSS dùng lại
+// ═══════════════════════════════════════════════════════════
+
+@use 'variables' as *;
+
+// Flex center
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Flex between
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// Button base
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-sm $spacing-xl;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  border-radius: $radius-base;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+// Button primary
+@mixin button-primary {
+  @include button-base;
+  background: $primary;
+  color: $white;
+
+  &:hover {
+    background: $primary-hover;
+  }
+}
+
+// Card
+@mixin card-base {
+  background: $white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-base;
+  padding: $spacing-2xl;
+}
+
+// Responsive breakpoints
+@mixin mobile {
+  @media (min-width: 576px) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: 768px) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: 992px) {
+    @content;
+  }
+}

@@ -1,0 +1,67 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-header">
+      <h1 class="brand">SmartBooking</h1>
+      <p class="subtitle">Sign in to your account</p>
+    </div>
+
+    <nz-alert
+      *ngIf="errorMessage"
+      nzType="error"
+      [nzMessage]="errorMessage"
+      nzShowIcon
+      class="login-alert"
+    ></nz-alert>
+
+    <form nz-form [formGroup]="loginForm" (ngSubmit)="onSubmit()" nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label nzRequired>Username</nz-form-label>
+        <nz-form-control nzErrorTip="Please input your username!">
+          <input
+            nz-input
+            formControlName="username"
+            placeholder="Enter username"
+            size="large"
+            autocomplete="username"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzRequired>Password</nz-form-label>
+        <nz-form-control nzErrorTip="Please input your password!">
+          <input
+            nz-input
+            type="password"
+            formControlName="password"
+            placeholder="Enter password"
+            size="large"
+            autocomplete="current-password"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <div class="login-options">
+        <label nz-checkbox formControlName="remember">Remember me</label>
+        <a class="forgot-link" (click)="$event.preventDefault()">Forgot password?</a>
+      </div>
+
+      <button
+        nz-button
+        nzType="primary"
+        nzSize="large"
+        nzBlock
+        [nzLoading]="isSubmitting"
+        type="submit"
+        [disabled]="loginForm.invalid"
+      >
+        {{ isSubmitting ? 'Signing in...' : 'Sign in' }}
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <span>Don't have an account?</span>
+      <a>Sign up</a>
+    </div>
+  </div>
+</div>

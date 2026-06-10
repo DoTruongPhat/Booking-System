@@ -1,0 +1,89 @@
+.staff-tickets-page {
+  padding: 0;
+}
+
+.page-header {
+  margin-bottom: 16px;
+
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1f2328;
+    margin: 0 0 4px 0;
+  }
+
+  .subtitle {
+    color: #6b7280;
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+.filter-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+
+  ::ng-deep .ant-card-body {
+    padding: 16px;
+  }
+}
+
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+
+  .status-select {
+    width: 200px;
+  }
+}
+
+.table-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.ticket-title {
+  color: #1890ff;
+  cursor: pointer;
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.text-muted {
+  color: #8c8c8c;
+  font-size: 13px;
+}
+
+.empty-row {
+  padding: 40px 0;
+  text-align: center;
+}
+
+.pagination-wrapper {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.description {
+  margin: 0;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: 13px;
+  color: #1f2328;
+}
+
+.status-info {
+  margin-bottom: 16px;
+  color: #1f2328;
+}

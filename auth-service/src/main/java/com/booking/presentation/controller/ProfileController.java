@@ -3,7 +3,6 @@ package com.booking.presentation.controller;
 import com.booking.application.port.in.ChangePasswordUseCase;
 import com.booking.application.port.in.GetProfileUseCase;
 import com.booking.application.port.in.UpdateProfileUseCase;
-import com.booking.application.service.UserManagementService;
 import com.booking.domain.model.User;
 import com.booking.presentation.request.ChangePasswordRequest;
 import com.booking.presentation.request.UpdateUserRequest;

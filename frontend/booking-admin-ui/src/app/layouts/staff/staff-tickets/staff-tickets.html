@@ -1,0 +1,254 @@
+<div class="staff-tickets-page">
+  <!-- ═══ HEADER ═══ -->
+  <div class="page-header">
+    <div>
+      <h1>My Assigned Tickets</h1>
+      <p class="subtitle">Các ticket được admin assign cho bạn</p>
+    </div>
+  </div>
+
+  <!-- ═══ INFO ALERT ═══ -->
+  <nz-alert
+    nzType="info"
+    nzMessage="Workflow"
+    nzDescription="Bạn có thể chuyển trạng thái từ OPEN → IN_PROGRESS → RESOLVED. Để CLOSE ticket, vui lòng liên hệ admin hoặc user tạo."
+    nzShowIcon
+    style="margin-bottom: 16px;"
+  ></nz-alert>
+
+  <!-- ═══ FILTER BAR ═══ -->
+  <nz-card class="filter-card">
+    <div class="filter-bar">
+      <nz-select
+        [(ngModel)]="statusFilter"
+        (ngModelChange)="onStatusFilterChange()"
+        nzPlaceHolder="Filter status"
+        class="status-select"
+      >
+        <nz-option nzValue="ALL" nzLabel="All status"></nz-option>
+        <nz-option nzValue="OPEN" nzLabel="Open"></nz-option>
+        <nz-option nzValue="IN_PROGRESS" nzLabel="In Progress"></nz-option>
+        <nz-option nzValue="RESOLVED" nzLabel="Resolved"></nz-option>
+        <nz-option nzValue="CLOSED" nzLabel="Closed"></nz-option>
+      </nz-select>
+
+      <button nz-button (click)="resetFilter()">
+        <span nz-icon nzType="reload"></span> Reset
+      </button>
+
+      <button nz-button (click)="loadTickets()" nz-tooltip="Reload data">
+        <span nz-icon nzType="sync"></span>
+      </button>
+    </div>
+  </nz-card>
+
+  <!-- ═══ TABLE ═══ -->
+  <nz-card class="table-card">
+    <nz-table
+      #ticketTable
+      [nzData]="tickets"
+      [nzLoading]="isLoading"
+      [nzShowPagination]="false"
+      nzSize="middle"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="50px"></th>
+          <th>Title</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Created by</th>
+          <th>Created at</th>
+          <th nzWidth="200px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let ticket of tickets">
+          <td>
+            <nz-avatar
+              [nzText]="ticket.title.charAt(0).toUpperCase()"
+              [style.background-color]="
+                getStatusColor(ticket.status) === 'blue' ? '#1890ff' :
+                getStatusColor(ticket.status) === 'orange' ? '#fa8c16' :
+                getStatusColor(ticket.status) === 'green' ? '#52c41a' : '#bfbfbf'
+              "
+            ></nz-avatar>
+          </td>
+          <td>
+            <a (click)="openDetailModal(ticket)" class="ticket-title">
+              {{ ticket.title }}
+            </a>
+          </td>
+          <td>
+            <nz-tag [nzColor]="getPriorityColor(ticket.priority)">
+              {{ ticket.priority }}
+            </nz-tag>
+          </td>
+          <td>
+            <nz-tag [nzColor]="getStatusColor(ticket.status)">
+              {{ ticket.status }}
+            </nz-tag>
+          </td>
+          <td>
+            <code class="text-muted">{{ ticket.createdBy.substring(0, 8) }}...</code>
+          </td>
+          <td>
+            <span class="text-muted">{{ ticket.createdAt | date: 'short' }}</span>
+          </td>
+          <td>
+            <nz-space nzSize="small">
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="View detail"
+                (click)="openDetailModal(ticket)"
+              >
+                <span nz-icon nzType="eye"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nzType="primary"
+                nz-tooltip="Update status"
+                [disabled]="!canUpdateStatus(ticket)"
+                (click)="openStatusModal(ticket)"
+              >
+                <span nz-icon nzType="edit"></span>
+                {{ getNextStatusLabel(ticket) }}
+              </button>
+            </nz-space>
+          </td>
+        </tr>
+
+        <tr *ngIf="!isLoading && !tickets.length">
+          <td colspan="7" class="empty-row">
+            <nz-empty nzNotFoundContent="No tickets assigned to you"></nz-empty>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+
+    <!-- ═══ PAGINATION ═══ -->
+    <div class="pagination-wrapper">
+      <nz-pagination
+        [nzPageIndex]="pageIndex"
+        [nzTotal]="total"
+        [nzPageSize]="pageSize"
+        [nzShowSizeChanger]="true"
+        [nzPageSizeOptions]="[10, 20, 50, 100]"
+        (nzPageIndexChange)="onPageChange($event)"
+        (nzPageSizeChange)="onPageSizeChange($event)"
+        [nzShowTotal]="totalTemplate"
+      ></nz-pagination>
+      <ng-template #totalTemplate let-total let-range="range">
+        {{ range[0] }}-{{ range[1] }} of {{ total }} tickets
+      </ng-template>
+    </div>
+  </nz-card>
+</div>
+
+<!-- ═══ DETAIL MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isDetailModalOpen"
+  [nzTitle]="selectedTicket?.title || 'Ticket Detail'"
+  [nzFooter]="null"
+  [nzWidth]="700"
+  (nzOnCancel)="isDetailModalOpen = false"
+>
+  <ng-container *nzModalContent>
+    <nz-spin [nzSpinning]="isLoading">
+      <ng-container *ngIf="selectedTicket">
+        <nz-descriptions
+          [nzColumn]="{ xs: 1, sm: 2 }"
+          nzBordered
+          nzSize="small"
+        >
+          <nz-descriptions-item nzTitle="ID">
+            <code>{{ selectedTicket.id }}</code>
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Status">
+            <nz-tag [nzColor]="getStatusColor(selectedTicket.status)">
+              {{ selectedTicket.status }}
+            </nz-tag>
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Priority">
+            <nz-tag [nzColor]="getPriorityColor(selectedTicket.priority)">
+              {{ selectedTicket.priority }}
+            </nz-tag>
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Created by">
+            <code>{{ selectedTicket.createdBy }}</code>
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Assigned to">
+            <code>{{ selectedTicket.assignedTo || '—' }}</code>
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Created at">
+            {{ selectedTicket.createdAt | date: 'medium' }}
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Updated at">
+            {{ selectedTicket.updatedAt | date: 'medium' }}
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Closed at" [nzSpan]="2">
+            {{ selectedTicket.closedAt ? (selectedTicket.closedAt | date: 'medium') : '—' }}
+          </nz-descriptions-item>
+
+          <nz-descriptions-item nzTitle="Description" [nzSpan]="2">
+            <pre class="description">{{ selectedTicket.description }}</pre>
+          </nz-descriptions-item>
+        </nz-descriptions>
+      </ng-container>
+    </nz-spin>
+  </ng-container>
+</nz-modal>
+
+<!-- ═══ STATUS UPDATE MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isStatusModalOpen"
+  [nzTitle]="'Update Status - ' + (selectedTicket?.title || '')"
+  [nzOkLoading]="isSubmitting"
+  nzOkText="Update"
+  (nzOnCancel)="isStatusModalOpen = false"
+  (nzOnOk)="submitStatusUpdate()"
+>
+  <ng-container *nzModalContent>
+    <ng-container *ngIf="selectedTicket">
+      <p class="status-info">
+        Current status:
+        <nz-tag [nzColor]="getStatusColor(selectedTicket.status)">
+          {{ selectedTicket.status }}
+        </nz-tag>
+      </p>
+
+      <nz-form-item>
+        <nz-form-label nzRequired>New status</nz-form-label>
+        <nz-form-control>
+          <nz-select [(ngModel)]="newStatus" nzPlaceHolder="Select new status">
+            <nz-option
+              *ngFor="let s of statusOptions"
+              [nzValue]="s.value"
+              [nzLabel]="s.label"
+              [nzDisabled]="!allowedTransitions[selectedTicket.status].includes(s.value)"
+            ></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-alert
+        *ngIf="selectedTicket.status === 'RESOLVED' || selectedTicket.status === 'CLOSED'"
+        nzType="warning"
+        nzMessage="This ticket is in final state. You cannot change its status."
+        nzShowIcon
+        style="margin-top: 12px;"
+      ></nz-alert>
+    </ng-container>
+  </ng-container>
+</nz-modal>

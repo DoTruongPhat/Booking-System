@@ -1,0 +1,53 @@
+// ═══════════════════════════════════════════════════════════
+// MAIN SCSS - Import tất cả files
+// ═══════════════════════════════════════════════════════════
+
+@use 'variables' as *;
+@use 'mixins' as *;
+
+// CSS Reset
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: $font-family;
+  font-size: $font-size-base;
+  line-height: 1.5;
+  color: $text-primary;
+  background: $gray-100;
+  -webkit-font-smoothing: antialiased;
+}
+
+// Links
+a {
+  color: $primary;
+  text-decoration: none;
+
+  &:hover {
+    color: $primary-hover;
+  }
+}
+
+// Buttons
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+// Headings
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: 600;
+}
