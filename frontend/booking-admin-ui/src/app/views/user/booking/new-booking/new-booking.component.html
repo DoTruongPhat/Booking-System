@@ -1,0 +1,77 @@
+<div class="new-booking">
+  <!-- SEARCH FORM -->
+  <div class="search-box">
+    <h2>Tìm phòng khách sạn</h2>
+
+    <div class="search-fields">
+      <div class="field">
+        <label>Điểm đến</label>
+        <nz-input-group [nzPrefix]="locationIcon">
+          <input nz-input placeholder="Bạn muốn đi đâu?" [(ngModel)]="destination" />
+        </nz-input-group>
+          <ng-template #locationIcon><span nz-icon nzType="environment"></span></ng-template>
+      </div>
+
+      <div class="field">
+        <label>Nhận phòng</label>
+        <nz-date-picker [(ngModel)]="checkIn" style="width: 100%;"></nz-date-picker>
+      </div>
+
+      <div class="field">
+        <label>Trả phòng</label>
+        <nz-date-picker [(ngModel)]="checkOut" style="width: 100%;"></nz-date-picker>
+      </div>
+
+      <div class="field field-small">
+        <label>Khách</label>
+        <nz-input-number [(ngModel)]="guests" [nzMin]="1" [nzMax]="10" style="width: 100%;"></nz-input-number>
+      </div>
+
+      <div class="field field-small">
+        <label>Phòng</label>
+        <nz-input-number [(ngModel)]="rooms" [nzMin]="1" [nzMax]="5" style="width: 100%;"></nz-input-number>
+      </div>
+
+      <button nz-button nzType="primary" class="search-btn">
+        <span nz-icon nzType="search"></span>
+        Tìm kiếm
+      </button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <h3 class="section-title">Khách sạn nổi bật</h3>
+
+  <div class="result-grid">
+    <div *ngFor="let hotel of results" class="hotel-card">
+      <div class="hotel-image">
+        <img [src]="hotel.image" [alt]="hotel.name" />
+        <div class="hotel-badge">Khuyến mãi</div>
+      </div>
+
+      <div class="hotel-info">
+        <div class="hotel-header">
+          <h4>{{ hotel.name }}</h4>
+          <div class="hotel-rating">
+            <span nz-icon nzType="star" nzTheme="fill"></span>
+            <strong>{{ hotel.rating }}</strong>
+            <span class="reviews">({{ hotel.reviews }} đánh giá)</span>
+          </div>
+        </div>
+
+        <div class="hotel-location">
+          <span nz-icon nzType="environment"></span>
+          {{ hotel.location }}
+        </div>
+
+        <div class="hotel-footer">
+          <div class="hotel-price">
+            <span class="price-label">Giá mỗi đêm từ</span>
+            <div class="price-value">{{ formatPrice(hotel.price) }}</div>
+          </div>
+          <button nz-button nzType="primary">Đặt ngay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

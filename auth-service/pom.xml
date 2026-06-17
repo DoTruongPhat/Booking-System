@@ -154,6 +154,14 @@
 			<artifactId>spring-security-crypto</artifactId>
 		</dependency>
 
+		<!-- BouncyCastle: support MGF1 SHA-256 cho RSA-OAEP,
+		     tương thích với W3C Web Crypto API của browser -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.78.1</version>
+		</dependency>
+
 		<!-- Kafka -->
 		<dependency>
 			<groupId>org.springframework.kafka</groupId>

@@ -1,0 +1,111 @@
+<header class="navbar" [class.is-scrolled]="isScrolled()">
+  <div class="navbar-container">
+    <!-- Logo -->
+    <a routerLink="/" class="logo" (click)="closeDropdown()">
+      <app-logo></app-logo>
+      <span class="logo-text">SmartBooking</span>
+    </a>
+
+    <!-- Main Navigation -->
+    <nav class="main-nav">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item" (click)="closeDropdown()">
+        Trang chủ
+      </a>
+      <a routerLink="/user/booking/new" class="nav-item" (click)="closeDropdown()">
+        Đặt phòng
+      </a>
+
+      <!-- Khách sạn Dropdown -->
+      <div class="nav-item-dropdown" [class.is-open]="openDropdown() === hotelsDropdown.label">
+        <button
+          type="button"
+          class="nav-item nav-item-trigger"
+          (click)="toggleDropdown(hotelsDropdown.label, $event)"
+          [attr.aria-expanded]="openDropdown() === hotelsDropdown.label"
+        >
+          <span>{{ hotelsDropdown.label }}</span>
+        </button>
+
+        <div class="dropdown-panel hotels-panel">
+          <div class="dropdown-grid">
+            <div class="dropdown-section" *ngFor="let section of hotelsDropdown.sections">
+              <h4 class="dropdown-section-title">{{ section.title }}</h4>
+              <a
+                *ngFor="let item of section.items"
+                class="dropdown-item"
+                [routerLink]="item.link"
+                (click)="closeDropdown()"
+              >
+                <span class="dropdown-item-icon" nz-icon [nzType]="item.icon" nzTheme="outline"></span>
+                <div class="dropdown-item-content">
+                  <span class="dropdown-item-label">{{ item.label }}</span>
+                  <span class="dropdown-item-desc" *ngIf="item.description">{{ item.description }}</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a class="nav-item" (click)="closeDropdown()">Khuyến mãi</a>
+      <a class="nav-item" (click)="closeDropdown()">Liên hệ</a>
+
+      <!-- Xem thêm Dropdown -->
+      <div class="nav-item-dropdown" [class.is-open]="openDropdown() === moreDropdown.label">
+        <button
+          type="button"
+          class="nav-item nav-item-trigger"
+          (click)="toggleDropdown(moreDropdown.label, $event)"
+          [attr.aria-expanded]="openDropdown() === moreDropdown.label"
+        >
+          <span>{{ moreDropdown.label }}</span>
+        </button>
+
+        <div class="dropdown-panel more-panel">
+          <div class="dropdown-grid">
+            <div class="dropdown-section" *ngFor="let section of moreDropdown.sections">
+              <h4 class="dropdown-section-title">{{ section.title }}</h4>
+              <a
+                *ngFor="let item of section.items"
+                class="dropdown-item"
+                [routerLink]="item.link"
+                (click)="handleItemAction(item.action); closeDropdown()"
+              >
+                <span class="dropdown-item-icon" nz-icon [nzType]="item.icon" nzTheme="outline"></span>
+                <div class="dropdown-item-content">
+                  <span class="dropdown-item-label">{{ item.label }}</span>
+                  <span class="dropdown-item-desc" *ngIf="item.description">{{ item.description }}</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Actions -->
+    <div class="navbar-actions">
+      <ng-container *ngIf="!user; else loggedIn">
+        <button class="action-btn action-btn-ghost" (click)="goToLogin()">
+          <span nz-icon nzType="user"></span>
+          <span class="action-label">Đăng nhập</span>
+        </button>
+        <a class="action-btn action-btn-primary" routerLink="/auth/register">
+          <span class="action-label">Đăng ký</span>
+        </a>
+      </ng-container>
+      <ng-template #loggedIn>
+        <button class="action-btn action-btn-icon" aria-label="Tìm kiếm">
+          <span nz-icon nzType="search"></span>
+        </button>
+        <button class="action-btn action-btn-icon" aria-label="Thông báo">
+          <span nz-icon nzType="bell"></span>
+          <span class="notification-dot"></span>
+        </button>
+        <button class="action-btn action-btn-icon" aria-label="Đăng xuất" (click)="logout()">
+          <span nz-icon nzType="logout"></span>
+        </button>
+      </ng-template>
+    </div>
+  </div>
+</header>

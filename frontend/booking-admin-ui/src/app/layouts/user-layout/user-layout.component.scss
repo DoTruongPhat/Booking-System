@@ -1,0 +1,113 @@
+// USER LAYOUT - Mytour style
+.user-layout {
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.header {
+  background: var(--color-primary);
+  color: white;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: none;
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .nav-menu {
+    display: flex;
+    gap: 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+
+    &:hover { background: rgba(255, 255, 255, 0.12); color: white; }
+
+    &.nav-active {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      span:last-child { display: none; }
+    }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .user-menu {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: var(--radius-md);
+    color: white;
+    transition: background 0.2s;
+
+    &:hover { background: rgba(255, 255, 255, 0.15); }
+  }
+
+  .user-avatar {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    font-weight: 600;
+  }
+
+  .user-name {
+    font-weight: 500;
+    font-size: 14px;
+
+    @media (max-width: 768px) { display: none; }
+  }
+}
+
+.content {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: calc(100vh - 60px);
+}

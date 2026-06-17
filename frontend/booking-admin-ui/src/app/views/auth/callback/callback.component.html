@@ -1,0 +1,22 @@
+<div class="callback-page">
+  <div class="callback-card">
+    <div *ngIf="isProcessing" class="processing">
+      <div class="spinner">
+        <span nz-icon nzType="loading" nzTheme="outline"></span>
+      </div>
+      <h2>Đang xử lý đăng nhập...</h2>
+      <p>Vui lòng đợi trong giây lát</p>
+    </div>
+
+    <div *ngIf="!isProcessing && errorMessage" class="error">
+      <div class="error-icon">
+        <span nz-icon nzType="close-circle" nzTheme="fill"></span>
+      </div>
+      <h2>Đăng nhập thất bại</h2>
+      <p class="error-message">{{ errorMessage }}</p>
+      <button nz-button nzType="primary" (click)="router.navigate(['/auth/login'])">
+        Quay lại đăng nhập
+      </button>
+    </div>
+  </div>
+</div>

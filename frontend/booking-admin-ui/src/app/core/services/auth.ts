@@ -36,6 +36,19 @@ export class Auth {
     return this.http.post<void>(`${this.apiUrl}/logout`, {});
   }
 
+  // ── 2.5 EXCHANGE CODE (Form B callback) ──────────────────
+  exchangeCode(
+    code: string,
+    codeVerifier: string,
+    redirectUri: string,
+  ): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(
+      `${this.apiUrl}/exchange`,
+      { code, codeVerifier, redirectUri },
+      { withCredentials: true },
+    );
+  }
+
   // ── 3. CHECK LOGGED IN ───────────────────────────────────
   isLoggedIn(): boolean {
     if (!hasStorage()) return false;
@@ -89,6 +102,29 @@ export class Auth {
 
   getRoles(): string[] {
     return this.getUser()?.roles ?? [];
+  }
+
+  // ── 6.5 PRIMARY ROLE ─────────────────────────────────────
+  getPrimaryRole(): 'ADMIN' | 'MANAGER' | 'STAFF' | 'USER' {
+    const roles = this.getRoles();
+    if (roles.includes('ADMIN_ALL')) return 'ADMIN';
+    if (roles.includes('MANAGER')) return 'MANAGER';
+    if (roles.includes('STAFF')) return 'STAFF';
+    return 'USER';
+  }
+
+  // ── 6.6 LANDING PATH (theo role) ─────────────────────────
+  getLandingPath(): string {
+    const role = this.getPrimaryRole();
+    switch (role) {
+      case 'ADMIN':
+      case 'MANAGER':
+      case 'STAFF':
+        return '/admin/dashboard';
+      case 'USER':
+      default:
+        return '/user/booking/my';
+    }
   }
 
   // ── 7. CLEAR ALL (logout phía FE) ────────────────────────

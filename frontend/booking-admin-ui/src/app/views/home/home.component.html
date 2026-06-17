@@ -1,0 +1,162 @@
+<div class="home-page">
+  <!-- === TOP BANNER (xanh teal + chữ chạy tự động) === -->
+  <div class="top-banner">
+    <div class="banner-marquee">
+      <span class="banner-text">SALE 50% - Đặt phòng hôm nay, tiết kiệm ngay!</span>
+      <span class="banner-text">Miễn phí hủy phòng trong 24h</span>
+      <span class="banner-text">Tặng bữa sáng miễn phí cho thành viên mới</span>
+      <span class="banner-text">SALE 50% - Đặt phòng hôm nay, tiết kiệm ngay!</span>
+      <span class="banner-text">Miễn phí hủy phòng trong 24h</span>
+      <span class="banner-text">Tặng bữa sáng miễn phí cho thành viên mới</span>
+    </div>
+  </div>
+
+  <!-- === NAVBAR dùng chung === -->
+  <app-navbar></app-navbar>
+
+  <!-- === HERO BANNER === -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-image">
+        <img
+          src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800"
+          alt="Luxury hotel"
+        />
+      </div>
+      <div class="hero-content">
+        <h1>Đặt phòng khách sạn dễ dàng</h1>
+        <p class="hero-subtitle">
+          Khám phá hàng ngàn khách sạn với giá tốt nhất. Đặt phòng nhanh chóng, thanh toán an toàn.
+        </p>
+        <div class="hero-features">
+          <div class="hero-feature">
+            <span nz-icon nzType="check-circle" nzTheme="fill"></span>
+            <span>Miễn phí hủy phòng</span>
+          </div>
+          <div class="hero-feature">
+            <span nz-icon nzType="check-circle" nzTheme="fill"></span>
+            <span>Giá tốt nhất đảm bảo</span>
+          </div>
+          <div class="hero-feature">
+            <span nz-icon nzType="check-circle" nzTheme="fill"></span>
+            <span>Hỗ trợ 24/7</span>
+          </div>
+        </div>
+        <button class="hero-cta" (click)="goToDashboard()">
+          <span>Bắt đầu đặt phòng</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- === FEATURES === -->
+  <section class="features-section">
+    <div class="container">
+      <h2 class="section-title">Tại sao chọn SmartBooking?</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">
+            <span nz-icon nzType="dollar" nzTheme="fill"></span>
+          </div>
+          <h3>Giá tốt nhất</h3>
+          <p>
+            Cam kết giá rẻ nhất. Nếu tìm thấy giá thấp hơn, chúng tôi hoàn tiền phần chênh lệch.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">
+            <span nz-icon nzType="safety" nzTheme="fill"></span>
+          </div>
+          <h3>Thanh toán an toàn</h3>
+          <p>Mã hóa SSL 256-bit, hỗ trợ nhiều phương thức thanh toán: Visa, Master, Momo, VNPay.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrapper">
+            <span nz-icon nzType="customer-service" nzTheme="fill"></span>
+          </div>
+          <h3>Hỗ trợ 24/7</h3>
+          <p>Đội ngũ tư vấn viên 24/7 qua hotline, chat, email. Sẵn sàng hỗ trợ bạn mọi lúc.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- === POPULAR DESTINATIONS === -->
+  <section class="destinations-section">
+    <div class="container">
+      <h2 class="section-title">Điểm đến phổ biến</h2>
+      <div class="destinations-grid">
+        <div class="destination-card">
+          <img
+            src="https://images.unsplash.com/photo-1559592413-7c4d2b1c3b73?w=400"
+            alt="Nha Trang"
+          />
+          <div class="destination-info">
+            <h3>Nha Trang</h3>
+            <p>Biển xanh cát trắng</p>
+          </div>
+        </div>
+        <div class="destination-card">
+          <img
+            src="https://images.unsplash.com/photo-1573270689103-d7a4e42b7498?w=400"
+            alt="Đà Nẵng"
+          />
+          <div class="destination-info">
+            <h3>Đà Nẵng</h3>
+            <p>Thành phố đáng sống</p>
+          </div>
+        </div>
+        <div class="destination-card">
+          <img
+            src="https://images.unsplash.com/photo-1528127269322-539801943592?w=400"
+            alt="Hà Nội"
+          />
+          <div class="destination-info">
+            <h3>Hà Nội</h3>
+            <p>Thủ đô nghìn năm văn hiến</p>
+          </div>
+        </div>
+        <div class="destination-card">
+          <img
+            src="https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=400"
+            alt="Hồ Chí Minh"
+          />
+          <div class="destination-info">
+            <h3>TP. Hồ Chí Minh</h3>
+            <p>Thành phố không ngủ</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- === FOOTER === -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>SmartBooking</h4>
+          <p>Nền tảng đặt phòng khách sạn hàng đầu Việt Nam</p>
+        </div>
+        <div class="footer-col">
+          <h4>Về chúng tôi</h4>
+          <a>Giới thiệu</a>
+          <a>Tuyển dụng</a>
+          <a>Liên hệ</a>
+        </div>
+        <div class="footer-col">
+          <h4>Hỗ trợ</h4>
+          <a>Trung tâm trợ giúp</a>
+          <a>Điều khoản</a>
+          <a>Chính sách</a>
+        </div>
+        <div class="footer-col">
+          <h4>Liên hệ</h4>
+          <p>Email: support@smartbooking.vn</p>
+          <p>Hotline: 1900-1234</p>
+        </div>
+      </div>
+      <div class="footer-bottom">© 2026 SmartBooking</div>
+    </div>
+  </footer>
+</div>

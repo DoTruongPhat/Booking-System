@@ -8,9 +8,15 @@ public interface JwtService {
 
     /**
      * Tạo JWT từ thông tin user
-     * Payload: username, roles, issuedAt, jti
+     * Payload: username, roles, issuedAt, jti (random UUID)
      */
     String generateToken(User user);
+
+    /**
+     * Tạo JWT với jti cho trước (dùng cho single session tracking)
+     * @param jti JWT ID sẽ match với user_sessions.jti
+     */
+    String generateToken(User user, String jti);
 
     /**
      * Verify JWT signature có hợp lệ không

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -40,16 +41,13 @@ public class HeaderEnrichmentFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        String authHeader = exchange.getRequest()
-                .getHeaders()
-                .getFirst(HttpHeaders.AUTHORIZATION);
+        String token = extractToken(exchange);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (token == null || token.isBlank()) {
             return chain.filter(exchange);
         }
 
         try {
-            String token = authHeader.substring(7);
             String[] parts = token.split("\\.");
 
             if (parts.length != 3) {
@@ -59,7 +57,8 @@ public class HeaderEnrichmentFilter implements GlobalFilter, Ordered {
             // Decode payload (phần giữa JWT)
             String payload = new String(
                     Base64.getUrlDecoder().decode(parts[1]),
-                    StandardCharsets.UTF_8);
+                    StandardCharsets.UTF_8
+            );
 
             // Parse đơn giản không cần Jackson
             String userId = extractValue(payload, "userId");
@@ -99,5 +98,25 @@ public class HeaderEnrichmentFilter implements GlobalFilter, Ordered {
     @Override
     public int getOrder() {
         return 0;
+    }
+
+    private String extractToken(ServerWebExchange exchange) {
+        String authHeader = exchange.getRequest()
+                .getHeaders()
+                .getFirst(HttpHeaders.AUTHORIZATION);
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        HttpCookie cookie = exchange.getRequest()
+                .getCookies()
+                .getFirst("access_token");
+
+        if (cookie != null && cookie.getValue() != null && !cookie.getValue().isBlank()) {
+            return cookie.getValue();
+        }
+
+        return null;
     }
 }

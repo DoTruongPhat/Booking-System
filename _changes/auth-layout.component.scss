@@ -1,0 +1,19 @@
+// ═══════════════════════════════════════════════════════════
+// AUTH LAYOUT - Wraps NavbarComponent + content
+// ═══════════════════════════════════════════════════════════
+
+.auth-page {
+  min-height: 100vh;
+  background: var(--color-bg-soft);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+}

@@ -1,0 +1,46 @@
+<div class="user-layout">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <a routerLink="/user/booking/my" class="logo">
+        <span class="logo-icon" nz-icon nzType="home" nzTheme="fill"></span>
+        SmartBooking
+      </a>
+
+      <nav class="nav-menu">
+        <a *ngFor="let item of navItems"
+           [routerLink]="item.path"
+           routerLinkActive="nav-active"
+           class="nav-item">
+          <span [nzType]="item.icon" nz-icon></span>
+          <span>{{ item.label }}</span>
+        </a>
+      </nav>
+    </div>
+
+    <div class="header-right">
+      <div class="user-menu" nz-dropdown nzTrigger="click" [nzDropdownMenu]="userMenu">
+        <nz-avatar [nzText]="userInitials" class="user-avatar" nzSize="small"></nz-avatar>
+        <span class="user-name">{{ user?.username }}</span>
+        <span nz-icon nzType="down"></span>
+      </div>
+      <nz-dropdown-menu #userMenu="nzDropdownMenu">
+        <ul nz-menu>
+          <li nz-menu-item routerLink="/user/profile">
+            <span nz-icon nzType="user"></span>
+            Tài khoản của tôi
+          </li>
+          <li nz-menu-divider></li>
+          <li nz-menu-item (click)="logout()">
+            <span nz-icon nzType="logout"></span>
+            Đăng xuất
+          </li>
+        </ul>
+      </nz-dropdown-menu>
+    </div>
+  </header>
+
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

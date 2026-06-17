@@ -2,15 +2,19 @@ package com.booking.infrastructure.security.filter;
 
 import com.booking.application.port.out.TokenRepositoryPort;
 import com.booking.application.service.JwtService;
+import com.booking.application.service.SessionService;
 import com.booking.domain.exception.ErrorCode;
+import com.booking.domain.model.UserSession;
 import com.booking.infrastructure.external.cache.TokenCacheService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -32,6 +36,7 @@ public class TokenAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final TokenRepositoryPort tokenRepositoryPort;
     private final TokenCacheService tokenCacheService;
+    private final SessionService sessionService;
 
     @Override
     protected void doFilterInternal(
@@ -44,14 +49,12 @@ public class TokenAuthFilter extends OncePerRequestFilter {
         // → Format: "Bearer eyJhbGci..."
         // → Không có header hoặc không đúng format → cho đi tiếp
         //   (sẽ bị chặn bởi Spring Security nếu endpoint cần auth)
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        String jwt = extractToken(request);
+
+        if (jwt == null || jwt.isBlank()) {
             filterChain.doFilter(request, response);
             return;
         }
-
-        // Bỏ "Bearer " (7 ký tự) → lấy raw JWT
-        String jwt = authHeader.substring(7);
 
         try {
             // Bước 2: Verify JWT signature
@@ -71,6 +74,18 @@ public class TokenAuthFilter extends OncePerRequestFilter {
             String username = jwtService.extractUsername(jwt);
             String userId = jwtService.extractUserId(jwt);
             String jti = jwtService.extractJti(jwt);
+
+            // Bước 3.5: Check session còn active trong DB (Single Session)
+            // → Nếu session đã bị kill (login ở nơi khác) → 401
+            // → Đây là điểm khác biệt của single session:
+            //   JWT signature vẫn valid NHƯNG session đã bị invalidate
+            var activeSession = sessionService.verifyActive(jti);
+            if (activeSession.isEmpty()) {
+                log.info("[Token] Session not active for jti: {}, user: {} (probably killed by new login)",
+                    jti, username);
+                sendSessionKilled(response);
+                return;
+            }
 
             // Bước 4: Check blacklist trước (quan trọng!)
             // → Admin revoke → jti bị blacklist trong Redis
@@ -178,12 +193,47 @@ public class TokenAuthFilter extends OncePerRequestFilter {
                         "\"message\":\"" + ErrorCode.AUTH_003_MSG + "\"}");
     }
 
+    /**
+     * 401 cho trường hợp session bị kill (login ở nơi khác)
+     * FE sẽ hiển thị toast warning
+     */
+    private void sendSessionKilled(HttpServletResponse response)
+            throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write(
+                "{\"success\":false," +
+                        "\"errorCode\":\"SESSION_KILLED\"," +
+                        "\"message\":\"Your session was ended because you logged in on another device\"}");
+    }
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        return path.equals("/auth/login")
+        return path.equals("/api/auth/login")
+                || path.equals("/api/auth/exchange")
+                || path.equals("/api/auth/register")
+                || path.equals("/auth/login")
                 || path.equals("/auth/register")
+                || path.startsWith("/api/internal/")
                 || path.startsWith("/internal/")
                 || path.equals("/actuator/health");
+    }
+    private String extractToken(HttpServletRequest request) {
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("access_token".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        return null;
     }
 }

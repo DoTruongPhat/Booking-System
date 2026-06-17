@@ -28,6 +28,11 @@ public interface UserRepositoryPort {
 
     Optional<User> findById(UUID id);
 
+    /**
+     * V8: Tìm user theo Keycloak user id (dùng cho sync từ KC)
+     */
+    Optional<User> findByKcUserId(String kcUserId);
+
     User save(User user);
 
     boolean existsByUsername(String username);

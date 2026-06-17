@@ -1,0 +1,53 @@
+<svg
+  class="brand-logo"
+  viewBox="0 0 40 40"
+  xmlns="http://www.w3.org/2000/svg"
+  aria-label="SmartBooking"
+>
+  <defs>
+    <!-- Gradient chính -->
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5B8FF9" />
+      <stop offset="100%" stop-color="#4364D8" />
+    </linearGradient>
+    <!-- Gradient highlight -->
+    <linearGradient id="logoHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect x="0" y="0" width="40" height="40" rx="10" fill="url(#logoGradient)" />
+
+  <!-- Highlight overlay -->
+  <rect x="0" y="0" width="40" height="40" rx="10" fill="url(#logoHighlight)" />
+
+  <!-- Building/Hotel icon (căn giữa) -->
+  <g transform="translate(8, 8)">
+    <!-- Tòa nhà chính -->
+    <rect x="2" y="6" width="9" height="18" rx="1.2" fill="#FFFFFF" />
+    <!-- Tòa nhà phụ (nhỏ hơn, bên phải) -->
+    <rect x="13" y="11" width="9" height="13" rx="1.2" fill="#FFFFFF" opacity="0.85" />
+    <!-- Cửa sổ tòa nhà chính -->
+    <rect x="4" y="9" width="2" height="2" rx="0.4" fill="#5B8FF9" />
+    <rect x="7" y="9" width="2" height="2" rx="0.4" fill="#5B8FF9" />
+    <rect x="4" y="13" width="2" height="2" rx="0.4" fill="#5B8FF9" />
+    <rect x="7" y="13" width="2" height="2" rx="0.4" fill="#5B8FF9" />
+    <rect x="4" y="17" width="2" height="2" rx="0.4" fill="#5B8FF9" />
+    <rect x="7" y="17" width="2" height="2" rx="0.4" fill="#5B8FF9" />
+    <!-- Cửa sổ tòa nhà phụ -->
+    <rect x="15" y="13" width="2" height="2" rx="0.4" fill="#5B8FF9" />
+    <rect x="18" y="13" width="2" height="2" rx="0.4" fill="#5B8FF9" />
+    <rect x="15" y="17" width="2" height="2" rx="0.4" fill="#5B8FF9" />
+    <rect x="18" y="17" width="2" height="2" rx="0.4" fill="#5B8FF9" />
+    <!-- Ngôi sao nhỏ ở trên (rating) -->
+    <path
+      d="M 12 2 L 13 4 L 15 4.5 L 13.5 5.8 L 14 8 L 12 6.8 L 10 8 L 10.5 5.8 L 9 4.5 L 11 4 Z"
+      fill="#FFD700"
+      stroke="#FFFFFF"
+      stroke-width="0.4"
+      stroke-linejoin="round"
+    />
+  </g>
+</svg>

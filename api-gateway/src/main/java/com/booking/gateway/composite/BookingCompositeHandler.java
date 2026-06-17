@@ -37,16 +37,15 @@ public class BookingCompositeHandler {
     private Mono<ServerResponse> getDashboard(ServerRequest request) {
         log.info("[Composite] Dashboard request");
 
-        String authHeader = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
+        String cookie = request.headers().firstHeader(HttpHeaders.COOKIE);
         WebClient client = WebClient.create();
 
         Mono<Map> userStats = client.get()
                 .uri(authServiceUrl + "/api/admin/dashboard")
-                .header(HttpHeaders.AUTHORIZATION, authHeader != null ? authHeader : "")
+                .header(HttpHeaders.COOKIE, cookie != null ? cookie : "")
                 .header("X-API-KEY", "dev-api-key-abc123")
                 .retrieve()
-                .bodyToMono(Map.class)
-                .onErrorReturn(Map.of("error", "Auth Service unavailable"));
+                .bodyToMono(Map.class);
 
         Mono<Map> bookingStats = Mono.just(Map.of(
                 "totalBookings", 0,

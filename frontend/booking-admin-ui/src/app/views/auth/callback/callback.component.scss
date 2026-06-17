@@ -1,0 +1,70 @@
+.callback-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-hero);
+  padding: 24px;
+}
+
+.callback-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 64px 48px;
+  text-align: center;
+  box-shadow: var(--shadow-xl);
+  max-width: 480px;
+  width: 100%;
+}
+
+.processing {
+  .spinner {
+    font-size: 56px;
+    color: var(--color-primary);
+    margin-bottom: 24px;
+    animation: spin 1.2s linear infinite;
+
+    span[nz-icon] {
+      font-size: 56px;
+    }
+  }
+
+  h2 {
+    font-size: var(--font-size-2xl);
+    margin-bottom: 8px;
+    color: var(--color-text-primary);
+  }
+
+  p {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-base);
+  }
+}
+
+.error {
+  .error-icon {
+    font-size: 56px;
+    color: var(--color-danger);
+    margin-bottom: 24px;
+
+    span[nz-icon] {
+      font-size: 56px;
+    }
+  }
+
+  h2 {
+    font-size: var(--font-size-2xl);
+    margin-bottom: 12px;
+    color: var(--color-text-primary);
+  }
+
+  .error-message {
+    color: var(--color-text-secondary);
+    margin-bottom: 24px;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

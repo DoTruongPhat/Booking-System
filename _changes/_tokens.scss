@@ -1,0 +1,210 @@
+// ═══════════════════════════════════════════════════════════
+// DESIGN TOKENS - Single source of truth
+// Import file này ở đầu mỗi component SCSS:
+// @use '../../../styles/tokens' as t;
+// Hoặc trong global styles.scss:
+// @import './styles/tokens';
+// ═══════════════════════════════════════════════════════════
+
+// === FONT FAMILY ===
+$font-family-base: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-family-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+
+// === FONT SIZE ===
+$font-size-2xs: 11px;
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-base: 14px;
+$font-size-md: 15px;
+$font-size-lg: 16px;
+$font-size-xl: 18px;
+$font-size-2xl: 20px;
+$font-size-3xl: 24px;
+$font-size-4xl: 28px;
+$font-size-5xl: 32px;
+$font-size-6xl: 40px;
+
+// === FONT WEIGHT ===
+$font-weight-light: 300;
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-weight-black: 800;
+
+// === LINE HEIGHT ===
+$line-height-tight: 1.2;
+$line-height-snug: 1.35;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.65;
+
+// === LETTER SPACING ===
+$letter-spacing-tight: -0.02em;
+$letter-spacing-base: -0.005em;
+$letter-spacing-wide: 0.02em;
+$letter-spacing-wider: 0.06em;
+$letter-spacing-uppercase: 0.08em;
+
+// === BRAND COLORS - Primary (Blue) ===
+$color-primary-50: #F0F7FF;
+$color-primary-100: #E3F0FF;
+$color-primary-200: #C8DEFF;
+$color-primary-300: #9EC3FF;
+$color-primary-400: #6FA1FF;
+$color-primary: #0064D2;
+$color-primary-hover: #0052AB;
+$color-primary-active: #003E85;
+$color-primary-dark: #002F66;
+
+// === ACCENT COLORS - Green Pastel ===
+$color-accent-50: #F0FAF1;
+$color-accent-100: #E0F3E2;
+$color-accent-200: #C8E8CB;
+$color-accent-300: #A5D6AA;
+$color-accent: #6FBF73;
+$color-accent-hover: #5BAA60;
+$color-accent-active: #4A8F4F;
+
+// === SEMANTIC COLORS ===
+$color-success-light: #E5F7EF;
+$color-success: #00A86B;
+$color-success-hover: #008C57;
+
+$color-warning-light: #FFF6E5;
+$color-warning: #FFA500;
+$color-warning-hover: #E59400;
+
+$color-danger-light: #FDECEC;
+$color-danger: #E53935;
+$color-danger-hover: #C52828;
+
+$color-info-light: #E8F4FE;
+$color-info: #2196F3;
+$color-info-hover: #1976D2;
+
+// === NEUTRAL COLORS ===
+$color-white: #FFFFFF;
+$color-black: #000000;
+
+$color-gray-50: #FAFAFA;
+$color-gray-100: #F5F5F5;
+$color-gray-200: #EEEEEE;
+$color-gray-300: #E0E0E0;
+$color-gray-400: #BDBDBD;
+$color-gray-500: #999999;
+$color-gray-600: #666666;
+$color-gray-700: #4A4A4A;
+$color-gray-800: #333333;
+$color-gray-900: #1A1A2E;
+
+$color-bg: #{$color-gray-100};
+$color-bg-soft: #FAFAFA;
+$color-bg-card: #FFFFFF;
+$color-bg-overlay: rgba(15, 35, 70, 0.7);
+
+$color-text-primary: #333333;
+$color-text-secondary: #666666;
+$color-text-muted: #999999;
+$color-text-inverse: #FFFFFF;
+
+$color-border: #E0E0E0;
+$color-border-light: #EEEEEE;
+$color-border-dark: #BDBDBD;
+
+// === GRADIENTS ===
+$gradient-primary: linear-gradient(135deg, #{$color-primary} 0%, #{$color-primary-hover} 100%);
+$gradient-accent: linear-gradient(135deg, #{$color-accent} 0%, #{$color-accent-hover} 100%);
+$gradient-hero: linear-gradient(135deg, #F0F9F8 0%, #E0F2F1 100%);
+$gradient-cta-blue: linear-gradient(135deg, #0064D2 0%, #0052AB 100%);
+$gradient-banner-dark: linear-gradient(135deg, rgba(15, 35, 70, 0.72) 0%, rgba(30, 60, 110, 0.62) 50%, rgba(20, 45, 90, 0.7) 100%);
+
+// === SHADOWS ===
+$shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+$shadow-md: 0 2px 6px -1px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 4px 12px -2px rgba(0, 0, 0, 0.10), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+$shadow-xl: 0 8px 24px -4px rgba(0, 0, 0, 0.12), 0 16px 32px -8px rgba(0, 0, 0, 0.10);
+$shadow-primary: 0 2px 8px rgba(0, 100, 210, 0.18);
+$shadow-primary-lg: 0 6px 16px rgba(0, 100, 210, 0.32);
+$shadow-accent: 0 4px 12px rgba(111, 191, 115, 0.28);
+
+// === BORDER RADIUS ===
+$radius-xs: 4px;
+$radius-sm: 6px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+$radius-2xl: 20px;
+$radius-3xl: 24px;
+$radius-full: 9999px;
+
+// === SPACING ===
+$spacing-0: 0;
+$spacing-1: 4px;
+$spacing-2: 8px;
+$spacing-3: 12px;
+$spacing-4: 16px;
+$spacing-5: 20px;
+$spacing-6: 24px;
+$spacing-7: 28px;
+$spacing-8: 32px;
+$spacing-10: 40px;
+$spacing-12: 48px;
+$spacing-14: 56px;
+$spacing-16: 64px;
+$spacing-20: 80px;
+$spacing-24: 96px;
+
+// === LAYOUT ===
+$container-max: 1280px;
+$container-sm: 640px;
+$container-md: 768px;
+$container-lg: 1024px;
+$container-xl: 1280px;
+
+$header-height: 64px;
+$header-height-lg: 72px;
+$sidebar-width: 240px;
+$sidebar-width-collapsed: 64px;
+
+// === TRANSITIONS ===
+$transition-fast: all 0.15s ease-out;
+$transition-base: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-smooth: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+$transition-spring: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+$transition-fast-duration: 0.15s;
+$transition-base-duration: 0.25s;
+$transition-slow-duration: 0.35s;
+
+// === Z-INDEX ===
+$z-hide: -1;
+$z-base: 1;
+$z-dropdown: 100;
+$z-sticky: 200;
+$z-fixed: 300;
+$z-modal: 1000;
+$z-popover: 1100;
+$z-tooltip: 1200;
+$z-toast: 1300;
+
+// === BREAKPOINTS ===
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-2xl: 1400px;
+
+// === COMPONENT SPECIFIC ===
+$button-height-sm: 32px;
+$button-height-md: 38px;
+$button-height-lg: 44px;
+$button-height-xl: 52px;
+
+$input-height-sm: 32px;
+$input-height-md: 40px;
+$input-height-lg: 48px;
+
+$navbar-bg: rgba(255, 255, 255, 0.85);
+$navbar-bg-scrolled: rgba(255, 255, 255, 0.95);
+$navbar-blur: saturate(180%) blur(12px);

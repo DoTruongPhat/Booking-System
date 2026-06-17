@@ -1,0 +1,552 @@
+// ═══════════════════════════════════════════════════════════
+// LOGIN - 2 cột: Banner trái (ảnh mờ) + Form phải
+// Style: subtle animations + Be Vietnam Pro + hiện đại
+// ═══════════════════════════════════════════════════════════
+
+.login-page {
+  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 70vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 24px;
+  gap: 24px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    padding: 16px;
+
+    .login-banner { display: none; }
+  }
+}
+
+// =====================================================
+// === BANNER TRÁI - ẢNH KHÁCH SẠN + OVERLAY + BLUR NHẸ ===
+// =====================================================
+.login-banner {
+  position: relative;
+  color: white;
+  padding: 56px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 18px;
+  overflow: hidden;
+  isolation: isolate;
+  animation: slideInLeft 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  min-height: 560px;
+
+  // === LAYER 1: ảnh nền ===
+  background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=80');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  // === LAYER 2: blur nhẹ cho ảnh nền ===
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: inherit;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(4px) brightness(0.85) saturate(1.05);
+    transform: scale(1.08); // tránh viền mờ khi blur
+    z-index: -2;
+  }
+
+  // === LAYER 3: overlay gradient để chữ trắng nổi bật ===
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(15, 35, 70, 0.72) 0%,
+      rgba(30, 60, 110, 0.62) 50%,
+      rgba(20, 45, 90, 0.7) 100%
+    );
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: -1;
+  }
+
+  @media (max-width: 900px) {
+    min-height: 320px;
+    padding: 36px 28px;
+  }
+}
+
+// === Floating decorative orbs (chuyển động nhẹ) ===
+.login-banner .orb {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+  z-index: -1;
+
+  &.orb-1 {
+    width: 280px;
+    height: 280px;
+    top: -70px;
+    right: -70px;
+    animation: float 8s ease-in-out infinite;
+  }
+
+  &.orb-2 {
+    width: 200px;
+    height: 200px;
+    bottom: -50px;
+    left: -50px;
+    animation: float 10s ease-in-out infinite reverse;
+  }
+
+  &.orb-3 {
+    width: 140px;
+    height: 140px;
+    top: 40%;
+    right: 12%;
+    animation: float 12s ease-in-out infinite;
+    animation-delay: 2s;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  50% { transform: translateY(-12px) translateX(6px); }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.banner-content {
+  position: relative;
+  z-index: 1;
+  max-width: 460px;
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.15s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.banner-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 32px;
+  letter-spacing: -0.01em;
+
+  .logo-icon {
+    width: 42px;
+    height: 42px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  &:hover .logo-icon {
+    transform: rotate(-8deg) scale(1.06);
+  }
+}
+
+.banner-title {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 16px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  letter-spacing: -0.015em;
+
+  @media (max-width: 1100px) {
+    font-size: 26px;
+  }
+}
+
+.banner-subtitle {
+  font-size: 15px;
+  line-height: 1.65;
+  opacity: 0.92;
+  margin-bottom: 28px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+  font-weight: 400;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out forwards;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+
+  &:nth-child(1) { animation-delay: 0.3s; }
+  &:nth-child(2) { animation-delay: 0.42s; }
+  &:nth-child(3) { animation-delay: 0.54s; }
+
+  .feature-icon {
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+}
+
+// =====================================================
+// === FORM PHẢI ===
+// =====================================================
+.login-form-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: slideInRight 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.1s;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.login-form {
+  width: 100%;
+  max-width: 420px;
+  background: white;
+  padding: 40px 36px;
+  border-radius: 18px;
+  border: 1px solid var(--color-border-light);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+  animation: formFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.25s;
+
+  @media (max-width: 480px) {
+    padding: 28px 22px;
+  }
+}
+
+@keyframes formFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.form-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 6px;
+  letter-spacing: -0.015em;
+}
+
+.form-subtitle {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+// === TAB SWITCHER ===
+.tab-switcher {
+  display: flex;
+  background: var(--color-bg-soft);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: color 0.25s ease, background 0.25s ease, transform 0.2s ease;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  position: relative;
+  z-index: 1;
+
+  &:hover:not(.active) {
+    color: var(--color-text-primary);
+  }
+
+  &.active {
+    background: white;
+    color: var(--color-primary);
+    font-weight: 600;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 2px 8px rgba(0, 100, 210, 0.08);
+  }
+
+  span[nz-icon] {
+    font-size: 14px;
+  }
+}
+
+// === INPUT ===
+.form-group {
+  margin-bottom: 16px;
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 6px;
+    letter-spacing: -0.005em;
+  }
+
+  input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 9px;
+    font-size: 14px;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    color: var(--color-text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    background: white;
+
+    &::placeholder { color: var(--color-text-muted); }
+
+    &:hover:not(:focus) {
+      border-color: var(--color-primary-light);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-light);
+      background: white;
+    }
+  }
+}
+
+.form-alert {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+  padding: 10px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  border-left: 3px solid var(--color-danger);
+  animation: shakeX 0.4s ease-out;
+}
+
+@keyframes shakeX {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0 20px;
+  font-size: 13px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
+
+  input {
+    width: auto;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+  }
+
+  &:hover { color: var(--color-text-primary); }
+}
+
+.forgot-link, .signup-link {
+  color: var(--color-primary);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.75;
+    text-decoration: underline;
+  }
+}
+
+.submit-btn {
+  width: 100%;
+  height: 44px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  letter-spacing: 0.01em;
+  position: relative;
+  overflow: hidden;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 100, 210, 0.28);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 100, 210, 0.18);
+  }
+
+  &:disabled {
+    background: var(--color-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+}
+
+.signup-text {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  margin-top: 18px;
+}
+
+// === SSO TAB ===
+.sso-content {
+  text-align: center;
+  padding: 16px 0;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.sso-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  font-size: 28px;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    transform: scale(1.06) rotate(-4deg);
+  }
+}
+
+.sso-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--color-text-primary);
+}
+
+.sso-desc {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+
+.sso-key-icon {
+  margin-right: 6px;
+}
+
+.sso-hint {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin-top: 16px;
+}
+
+// === Reduced motion ===
+@media (prefers-reduced-motion: reduce) {
+  .login-banner,
+  .banner-content,
+  .feature-item,
+  .login-form-wrapper,
+  .login-form,
+  .form-alert,
+  .sso-content,
+  .login-banner .orb {
+    animation: none !important;
+  }
+}

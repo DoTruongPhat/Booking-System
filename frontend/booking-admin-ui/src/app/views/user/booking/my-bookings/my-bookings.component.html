@@ -1,0 +1,97 @@
+<div class="my-bookings">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <h1>Đặt phòng của tôi</h1>
+      <p>Xin chào {{ user?.username }}! Quản lý các đặt phòng của bạn tại đây.</p>
+    </div>
+    <button nz-button nzType="primary" routerLink="/user/booking/new">
+      <span nz-icon nzType="plus"></span>
+      Đặt phòng mới
+    </button>
+  </div>
+
+  <!-- FILTER TABS -->
+  <div class="filter-tabs">
+    <button class="tab-btn active">
+      Tất cả
+      <span class="badge">{{ bookings.length }}</span>
+    </button>
+    <button class="tab-btn">Sắp tới</button>
+    <button class="tab-btn">Đang xử lý</button>
+    <button class="tab-btn">Hoàn thành</button>
+    <button class="tab-btn">Đã hủy</button>
+  </div>
+
+  <!-- BOOKING LIST -->
+  <div *ngIf="bookings.length > 0" class="booking-list">
+    <div *ngFor="let booking of bookings" class="booking-card">
+      <div class="booking-image">
+        <img [src]="booking.image" [alt]="booking.hotelName" />
+        <nz-tag [nzColor]="getStatusColor(booking.status)" class="status-tag">
+          {{ getStatusLabel(booking.status) }}
+        </nz-tag>
+      </div>
+
+      <div class="booking-info">
+        <div class="booking-header">
+          <h3>{{ booking.hotelName }}</h3>
+          <div class="booking-id">Mã: {{ booking.id }}</div>
+        </div>
+
+        <div class="booking-location">
+          <span nz-icon nzType="environment"></span>
+          {{ booking.location }}
+        </div>
+
+        <div class="booking-details">
+          <div class="detail-item">
+            <span nz-icon nzType="calendar"></span>
+            <div>
+              <div class="label">Nhận phòng</div>
+              <div class="value">{{ formatDate(booking.checkIn) }}</div>
+            </div>
+          </div>
+          <div class="detail-item">
+            <span nz-icon nzType="calendar"></span>
+            <div>
+              <div class="label">Trả phòng</div>
+              <div class="value">{{ formatDate(booking.checkOut) }}</div>
+            </div>
+          </div>
+          <div class="detail-item">
+            <span nz-icon nzType="user"></span>
+            <div>
+              <div class="label">{{ booking.guests }} khách</div>
+              <div class="value">{{ booking.rooms }} phòng</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="booking-actions">
+        <div class="price">{{ formatPrice(booking.totalPrice) }}</div>
+        <div class="action-buttons">
+          <button nz-button nzSize="small">Chi tiết</button>
+          <button nz-button nzType="primary" nzSize="small" *ngIf="booking.status === 'PENDING'">
+            Thanh toán
+          </button>
+          <button nz-button nzDanger nzSize="small" nzType="text"
+                  *ngIf="booking.status === 'PENDING' || booking.status === 'CONFIRMED'">
+            Hủy
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div *ngIf="bookings.length === 0" class="empty-state">
+    <span nz-icon nzType="inbox" class="empty-icon"></span>
+    <h3>Bạn chưa có đặt phòng nào</h3>
+    <p>Hãy khám phá các khách sạn tuyệt vời và đặt phòng ngay hôm nay!</p>
+    <button nz-button nzType="primary" routerLink="/user/booking/new">
+      Đặt phòng ngay
+    </button>
+  </div>
+</div>

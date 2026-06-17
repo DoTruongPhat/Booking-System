@@ -17,6 +17,9 @@ public final class ErrorCode {
     public static final String AUTH_004 = "AUTH_004";
     public static final String AUTH_004_MSG = "Current password is incorrect";
 
+    public static final String AUTH_005 = "AUTH_005";
+    public static final String AUTH_005_MSG = "Invalid or expired OTP";
+
     // ── User ──────────────────────────────────────────────
     public static final String USR_001 = "USR_001";
     public static final String USR_001_MSG = "User not found";

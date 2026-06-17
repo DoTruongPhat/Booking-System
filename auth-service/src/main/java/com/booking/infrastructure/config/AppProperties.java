@@ -28,6 +28,11 @@ public class AppProperties {
         private String realm;
         private String clientId;
         private String clientSecret;
+        private String feClientId;          // FE client (public + PKCE)
+        private String adminUsername;       // Admin user
+        private String adminPassword;
+        private int jwksCacheTtl = 3600;    // JWKS cache TTL (giây)
+        private int sessionTtl = 3600;      // Session TTL (giây)
     }
 
     @Data

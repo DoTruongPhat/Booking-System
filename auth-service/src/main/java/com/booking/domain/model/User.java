@@ -31,6 +31,25 @@ public class User {
     private boolean twoFactorEnabled = false;
     private Set<Role> roles = new HashSet<>();
 
+    // ── Keycloak sync fields (V8) ───────────────────────────
+    private String phone;
+    private String kcUserId;
+    private ZonedDateTime kcSyncedAt;
+    /**
+     * PENDING: chưa sync sang KC
+     * SYNCED: đã sync
+     * FAILED: sync lỗi
+     * DELETED: user đã xóa ở KC
+     */
+    private String syncStatus = "PENDING";
+    private long syncVersion = 0L;
+    /**
+     * LOCAL: chỉ Form A
+     * KEYCLOAK: chỉ Form B
+     * LINKED: có cả 2
+     */
+    private String authSource = "LOCAL";
+
     public User() {}
 
     // ── Business Methods ──────────────────────────────────────
@@ -136,4 +155,22 @@ public class User {
 
     public Set<Role> getRoles() { return roles; }
     public void setRoles(Set<Role> roles) { this.roles = roles; }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
+    public String getKcUserId() { return kcUserId; }
+    public void setKcUserId(String kcUserId) { this.kcUserId = kcUserId; }
+
+    public ZonedDateTime getKcSyncedAt() { return kcSyncedAt; }
+    public void setKcSyncedAt(ZonedDateTime kcSyncedAt) { this.kcSyncedAt = kcSyncedAt; }
+
+    public String getSyncStatus() { return syncStatus; }
+    public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
+
+    public long getSyncVersion() { return syncVersion; }
+    public void setSyncVersion(long syncVersion) { this.syncVersion = syncVersion; }
+
+    public String getAuthSource() { return authSource; }
+    public void setAuthSource(String authSource) { this.authSource = authSource; }
 }

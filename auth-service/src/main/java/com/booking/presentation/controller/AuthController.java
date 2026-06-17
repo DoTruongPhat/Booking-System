@@ -1,20 +1,27 @@
 package com.booking.presentation.controller;
 
 import com.booking.application.port.in.*;
+import com.booking.application.service.DecryptPasswordService;
 import com.booking.application.service.JwtService;
 import com.booking.application.service.TwoFactorService;
+import com.booking.infrastructure.crypto.JweCryptoService;
 import com.booking.shared.util.MaskUtil;
 import com.booking.presentation.request.*;
 import com.booking.presentation.response.LoginResponse;
 import com.booking.presentation.response.RegisterResponse;
 import com.booking.presentation.response.TwoFactorResponse;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
 
 @RestController
 @RequestMapping("/auth")
@@ -36,20 +43,47 @@ public class AuthController {
     private final RegisterUseCase registerUseCase;
     private final Verify2faUseCase verify2faUseCase;
     private final Manage2faUseCase manage2faUseCase;
+    private final ExchangeKeycloakCodeUseCase exchangeKeycloakCodeUseCase;
+    private final GetPublicKeyUseCase getPublicKeyUseCase;
 
     // TwoFactorService và JwtService giữ nguyên
     // → Chưa có Use Case riêng cho 2FA setup/enable/disable
     private final JwtService jwtService;
+    private final DecryptPasswordService decryptPasswordService;
+
+    /**
+     * GET /api/auth/public-key
+     * FE lấy public key để encrypt password trước khi gửi.
+     * Public route — không cần auth.
+     */
+    @GetMapping("/public-key")
+    public ResponseEntity<JweCryptoService.PublicKeyInfo> getPublicKey() {
+        log.info("[CONTROLLER] Public key requested");
+        return ResponseEntity.ok(getPublicKeyUseCase.get());
+    }
 
     /**
      * POST /api/auth/login
-     * FE gửi username + password
-     * BE trả token + thông tin user
+     * FE gửi username + (encryptedPassword HOẶC password)
+     * BE decrypt → trả cookie HttpOnly (body không chứa token)
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login
     (@Valid @RequestBody LoginRequest request,
      HttpServletRequest httpServletRequest) {
+
+        // ── Step 1: Decrypt JWE password ──
+        String plainPassword = resolvePassword(request);
+
+        if (plainPassword == null || plainPassword.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Password must not be blank");
+        }
+
+        // Ghi đè request bằng password đã decrypt
+        request.setPassword(plainPassword);
+        request.setEncryptedPassword(null);
+
         String ipAddress = getClientIp(httpServletRequest);
         String userAgent = httpServletRequest.getHeader("User-Agent");
 
@@ -57,21 +91,97 @@ public class AuthController {
                 MaskUtil.maskUsername(request.getUsername()));
 
         LoginResponse response = loginUseCase.login(request, ipAddress, userAgent);
-        return ResponseEntity.ok(response);
 
+        if (response.isTwoFactorRequired()) {
+            return ResponseEntity.ok(response);
+        }
+
+        // ── Step 2: Set HttpOnly cookie, KHÔNG trả token trong body ──
+        ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", response.getToken())
+                .httpOnly(true)
+                .secure(false) // dev localhost
+                .path("/")
+                .maxAge(Duration.ofHours(1))
+                .sameSite("Lax")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+                .body(response);
+    }
+
+    /**
+     * Resolve password từ request:
+     * - Ưu tiên encryptedPassword (JWE) — decrypt bằng private key
+     * - Fallback password plain (dev/test)
+     */
+    private String resolvePassword(LoginRequest request) {
+        if (request.getEncryptedPassword() != null
+                && !request.getEncryptedPassword().isBlank()) {
+            log.debug("[CONTROLLER] Decrypting JWE password");
+            return decryptPasswordService.decrypt(
+                    request.getEncryptedPassword());
+        }
+        return request.getPassword();
+    }
+
+    /**
+     * POST /api/auth/exchange
+     * Form B (Keycloak) login:
+     * FE gửi code + code_verifier (PKCE) → BE exchange với KC → cấp JWT nội bộ
+     * Public route — không cần auth (là bước đầu của login flow)
+     */
+    @PostMapping("/exchange")
+    public ResponseEntity<LoginResponse> exchange(
+            @Valid @RequestBody ExchangeCodeRequest request,
+            HttpServletRequest httpServletRequest) {
+
+        String ipAddress = getClientIp(httpServletRequest);
+        String userAgent = httpServletRequest.getHeader("User-Agent");
+
+        log.info("[CONTROLLER] Keycloak exchange from IP: {}", ipAddress);
+
+        LoginResponse response = exchangeKeycloakCodeUseCase.exchange(
+            request, ipAddress, userAgent
+        );
+
+        // Set HttpOnly cookie giống Form A
+        ResponseCookie accessTokenCookie = ResponseCookie.from(
+                "access_token", response.getToken())
+            .httpOnly(true)
+            .secure(false)  // dev localhost
+            .path("/")
+            .maxAge(Duration.ofHours(1))
+            .sameSite("Lax")
+            .build();
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+            .body(response);
     }
     /**
      * POST /api/auth/logout
      * FE gửi token trong Authorization header
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
-            @RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Void> logout(HttpServletRequest request) {
+        String rawToken = extractToken(request);
 
-        String rawToken = authHeader.substring(7);
-        log.info("[CONTROLLER] Logout request");
-        logoutUseCase.logout(rawToken);
-        return ResponseEntity.ok().build();
+        if (rawToken != null) {
+            logoutUseCase.logout(rawToken);
+        }
+
+        ResponseCookie deleteCookie = ResponseCookie.from("access_token", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(0)
+                .build();
+
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                .build();
     }
 
     @PostMapping("/register")
@@ -199,9 +309,40 @@ public class AuthController {
 
         log.info("[CONTROLLER] 2FA verify request");
 
-        LoginResponse response = verify2faUseCase.verify2fa
-                (request, ipAddress, userAgent);
-        return  ResponseEntity.ok(response);
+        LoginResponse response =
+                verify2faUseCase.verify2fa(request, ipAddress, userAgent);
+
+        ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", response.getToken())
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(Duration.ofHours(1))
+                .sameSite("Lax")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
+                .body(response);
+    }
+
+
+    private String extractToken(HttpServletRequest request) {
+
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("access_token".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        return null;
     }
 
 

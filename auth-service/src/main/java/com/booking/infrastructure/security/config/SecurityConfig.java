@@ -42,6 +42,8 @@ public class SecurityConfig {
                 // Public: không cần token
                 .requestMatchers(
                         "/auth/login",
+                        "/auth/exchange",            // V8: Keycloak exchange
+                        "/auth/public-key",
                         "/auth/register",
                         "/auth/logout",
                         "/auth/forgot-password",

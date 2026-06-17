@@ -59,6 +59,12 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
     }
 
     @Override
+    public Optional<User> findByKcUserId(String kcUserId) {
+        return userJpaRepository.findByKcUserId(kcUserId)
+                .map(userEntityMapper::toDomain);
+    }
+
+    @Override
     public Optional<User> findById(UUID id) {
         return userJpaRepository.findById(id)
                 .map(userEntityMapper::toDomain);

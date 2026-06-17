@@ -72,6 +72,26 @@ public class UserEntity {
     @Column(name = "two_factor_enabled", nullable = false)
     private boolean twoFactorEnabled = false;
 
+    // ── V8: Keycloak sync fields ───────────────────────────
+
+    @Column(name = "phone", length = 20)
+    private String phone;
+
+    @Column(name = "kc_user_id", length = 100)
+    private String kcUserId;
+
+    @Column(name = "kc_synced_at")
+    private ZonedDateTime kcSyncedAt;
+
+    @Column(name = "sync_status", nullable = false, length = 20)
+    private String syncStatus = "PENDING";
+
+    @Column(name = "sync_version", nullable = false)
+    private long syncVersion = 0L;
+
+    @Column(name = "auth_source", nullable = false, length = 20)
+    private String authSource = "LOCAL";
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_roles", schema = "auth",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -196,4 +216,22 @@ public class UserEntity {
     public void setTwoFactorEnabled(boolean twoFactorEnabled) {
         this.twoFactorEnabled = twoFactorEnabled;
     }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
+    public String getKcUserId() { return kcUserId; }
+    public void setKcUserId(String kcUserId) { this.kcUserId = kcUserId; }
+
+    public ZonedDateTime getKcSyncedAt() { return kcSyncedAt; }
+    public void setKcSyncedAt(ZonedDateTime kcSyncedAt) { this.kcSyncedAt = kcSyncedAt; }
+
+    public String getSyncStatus() { return syncStatus; }
+    public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
+
+    public long getSyncVersion() { return syncVersion; }
+    public void setSyncVersion(long syncVersion) { this.syncVersion = syncVersion; }
+
+    public String getAuthSource() { return authSource; }
+    public void setAuthSource(String authSource) { this.authSource = authSource; }
 }

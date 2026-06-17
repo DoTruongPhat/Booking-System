@@ -3,22 +3,19 @@ package com.booking.application.service.serviceimpl;
 import com.booking.application.port.in.*;
 import com.booking.application.port.out.DomainEventPublisher;
 import com.booking.application.port.out.RoleRepositoryPort;
+import com.booking.application.port.out.TokenRepositoryPort;
 import com.booking.application.service.*;
 import com.booking.application.validator.UserValidator;
-import com.booking.domain.event.PasswordResetRequestedEvent;
 import com.booking.domain.event.UserRegisteredEvent;
 import com.booking.domain.exception.*;
 import com.booking.domain.model.Role;
 import com.booking.domain.model.User;
 import com.booking.presentation.mapper.UserMapper;
-import com.booking.presentation.response.VerifyUserResponse;
 import com.booking.shared.util.MaskUtil;
 import com.booking.presentation.request.*;
 import com.booking.presentation.response.LoginResponse;
-import com.booking.application.port.out.TokenRepositoryPort;
 import com.booking.application.port.out.UserRepositoryPort;
 import com.booking.infrastructure.external.cache.TokenCacheService;
-import com.booking.infrastructure.external.keycloak.KeycloakGateway;
 import com.booking.presentation.response.RegisterResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -36,16 +33,10 @@ import java.util.UUID;
 public class AuthServiceImpl implements
         AuthService,
         LoginUseCase,
-        RegisterUseCase,
-        LogoutUseCase,
-        ForgotPasswordUseCase,
-        ResetPasswordUseCase,
-        Verify2faUseCase,
-        VerifyUserUseCase{
+        RegisterUseCase{
 
     private final UserRepositoryPort userRepositoryPort;
     private final TokenRepositoryPort tokenRepositoryPort;
-    private final KeycloakGateway keycloakGateway;
     private final TokenService tokenService;
     private final TokenCacheService tokenCacheService;
     private final PasswordService passwordService;
@@ -53,6 +44,8 @@ public class AuthServiceImpl implements
     private final UserMapper mapper;
     private final TwoFactorService twoFactorService;
     private final SystemParamService systemParamService;
+    private final SessionService sessionService;
+    private final JwtService jwtService;
 
     private final UserValidator userValidator;
     private final DomainEventPublisher eventPublisher;
@@ -83,11 +76,15 @@ public class AuthServiceImpl implements
                     ErrorCode.AUTH_002_MSG);
         }
 
-        // Bước 3: Xác thực với Keycloak
-        boolean kcOk = keycloakGateway.authenticate(
-                username, request.getPassword());
+        // Bước 3: Verify password local (BCrypt)
+        boolean passwordOk = passwordService.verify(
+                request.getPassword(),
+                user.getPasswordHash(),
+                user.getPasswordSalt(),
+                user.getUsername()
+        );
 
-        if (!kcOk) {
+        if (!passwordOk) {
             user.incrementFailedAttempts();
 
             int maxAttempts = systemParamService.getIntValue("MAX_LOGIN_ATTEMPTS", 5);
@@ -128,17 +125,34 @@ public class AuthServiceImpl implements
                     .build();
         }
 
-        // Bước 5: Vô hiệu hóa tất cả token cũ
-        int deactivated = tokenRepositoryPort
-                .deactivateAllByUserId(userWithRoles.getId(), "NEW_LOGIN");
-        log.info("[Auth] Deactivated {} old tokens for user {}",
-                deactivated, MaskUtil.maskUsername(username));
+        // Bước 5: Single Session - Kill tất cả session cũ của user
+        // → Nếu user login ở nơi khác → session cũ bị kill ngay lập tức
+        int killed = sessionService.killOldSessions(
+            userWithRoles.getId(),
+            com.booking.domain.model.UserSession.REASON_NEW_LOGIN
+        );
+        log.info("[Auth] Killed {} old session(s) for user {}",
+            killed, MaskUtil.maskUsername(username));
 
+        // Bước 6: Tạo JWT nội bộ + session tracking
+        // → JWT có jti match với user_sessions.jti
+        // → Nếu session bị kill → JWT cũng không dùng được nữa
+        String jti = UUID.randomUUID().toString();
+        String deviceInfo = parseUserAgent(userAgent);
+        int ttlSeconds = 3600; // 1 giờ - sẽ đổi khi có refresh token
 
+        com.booking.domain.model.UserSession newSession =
+            sessionService.createSession(
+                userWithRoles, jti,
+                com.booking.domain.model.UserSession.SOURCE_LOCAL,
+                deviceInfo, ipAddress, userAgent, ttlSeconds
+            );
 
-        // Bước 6: Tạo token mới
-        String rawToken = tokenService.createToken(userWithRoles, ipAddress, userAgent);
-        log.info("[Auth] Login successful: {}", MaskUtil.maskUsername(username));
+        // Tạo JWT với jti đã track
+        String rawToken = jwtService.generateToken(userWithRoles, jti);
+
+        log.info("[Auth] Login successful: {} (jti: {})",
+            MaskUtil.maskUsername(username), jti);
 
         // Bước 7: Trả response
         return LoginResponse.builder()
@@ -153,22 +167,20 @@ public class AuthServiceImpl implements
                 .build();
     }
 
-    @Override
-    @Transactional(rollbackFor = DomainException.class)
-    public void logout(String rawToken) {
-        log.info("[Auth] Logout request");
-
-        String tokenHash = tokenService.hashToken(rawToken);
-
-        tokenRepositoryPort.findByTokenHash(tokenHash)
-                .ifPresent(token -> {
-                    token.deactivate("LOGOUT");
-                    tokenRepositoryPort.save(token);
-                    tokenCacheService.deleteToken(
-                            token.getUser().getId().toString());
-                    log.info("[Auth] Logout successful for user {}",
-                            MaskUtil.maskUsername(token.getUser().getUsername()));
-                });
+    /**
+     * Parse user agent thành device info ngắn gọn
+     * VD: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0"
+     *   → "Chrome 120 / Windows"
+     */
+    private String parseUserAgent(String userAgent) {
+        if (userAgent == null || userAgent.isBlank()) return "Unknown";
+        // Simplified - production nên dùng ua-parser library
+        if (userAgent.contains("Chrome")) return "Chrome / Desktop";
+        if (userAgent.contains("Firefox")) return "Firefox / Desktop";
+        if (userAgent.contains("Safari")) return "Safari / Desktop";
+        if (userAgent.contains("Edge")) return "Edge / Desktop";
+        if (userAgent.contains("Mobile")) return "Mobile Browser";
+        return "Unknown Browser";
     }
 
     @Override
@@ -224,149 +236,4 @@ public class AuthServiceImpl implements
         return response;
     }
 
-    @Override
-    @Transactional(rollbackFor = DomainException.class)
-    public void forgotPassword(ForgotPasswordRequest request) {
-        String email = request.getEmail();
-        log.info("[Auth] Forgot password request: {}", MaskUtil.maskEmail(email));
-
-        User user = userRepositoryPort.findByEmail(email)
-                .orElseThrow(() -> new UserException(
-                        ErrorCode.USR_001, ErrorCode.USR_001_MSG));
-
-        String resetToken = UUID.randomUUID().toString();
-        tokenCacheService.saveResetToken(resetToken, user.getId().toString());
-
-        eventPublisher.publish(new PasswordResetRequestedEvent(
-                user.getId().toString(),
-                user.getUsername(),
-                user.getEmail(),
-                resetToken
-        ));
-        log.info("[Auth] Reset token sent to: {}", MaskUtil.maskEmail(email));
-    }
-
-    @Override
-    @Transactional(rollbackFor = DomainException.class)
-    public void resetPassword(ResetPasswordRequest request) {
-        String token = request.getToken();
-        log.info("[Auth] Reset password request");
-
-        String userId = tokenCacheService.getResetToken(token);
-        if (userId == null) {
-            throw new TokenException(ErrorCode.TKN_001, ErrorCode.TKN_001_MSG);
-        }
-
-        User user = userRepositoryPort.findById(UUID.fromString(userId))
-                .orElseThrow(() -> new UserException(
-                        ErrorCode.USR_001, ErrorCode.USR_001_MSG));
-
-        PasswordService.HashedPassword hashed =
-                passwordService.hash(
-                        request.getNewPassword(),
-                        user.getUsername(),
-                        user.getPasswordSalt());
-
-        user.setPasswordHash(hashed.hash());
-        user.setPasswordSalt(hashed.salt());
-        userRepositoryPort.save(user);
-        tokenCacheService.deleteResetToken(token);
-
-        log.info("[Auth] Password reset successful for user: {}",
-                MaskUtil.maskUsername(user.getUsername()));
-    }
-
-    @Override
-    public LoginResponse verify2fa(TwoFactorRequest request,
-                                   String ipAddress,
-                                   String userAgent) {
-        log.info("[Auth] 2FA verify request");
-
-        String userId = tokenCacheService.getMfaSession(request.getSessionToken());
-        if (userId == null) {
-            throw new TokenException(ErrorCode.TKN_001, ErrorCode.TKN_001_MSG);
-        }
-
-        User user = userRepositoryPort
-                .findByIdWithRoles(UUID.fromString(userId))
-                .orElseThrow(() -> new UserException(
-                        ErrorCode.USR_001, ErrorCode.USR_001_MSG));
-
-        if (!twoFactorService.verifyOtp(user.getTotpSecret(), request.getOtp())) {
-            throw new AuthException(ErrorCode.AUTH_001, "Invalid OTP");
-        }
-
-        tokenCacheService.deleteMfaSession(request.getSessionToken());
-        tokenRepositoryPort.deactivateAllByUserId(user.getId(), "NEW_LOGIN");
-
-        String jwt = tokenService.createToken(user, ipAddress, userAgent);
-        log.info("[Auth] 2FA verify successful: {}",
-                MaskUtil.maskUsername(user.getUsername()));
-
-        return LoginResponse.builder()
-                .token(jwt)
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .roles(user.getRoles().stream()
-                        .map(r -> r.getCode())
-                        .toList())
-                .timezone(user.getTimezone())
-                .twoFactorRequired(false)
-                .build();
-    }
-
-    @Override
-    public VerifyUserResponse verifyUser(VerifyUserRequest request) {
-        log.info("[Auth] Verify user request: {}",
-                MaskUtil.maskUsername(request.getUsername()));
-
-        // Bước 1: Tìm user
-        User user = userRepositoryPort
-                .findByUsername(request.getUsername())
-                .orElse(null);
-
-        // Không tìm thấy → valid = false
-        if (user == null) {
-            log.warn("[Auth] User not found for verify: {}",
-                    MaskUtil.maskUsername(request.getUsername()));
-            VerifyUserResponse response = new VerifyUserResponse();
-            response.setValid(false);
-            return response;
-        }
-
-        // Bước 2: Verify password
-        boolean isValid = passwordService.verify(
-                request.getPassword(),
-                user.getPasswordHash(),
-                user.getPasswordSalt(),
-                user.getUsername()
-        );
-
-        // Sai password → valid = false
-        if (!isValid) {
-            log.warn("[Auth] Verify failed for: {}",
-                    MaskUtil.maskUsername(request.getUsername()));
-            VerifyUserResponse response = new VerifyUserResponse();
-            response.setValid(false);
-            return response;
-        }
-
-        // Bước 3: Build response
-        VerifyUserResponse response = new VerifyUserResponse();
-        response.setValid(true);
-        response.setUserId(user.getId().toString());
-        response.setUsername(user.getUsername());
-        response.setEmail(user.getEmail());
-        response.setRoles(
-                user.getRoles() == null ? List.of() :
-                        user.getRoles().stream()
-                                .map(r -> r.getCode())
-                                .toList()
-        );
-
-        log.info("[Auth] Verify successful for: {}",
-                MaskUtil.maskUsername(request.getUsername()));
-        return response;
-
-    }
 }

@@ -1,0 +1,94 @@
+.profile {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--color-border-light);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.avatar-card {
+  text-align: center;
+
+  .big-avatar {
+    background: var(--color-primary);
+    color: white;
+    font-weight: 600;
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  p {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .role-tag {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    border: none;
+  }
+}
+
+.form-card {
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+}
+
+.form-group {
+  margin-bottom: 16px;
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 6px;
+  }
+
+  input {
+    width: 100%;
+  }
+
+  .hint {
+    display: block;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    margin-top: 4px;
+  }
+}
+
+.form-actions {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border-light);
+}

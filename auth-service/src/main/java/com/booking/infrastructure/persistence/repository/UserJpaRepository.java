@@ -30,6 +30,13 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, UUID> {
             "WHERE u.email = :email")
     Optional<UserEntity> findByEmail(String email);
 
+    // V8: Tìm user theo Keycloak user id
+    @Query("SELECT u FROM UserEntity u " +
+           "LEFT JOIN FETCH u.roles r " +
+            "LEFT JOIN FETCH r.permissions " +
+            "WHERE u.kcUserId = :kcUserId")
+    Optional<UserEntity> findByKcUserId(@Param("kcUserId") String kcUserId);
+
     // Kiểm tra username đã tồn tại chưa
     boolean existsByUsername(String username);
 

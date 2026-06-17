@@ -1,0 +1,43 @@
+<div class="profile">
+  <h1 class="page-title">Tài khoản của tôi</h1>
+
+  <div class="profile-grid">
+    <!-- AVATAR CARD -->
+    <div class="card avatar-card">
+      <nz-avatar [nzText]="userInitials" class="big-avatar" nzSize="large"></nz-avatar>
+      <h3>{{ user?.username }}</h3>
+      <p>{{ user?.email }}</p>
+      <nz-tag class="role-tag">{{ roleLabel }}</nz-tag>
+    </div>
+
+    <!-- INFO FORM -->
+    <div class="card form-card">
+      <h3>Thông tin cá nhân</h3>
+
+      <div class="form-group">
+        <label>Tên đăng nhập</label>
+        <input nz-input [value]="user?.username" disabled />
+      </div>
+
+      <div class="form-group">
+        <label>Email</label>
+        <input nz-input [value]="user?.email" disabled />
+      </div>
+
+      <div class="form-group">
+        <label>Số điện thoại</label>
+        <input nz-input [(ngModel)]="phone" placeholder="Chưa cập nhật" />
+        <small class="hint">Dùng để nhận thông báo đặt phòng</small>
+      </div>
+
+      <div class="form-group">
+        <label>Múi giờ</label>
+        <input nz-input [(ngModel)]="timezone" />
+      </div>
+
+      <div class="form-actions">
+        <button nz-button nzType="primary" (click)="save()">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+</div>

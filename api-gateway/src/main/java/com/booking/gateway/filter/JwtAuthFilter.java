@@ -3,6 +3,7 @@ package com.booking.gateway.filter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpCookie;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -69,15 +70,11 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         // Bước 2: Lấy Authorization header
         // → Format: "Bearer eyJhbGci..."
         // → Không có header → 401
-        String authHeader = exchange.getRequest()
-                .getHeaders()
-                .getFirst(HttpHeaders.AUTHORIZATION);
+        String token = extractToken(exchange);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            // Không có token → trả 401 ngay tại Gateway
-            // → Service không nhận được request này
-            exchange.getResponse()
-                    .setStatusCode(HttpStatus.UNAUTHORIZED);
+        if (token == null || token.isBlank()) {
+            // Không có token → trả về 401 Unauthorized
+            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
         }
 
@@ -94,5 +91,24 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         // -1 = chạy trước các filter khác của Gateway
         // → Đảm bảo check auth trước khi routing
         return -1;
+    }
+
+    private String extractToken(ServerWebExchange exchange) {
+        String authHeader = exchange.getRequest()
+                .getHeaders()
+                .getFirst(HttpHeaders.AUTHORIZATION);
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        HttpCookie cookie = exchange.getRequest()
+                .getCookies()
+                .getFirst("access_token");
+
+        if (cookie != null && cookie.getValue() != null && !cookie.getValue().isBlank()) {
+            return cookie.getValue();
+        }
+        return null;
     }
 }

@@ -1,145 +1,133 @@
 package com.booking.application.service.serviceimpl;
 
-import com.booking.application.port.in.ManageSessionUseCase;
-import com.booking.application.port.out.TokenRepositoryPort;
-import com.booking.application.service.JwtService;
+import com.booking.application.port.out.UserSessionRepositoryPort;
 import com.booking.application.service.SessionService;
-import com.booking.domain.exception.ErrorCode;
-import com.booking.domain.exception.TokenException;
-import com.booking.domain.model.Token;
-import com.booking.infrastructure.external.cache.TokenCacheService;
+import com.booking.domain.model.User;
+import com.booking.domain.model.UserSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
- * SessionServiceImpl = xử lý revoke token
- *
- * Luồng dữ liệu khi revoke:
- * 1. Tìm token active của user trong DB → lấy JTI
- * 2. Blacklist JTI trong Redis → token bị chặn ngay lập tức
- * 3. Deactivate token trong DB → đánh dấu đã revoke
- * 4. Xóa cache Redis (token:{userId}) → user phải login lại
- *
- * Tại sao cần cả Redis VÀ DB?
- * → Redis: chặn nhanh (mỗi request check Redis trước)
- * → DB: lưu lịch sử (audit log, biết token bị revoke lúc nào)
+ * SessionServiceImpl = implement SessionService
+ * Dùng UserSessionRepositoryPort (Output Port) thay vì
+ * UserSessionJpaRepository trực tiếp → tuân thủ Clean Architecture
  */
-
 @Service
 @RequiredArgsConstructor
 @Log4j2
-public class SessionServiceImpl implements
-        SessionService,
-        ManageSessionUseCase {
+public class SessionServiceImpl implements SessionService {
 
-    // Cần TokenRepositoryPort để:
-    // → Tìm token active của user (lấy JTI)
-    // → Deactivate token trong DB
-    private final TokenRepositoryPort tokenRepositoryPort;
+    private final UserSessionRepositoryPort sessionRepo;
 
-    // Cần TokenCacheService để:
-    // → Blacklist JTI trong Redis
-    // → Xóa cache token của user
-    private final TokenCacheService tokenCacheService;
-
-    // Cần JwtService để:
-    // → Tính TTL còn lại của token
-    // → Dùng làm TTL của blacklist entry
-    //   (blacklist không cần giữ lâu hơn token)
-    private final JwtService jwtService;
+    // ══════════════════════════════════════════════════════
+    // LEGACY API
+    // ══════════════════════════════════════════════════════
 
     @Override
     @Transactional
     public void revokeAllSessions(UUID userId) {
-
-        log.info("[Session] Revoking all sessions for user: {}", userId);
-
-        // Bước 1: Tìm token active mới nhất của user trong DB
-        // → Cần JTI để blacklist
-        // → Nếu không có token active → user chưa login → bỏ qua
-        tokenRepositoryPort
-                .findActiveTokenByUserId(userId)
-                .ifPresent(token -> {
-                    // Bước 2: Lấy JTI từ token
-                    // → JTI = UUID duy nhất nhúng trong JWT
-                    // → Dùng để blacklist chính xác token này
-                    String jti = token.getJti();
-
-
-                    // Bước 3: Blacklist JTI trong Redis
-                    // → TTL = 720 giờ (thời gian sống của token)
-                    // → Khi token hết hạn tự nhiên thì
-                    //   blacklist cũng tự xóa → Redis không bị đầy
-                    tokenCacheService.blacklistToken(jti, 720);
-
-                    log.info("[Session] Blacklisted jti: {}", jti);
-
-                });
-
-        // Bước 4: Deactivate tất cả token trong DB
-        // → Đánh dấu isActive = false
-        // → Lưu lý do = "ADMIN_REVOKE" để audit sau này
-        int count =
-                tokenRepositoryPort.deactivateAllByUserId(
-                        userId,
-                        "ADMIN_REVOKE"
-                );
-
-        log.info("[Session] Deactivated {} tokens in DB for user: {}",
-                count, userId);
-
-        // Bước 5: Xóa cache token trong Redis
-        // → Key: "token:{userId}"
-        // → Xóa để user không thể dùng cached token
-        // → Lần sau gọi API → TokenAuthFilter không thấy cache
-        //   → check DB → token đã deactivated → 401
-        tokenCacheService.deleteToken(userId.toString());
-
-        log.info("[Session] Cleared token cache for user: {}", userId);
-
-
+        int n = sessionRepo.invalidateAllActiveByUserId(
+            userId, UserSession.REASON_ADMIN_KILL
+        );
+        log.info("[Session] Revoked {} session(s) for user {}", n, userId);
     }
 
     @Override
     @Transactional
     public void revokeSession(String jti) {
-        log.info("[Session] Revoking session with jti: {}", jti);
+        invalidateByJti(jti, UserSession.REASON_LOGOUT);
+    }
 
-        // Bước 1: Tìm token theo JTI trong DB
-        // → Cần lấy userId để xóa cache Redis
-        // → Nếu không tìm thấy → JTI không hợp lệ → throw exception
-        Token token = tokenRepositoryPort.findByJti(jti)
-                .orElseThrow(() -> {
-                    log.warn("[Session] JTI not found: {}", jti);
-                    return new TokenException(
-                            ErrorCode.TKN_003,
-                            ErrorCode.TKN_003_MSG
-                    );
-                });
+    // ══════════════════════════════════════════════════════
+    // SINGLE SESSION API
+    // ══════════════════════════════════════════════════════
 
-        // Bước 2: Blacklist JTI trong Redis
-        // → Chặn token ngay lập tức kể từ request tiếp theo
-        // → TTL = 720 giờ
-        tokenCacheService.blacklistToken(jti, 720);
+    @Override
+    @Transactional
+    public int invalidateByJti(String jti, String reason) {
+        if (jti == null || jti.isBlank()) {
+            return 0;
+        }
+        int n = sessionRepo.invalidateByJti(jti, reason);
+        if (n > 0) {
+            log.info("[Session] Invalidated session jti: {} (reason: {})",
+                jti, reason);
+        }
+        return n;
+    }
 
-        log.info("[Session] Blacklisted jti: {}", jti);
+    @Override
+    @Transactional
+    public int killOldSessions(UUID userId, String reason) {
+        int killed = sessionRepo.invalidateAllActiveByUserId(userId, reason);
+        if (killed > 0) {
+            log.info("[Session] Killed {} old session(s) for user {} (reason: {})",
+                killed, userId, reason);
+        }
+        return killed;
+    }
 
-        // Bước 3: Deactivate token trong DB
-        // → Đánh dấu isActive = false
-        // → Lưu lý do để audit sau này
-        token.deactivate("ADMIN_REVOKE");
-        tokenRepositoryPort.save(token);
-        log.info("[Session] Deactivated token in DB, jti: {}", jti);
+    @Override
+    @Transactional
+    public UserSession createSession(User user, String jti, String authSource,
+                                     String deviceInfo, String ipAddress,
+                                     String userAgent, int ttlSeconds) {
+        UserSession session = new UserSession();
+        session.setId(UUID.randomUUID());
+        session.setUserId(user.getId());
+        session.setSessionId(UUID.randomUUID().toString());
+        session.setJti(jti);
+        session.setAuthSource(authSource);
+        session.setDeviceInfo(deviceInfo);
+        session.setIpAddress(ipAddress);
+        session.setUserAgent(userAgent);
+        session.setIssuedAt(ZonedDateTime.now());
+        session.setExpiresAt(ZonedDateTime.now().plusSeconds(ttlSeconds));
+        session.setLastActiveAt(ZonedDateTime.now());
 
-        // Bước 4: Xóa cache Redis của user
-        // → Key: "token:{userId}"
-        // → User phải login lại để lấy token mới
-        tokenCacheService.deleteToken(token.getUser().getId().toString());
-        log.info("[Session] Cleared token cache for user: {}",
-                token.getUser().getId());
+        UserSession saved = sessionRepo.save(session);
+        log.info("[Session] Created new session for user {} (jti: {}, source: {}, expires: {})",
+            user.getUsername(), jti, authSource, saved.getExpiresAt());
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Optional<UserSession> verifyActive(String jti) {
+        Optional<UserSession> opt = sessionRepo.findByJti(jti);
+        if (opt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        UserSession session = opt.get();
+        if (!session.isActive()) {
+            return Optional.empty();
+        }
+
+        // Touch last_active (best effort, không block)
+        try {
+            session.touch();
+            sessionRepo.save(session);
+        } catch (Exception e) {
+            log.debug("[Session] Failed to touch lastActive for jti: {}", jti);
+        }
+
+        return Optional.of(session);
+    }
+
+    @Override
+    @Transactional
+    public int cleanupExpired() {
+        int n = sessionRepo.cleanupExpired();
+        if (n > 0) {
+            log.info("[Session] Cleaned up {} expired session(s)", n);
+        }
+        return n;
     }
 }

@@ -40,35 +40,34 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String generateToken(User user) {
+        return generateToken(user, UUID.randomUUID().toString());
+    }
+
+    @Override
+    public String generateToken(User user, String jti) {
         // Lấy roles của user
-        // → Giữ lại để backward compatible
         List<String> roles = user.getRoles().stream()
                 .map(role -> role.getCode())
                 .collect(Collectors.toList());
 
-        // Lấy permissions của user
-        // → Đi qua tất cả roles → lấy tất cả permissions
-        // → flatMap: gộp nhiều Set<Permission> thành 1 stream
-        // → distinct: loại bỏ permission trùng
-        //   (ADMIN và MANAGER cùng có USER_READ → chỉ lấy 1 lần)
-        // → collect thành List<String> để nhúng vào JWT
+        // Lấy permissions (gộp từ tất cả roles, distinct)
         List<String> permissions = user.getRoles().stream()
                 .flatMap(role -> role.getPermissions().stream())
                 .map(permission -> permission.getCode())
                 .distinct()
                 .collect(Collectors.toList());
 
-        // Tạo JWT
+        // Tạo JWT - jti sẽ match với user_sessions.jti (single session tracking)
         return Jwts.builder()
-                .setSubject(user.getUsername())     // username
-                .claim("roles", roles)              // ["ADMIN", "USER"]
-                .claim("permissions", permissions)  // ["ADMIN_ALL", "USER_READ"...]
-                .claim("userId", user.getId())      // userId
-                .issuedAt(Date.from(Instant.now())) // thời điểm tạo
-                .id(UUID.randomUUID().toString())   // jti = unique ID
+                .setSubject(user.getUsername())
+                .claim("roles", roles)
+                .claim("permissions", permissions)
+                .claim("userId", user.getId())
+                .claim("kcUserId", user.getKcUserId())  // V8: track KC link
+                .issuedAt(Date.from(Instant.now()))
+                .id(jti)                               // jti từ session tracking
                 .signWith(getSecretKey())
                 .compact();
-
     }
 
     @Override

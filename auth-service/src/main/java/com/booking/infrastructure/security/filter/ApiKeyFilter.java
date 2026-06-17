@@ -116,7 +116,17 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
         return path.startsWith("/internal/")
-                || path.equals("/actuator/health");
+                || path.equals("/actuator/health")
+                // Public auth endpoints - không cần X-API-KEY
+                // vì browser/FE không có key này
+                || path.equals("/auth/login")
+                || path.equals("/auth/exchange")     // V8: Keycloak exchange
+                || path.equals("/auth/public-key")
+                || path.equals("/auth/register")
+                || path.equals("/auth/forgot-password")
+                || path.equals("/auth/reset-password")
+                || path.equals("/auth/logout")
+                || path.equals("/auth/2fa/verify");
     }
 }
 
