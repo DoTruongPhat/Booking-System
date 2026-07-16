@@ -1,0 +1,164 @@
+<div class="booking-detail-page">
+  <button nz-button nzType="text" (click)="goBack()" class="back-btn">
+    <span nz-icon nzType="arrow-left"></span> Quay lại danh sách
+  </button>
+
+  <nz-spin [nzSpinning]="isLoading">
+    <ng-container *ngIf="booking; else notFound">
+      <!-- HEADER -->
+      <nz-card class="header-card">
+        <div class="header-content">
+          <div>
+            <code class="booking-id">{{ booking.id }}</code>
+            <h1 class="booking-customer">{{ booking.guestInfo.fullName }}</h1>
+            <div class="header-tags">
+              <nz-tag [nzColor]="statusConfig[booking.status].color">
+                <span nz-icon nzType="calendar"></span>
+                {{ statusConfig[booking.status].label }}
+              </nz-tag>
+              <nz-tag [nzColor]="paymentConfig[booking.paymentStatus].color">
+                <span nz-icon nzType="credit-card"></span>
+                {{ paymentConfig[booking.paymentStatus].label }}
+              </nz-tag>
+            </div>
+          </div>
+          <div class="header-revenue">
+            <div class="revenue-label">Tổng thanh toán</div>
+            <div class="revenue-value">{{ formatVND(booking.finalPrice) }}</div>
+            <div class="revenue-breakdown text-muted">
+              {{ formatVND(booking.totalPrice) }} + {{ formatVND(booking.taxAmount) }} (thuế)
+            </div>
+          </div>
+        </div>
+      </nz-card>
+
+      <!-- CUSTOMER INFO -->
+      <nz-card nzTitle="Thông tin khách hàng" class="info-card">
+        <nz-descriptions [nzColumn]="{ xs: 1, sm: 2, md: 2 }" nzBordered>
+          <nz-descriptions-item nzTitle="Họ tên">
+            {{ booking.guestInfo.fullName }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Email">
+            {{ booking.guestInfo.email || '—' }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Số điện thoại">
+            {{ booking.guestInfo.phone || '—' }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Yêu cầu đặc biệt">
+            {{ booking.specialRequests || '—' }}
+          </nz-descriptions-item>
+        </nz-descriptions>
+      </nz-card>
+
+      <!-- HOTEL + ROOM -->
+      <nz-card nzTitle="Khách sạn & phòng" class="info-card">
+        <nz-descriptions [nzColumn]="{ xs: 1, sm: 2, md: 2 }" nzBordered>
+          <nz-descriptions-item nzTitle="Khách sạn" [nzSpan]="2">
+            <strong>{{ booking.hotelName }}</strong>
+            <div class="text-muted small">{{ booking.hotelAddress }}</div>
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Phòng">
+            {{ booking.roomName }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Số phòng">
+            {{ booking.rooms }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Check-in">
+            {{ formatDate(booking.checkIn) }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Check-out">
+            {{ formatDate(booking.checkOut) }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Số đêm"> {{ booking.nights }} đêm </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Khách">
+            {{ booking.guests.adults || 0 }} người lớn
+            <ng-container *ngIf="booking.guests.children">
+              · {{ booking.guests.children }} trẻ em
+            </ng-container>
+          </nz-descriptions-item>
+        </nz-descriptions>
+      </nz-card>
+
+      <!-- PRICING -->
+      <nz-card nzTitle="Chi tiết giá" class="info-card">
+        <nz-descriptions [nzColumn]="{ xs: 1, sm: 2, md: 2 }" nzBordered>
+          <nz-descriptions-item nzTitle="Giá/đêm">
+            {{ formatVND(booking.pricePerNight) }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Phương thức thanh toán">
+            {{ booking.paymentMethod || '—' }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Tổng tiền phòng">
+            {{ formatVND(booking.totalPrice) }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Thuế (10%)">
+            {{ formatVND(booking.taxAmount) }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Tổng thanh toán" [nzSpan]="2">
+            <strong class="text-purple">{{ formatVND(booking.finalPrice) }}</strong>
+          </nz-descriptions-item>
+        </nz-descriptions>
+      </nz-card>
+
+      <!-- HOST NOTE / CANCEL REASON -->
+      <nz-card
+        *ngIf="booking.hostNote || booking.cancellationReason"
+        nzTitle="Ghi chú"
+        class="info-card"
+      >
+        <nz-alert
+          *ngIf="booking.hostNote"
+          nzType="info"
+          nzShowIcon
+          nzMessage="Ghi chú của host"
+          [nzDescription]="booking.hostNote"
+          style="margin-bottom: 12px"
+        ></nz-alert>
+        <nz-alert
+          *ngIf="booking.cancellationReason"
+          nzType="error"
+          nzShowIcon
+          nzMessage="Lý do hủy"
+          [nzDescription]="booking.cancellationReason"
+        ></nz-alert>
+      </nz-card>
+
+      <!-- TIMELINE -->
+      <nz-card nzTitle="Lịch sử xử lý" class="info-card">
+        <nz-timeline>
+          <nz-timeline-item
+            *ngFor="let t of sortedTimeline"
+            [nzColor]="
+              t.toStatus === 'CANCELLED' || t.toStatus === 'NO_SHOW'
+                ? 'red'
+                : t.toStatus === 'COMPLETED'
+                  ? 'green'
+                  : 'blue'
+            "
+          >
+            <div class="timeline-header">
+              <nz-tag [nzColor]="statusConfig[t.toStatus]?.color || 'default'">
+                {{ statusConfig[t.toStatus]?.label || t.toStatus }}
+              </nz-tag>
+              <span class="timeline-from" *ngIf="t.fromStatus">
+                từ <nz-tag>{{ statusConfig[t.fromStatus]?.label || t.fromStatus }}</nz-tag>
+              </span>
+            </div>
+            <div class="timeline-meta">
+              <span nz-icon nzType="user"></span> {{ t.changedByName }}
+              <span nz-icon nzType="clock-circle" style="margin-left: 12px"></span>
+              {{ formatDateTime(t.changedAt) }}
+            </div>
+            <div *ngIf="t.note" class="timeline-note">
+              <span nz-icon nzType="message"></span> {{ t.note }}
+            </div>
+          </nz-timeline-item>
+        </nz-timeline>
+      </nz-card>
+    </ng-container>
+
+    <ng-template #notFound>
+      <nz-empty nzNotFoundContent="Không tìm thấy booking"></nz-empty>
+    </ng-template>
+  </nz-spin>
+</div>

@@ -1,14 +1,26 @@
 // ═══════════════════════════════════════════════════════════
 // AUTH SERVICE
-// Login, logout, lưu token + user info vào localStorage
+// ═══════════════════════════════════════════════════════════
+// TOKEN STRATEGY (theo yêu cầu user):
+// - access_token: lưu trong HttpOnly cookie (BE set qua Set-Cookie)
+// - refresh_token: cũng lưu trong HttpOnly cookie (cùng Set-Cookie)
+// - FE KHÔNG đọc được token từ cookie (HttpOnly)
+// - Interceptor KHÔNG gắn Authorization header (browser tự gửi cookie)
+// - Khi access_token hết hạn → FE gọi /api/auth/refresh
+// → BE đọc refresh_token từ cookie → trả access_token mới
 // ═══════════════════════════════════════════════════════════
 
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { LoginResponse, AuthUser } from '../models/auth.model';
+import { Observable } from 'rxjs';
+import {
+  LoginResponse,
+  AuthUser,
+  RegisterRequest,
+  RegisterResponse,
+  ResetPasswordRequest,
+} from '../models/auth.model';
 
-const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
 
 function hasStorage(): boolean {
@@ -23,55 +35,92 @@ export class Auth {
 
   constructor(private http: HttpClient) {}
 
-  // ── 1. LOGIN ─────────────────────────────────────────────
+  // ── 1. LOGIN (Form A) ───────────────────────────────────
+  // BE sẽ set HttpOnly cookie 'access_token' + 'refresh_token' qua Set-Cookie
   login(username: string, password: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, {
-      username,
-      password,
-    });
-  }
-
-  // ── 2. LOGOUT ────────────────────────────────────────────
-  logout(): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/logout`, {});
-  }
-
-  // ── 2.5 EXCHANGE CODE (Form B callback) ──────────────────
-  exchangeCode(
-    code: string,
-    codeVerifier: string,
-    redirectUri: string,
-  ): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(
-      `${this.apiUrl}/exchange`,
-      { code, codeVerifier, redirectUri },
+      `${this.apiUrl}/login`,
+      { username, password },
       { withCredentials: true },
     );
   }
 
-  // ── 3. CHECK LOGGED IN ───────────────────────────────────
+  // ── 2. LOGOUT ────────────────────────────────────────────
+  // BE xoá HttpOnly cookie + invalidate session
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/logout`, {}, { withCredentials: true });
+  }
+
+  // ── 2.5 LOGIN WITH KEYCLOAK (SSO via PKCE) ──────────────
+  loginWithKeycloak(): void {
+    window.location.href = 'http://localhost:8081/api/auth/sso/login';
+  }
+
+  loginWithGoogle(): void {
+    window.location.href = 'http://localhost:8081/api/auth/sso/login?provider=google';
+  }
+
+  // ── 2.7 REGISTER ─────────────────────────────────────────
+  register(payload: RegisterRequest): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${this.apiUrl}/register`, payload, {
+      withCredentials: true,
+    });
+  }
+
+  // ── 2.8 FORGOT PASSWORD ─────────────────────────────────
+  forgotPassword(email: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.apiUrl}/forgot-password`,
+      { email },
+      { withCredentials: true },
+    );
+  }
+
+  // ── 2.9 RESET PASSWORD ──────────────────────────────────
+  resetPassword(email: string, otp: string, newPassword: string): Observable<void> {
+    const body: ResetPasswordRequest = { email, otp, newPassword };
+    return this.http.post<void>(`${this.apiUrl}/reset-password`, body, { withCredentials: true });
+  }
+
+  completeProfile(username: string | null, newPassword: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.apiUrl}/complete-profile`,
+      { username, newPassword },
+      { withCredentials: true },
+    );
+  }
+
+  // ── 2.10 REFRESH TOKEN ──────────────────────────────────
+  // Gọi khi access_token hết hạn (401 response)
+  // BE đọc refresh_token từ cookie → trả access_token mới
+  refreshToken(): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/refresh`, {}, { withCredentials: true });
+  }
+
+  // ── 3. CHECK LOGGED IN ──────────────────────────────────
+  // CHÚ Ý: Token HttpOnly nên FE không đọc được.
+  // Cách check: dựa vào presence của user info trong localStorage.
   isLoggedIn(): boolean {
-    if (!hasStorage()) return false;
-    return !!localStorage.getItem(TOKEN_KEY);
+    return !!this.getUser();
   }
 
-  // ── 4. TOKEN HELPERS ─────────────────────────────────────
+  // ── 4. TOKEN HELPERS (DEPRECATED) ───────────────────────
+  // Token giờ do BE quản lý qua HttpOnly cookie.
+  // Giữ method để tương thích ngược (no-op).
   getToken(): string | null {
-    if (!hasStorage()) return null;
-    return localStorage.getItem(TOKEN_KEY);
+    return null;
   }
 
-  saveToken(token: string): void {
-    if (!hasStorage()) return;
-    localStorage.setItem(TOKEN_KEY, token);
+  saveToken(_token: string): void {
+    // no-op - BE tự lưu HttpOnly cookie
   }
 
   removeToken(): void {
-    if (!hasStorage()) return;
-    localStorage.removeItem(TOKEN_KEY);
+    // no-op - BE tự xoá cookie ở logout endpoint
   }
 
-  // ── 5. USER HELPERS ──────────────────────────────────────
+  // ── 5. USER HELPERS ─────────────────────────────────────
+  // User info KHÔNG nhạy cảm (username, email, roles) → lưu localStorage OK.
   saveUser(user: AuthUser): void {
     if (!hasStorage()) return;
     localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -88,7 +137,7 @@ export class Auth {
     localStorage.removeItem(USER_KEY);
   }
 
-  // ── 6. ROLE HELPERS ──────────────────────────────────────
+  // ── 6. ROLE HELPERS ─────────────────────────────────────
   hasRole(role: string): boolean {
     const u = this.getUser();
     return u?.roles?.includes(role) ?? false;
@@ -104,32 +153,33 @@ export class Auth {
     return this.getUser()?.roles ?? [];
   }
 
-  // ── 6.5 PRIMARY ROLE ─────────────────────────────────────
-  getPrimaryRole(): 'ADMIN' | 'MANAGER' | 'STAFF' | 'USER' {
+  // ── 6.5 PRIMARY ROLE ────────────────────────────────────
+
+  getPrimaryRole(): 'ADMIN' | 'HOST' | 'USER' {
     const roles = this.getRoles();
-    if (roles.includes('ADMIN_ALL')) return 'ADMIN';
-    if (roles.includes('MANAGER')) return 'MANAGER';
-    if (roles.includes('STAFF')) return 'STAFF';
+    if (roles.includes('ADMIN_ALL') || roles.includes('ADMIN')) return 'ADMIN';
+    if (roles.includes('HOST')) return 'HOST';
     return 'USER';
   }
 
-  // ── 6.6 LANDING PATH (theo role) ─────────────────────────
   getLandingPath(): string {
     const role = this.getPrimaryRole();
     switch (role) {
       case 'ADMIN':
-      case 'MANAGER':
-      case 'STAFF':
+      case 'HOST':
         return '/admin/dashboard';
-      case 'USER':
       default:
-        return '/user/booking/my';
+        return '/user/bookings';
     }
   }
 
-  // ── 7. CLEAR ALL (logout phía FE) ────────────────────────
+  getProfile(): Observable<any> {
+    return this.http.get('/api/users/me', { withCredentials: true });
+  }
+
+  // ── 7. CLEAR ALL (logout phía FE) ───────────────────────
+  // Chỉ xoá user info. Token cookie đã bị BE xoá qua /auth/logout.
   clearAll(): void {
-    this.removeToken();
     this.removeUser();
   }
 }

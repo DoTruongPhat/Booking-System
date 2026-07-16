@@ -1,0 +1,105 @@
+<div class="ticket-detail-page">
+  <!-- BACK BUTTON -->
+  <button nz-button nzType="text" (click)="goBack()" class="back-btn">
+    <span nz-icon nzType="arrow-left"></span> Quay lại danh sách
+  </button>
+
+  <nz-spin [nzSpinning]="isLoading">
+    <ng-container *ngIf="ticket; else notFound">
+      <!-- ═══ HEADER CARD ═══ -->
+      <nz-card class="header-card">
+        <div class="header-content">
+          <div class="header-left">
+            <div class="ticket-id-badge">
+              <span nz-icon nzType="tag"></span> {{ ticket.id }}
+            </div>
+            <h1 class="ticket-title">{{ ticket.title }}</h1>
+            <div class="header-tags">
+              <nz-tag [nzColor]="statusConfig[ticket.status].color">
+                <span nz-icon nzType="inbox"></span>
+                {{ statusConfig[ticket.status].label }}
+              </nz-tag>
+              <nz-tag [nzColor]="priorityConfig[ticket.priority].color">
+                <span nz-icon [nzType]="ticket.priority === 'URGENT' ? 'fire' : 'flag'"></span>
+                {{ priorityConfig[ticket.priority].label }}
+              </nz-tag>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="status-changer">
+              <label>Đổi trạng thái:</label>
+              <nz-select
+                [ngModel]="ticket.status"
+                (ngModelChange)="changeStatus($event)"
+                class="status-select"
+              >
+                <nz-option
+                  *ngFor="let s of allStatuses"
+                  [nzValue]="s"
+                  [nzLabel]="statusConfig[s].label"
+                ></nz-option>
+              </nz-select>
+            </div>
+          </div>
+        </div>
+      </nz-card>
+
+      <!-- ═══ META CARD ═══ -->
+      <nz-card class="meta-card" nzTitle="Thông tin chi tiết">
+        <nz-descriptions
+          [nzColumn]="{ xs: 1, sm: 2, md: 2 }"
+          nzBordered
+          [nzSize]="'default'"
+        >
+          <nz-descriptions-item nzTitle="ID">
+            <code class="code-value">{{ ticket.id }}</code>
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Trạng thái">
+            <nz-tag [nzColor]="statusConfig[ticket.status].color">
+              {{ statusConfig[ticket.status].label }}
+            </nz-tag>
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Priority">
+            <nz-tag [nzColor]="priorityConfig[ticket.priority].color">
+              {{ priorityConfig[ticket.priority].label }}
+            </nz-tag>
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Ngày tạo">
+            {{ formatDate(ticket.createdAt) }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Cập nhật cuối">
+            {{ formatDate(ticket.updatedAt) }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Đóng lúc">
+            {{ formatDate(ticket.closedAt) }}
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Created By (User ID)">
+            <code class="code-value">{{ ticket.createdBy }}</code>
+          </nz-descriptions-item>
+          <nz-descriptions-item nzTitle="Assigned To (Staff ID)">
+            <code class="code-value">{{ ticket.assignedTo || '— Chưa assign —' }}</code>
+          </nz-descriptions-item>
+        </nz-descriptions>
+      </nz-card>
+
+      <!-- ═══ DESCRIPTION CARD ═══ -->
+      <nz-card class="desc-card" nzTitle="Mô tả chi tiết">
+        <div class="description-content">{{ ticket.description }}</div>
+      </nz-card>
+
+      <!-- ═══ TIMELINE PLACEHOLDER ═══ -->
+      <nz-card class="timeline-card" nzTitle="Lịch sử xử lý">
+        <nz-alert
+          nzType="info"
+          nzShowIcon
+          nzMessage="Tính năng lịch sử xử lý sẽ được bổ sung khi BE có endpoint /api/tickets/:id/history"
+          nzDescription="Hiện tại chỉ xem được thông tin cơ bản và đổi trạng thái. Có thể dùng nút 'Assign staff' ở trang danh sách để gán ticket cho staff phụ trách."
+        ></nz-alert>
+      </nz-card>
+    </ng-container>
+
+    <ng-template #notFound>
+      <nz-empty nzNotFoundContent="Không tìm thấy ticket"></nz-empty>
+    </ng-template>
+  </nz-spin>
+</div>

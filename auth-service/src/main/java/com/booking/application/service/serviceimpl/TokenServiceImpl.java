@@ -1,75 +1,34 @@
 package com.booking.application.service.serviceimpl;
 
+import com.booking.application.port.out.TokenBlacklistRepositoryPort;
 import com.booking.application.port.out.TokenRepositoryPort;
 import com.booking.application.service.JwtService;
-import com.booking.application.service.SystemParamService;
 import com.booking.application.service.TokenService;
-import com.booking.domain.model.Token;
-import com.booking.domain.model.User;
 import com.booking.infrastructure.external.cache.TokenCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 
-@Log4j2
+/**
+ * TokenServiceImpl
+ *
+ * Sau Phase A (Stateless):
+ * - createToken() KHÔNG còn save vào DB. Login flow handle ở AuthServiceImpl.
+ *   Method này deprecated, có thể xóa nếu không còn caller.
+ * - validateToken(): verify ACCESS token:
+ *   - Check JWT signature
+ *   - Check Redis blacklist (fast-path)
+ *   - Check DB blacklist (fallback nếu Redis miss)
+ */
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class TokenServiceImpl implements TokenService {
 
     private final TokenRepositoryPort tokenRepositoryPort;
+    private final TokenBlacklistRepositoryPort blacklistRepositoryPort;
     private final TokenCacheService tokenCacheService;
     private final JwtService jwtService;
-
-    // Inject SystemParamService để lấy TTL động
-    // thay vì hardcode 720 giờ
-    private final SystemParamService systemParamService;
-
-    @Override
-    public String createToken(User user,
-                              String ipAddress,
-                              String userAgent) {
-        // Bước 1: Tạo JWT
-        String jwt = jwtService.generateToken(user);
-
-        // Bước 2: Hash JWT để lưu DB
-        // → không lưu raw JWT vào DB vì lý do bảo mật
-        // → nếu DB bị hack, attacker không lấy được token thật
-        String tokenHash = jwtService.hashToken(jwt);
-
-        // Bước 3: Lấy jti từ JWT
-        // → jti = UUID duy nhất nhúng trong JWT khi tạo
-        // → dùng để blacklist sau này
-        String jti = jwtService.extractJti(jwt);
-
-        // Bước 4: Lưu vào DB
-        Token tokenEntity = new Token();
-        tokenEntity.setUser(user);
-        tokenEntity.setTokenHash(tokenHash);
-        tokenEntity.setJti(jti);
-        tokenEntity.setIpAddress(ipAddress);
-        tokenEntity.setUserAgent(userAgent);
-        tokenRepositoryPort.save(tokenEntity);
-
-        log.info("[Token] Create token for user: {}", user.getUsername());
-
-        // Bước 5: Lấy TTL từ SystemParam (dynamic)
-        // → nếu key không tồn tại thì dùng default 720
-        // → admin có thể update TOKEN_TTL_HOURS qua API
-        //   mà không cần restart app
-        long ttlHours = systemParamService
-                .getIntValue("TOKEN_TTL_HOURS", 720);
-
-        // Bước 6: Lưu vào Redis với TTL động
-        // Key: "token:{userId}" → Value: raw JWT
-        tokenCacheService.saveToken(
-                user.getId().toString(),
-                jwt,
-                ttlHours
-        );
-
-        // Bước 7: Trả JWT cho FE
-        return jwt;
-    }
 
     @Override
     public String hashToken(String token) {
@@ -78,40 +37,47 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public boolean validateToken(String token) {
-
-        // Bước 1: Verify JWT signature
-        // → kiểm tra token có bị giả mạo không
+        // 1. Verify JWT signature + exp
         if (!jwtService.validateToken(token)) {
-            log.warn("[Token] Invalid token signature");
+            log.warn("[Token] Invalid signature/expired");
             return false;
         }
 
-        // Bước 2: Lấy JTI từ token
-        // → JTI = UUID duy nhất của token này
-        String jti = jwtService.extractJti(token);
+        // 2. Extract jti
+        String jti;
+        try {
+            jti = jwtService.extractJti(token);
+        } catch (Exception e) {
+            log.warn("[Token] Cannot extract jti: {}", e.getMessage());
+            return false;
+        }
 
-        // Bước 3: Check blacklist trong Redis
-        // → nếu jti có trong blacklist → token đã bị revoke
-        // → trả về false ngay, không cần check DB
-        // → Redis check rất nhanh (O(1)) → không ảnh hưởng performance
+        // 3. Check Redis blacklist (fast-path)
         if (tokenCacheService.isBlacklisted(jti)) {
-            log.warn("[Token] Token has been blacklisted, jti: {}", jti);
+            log.warn("[Token] Blacklisted (cache hit), jti: {}", jti);
             return false;
         }
 
-        // Bước 4: Check token có trong DB không
-        // → đảm bảo token được tạo bởi hệ thống
-        // → không bị giả mạo dù signature đúng
-        String tokenHash = jwtService.hashToken(token);
-        boolean isExist = tokenRepositoryPort
-                .findByTokenHash(tokenHash)
-                .isPresent();
-
-        if (!isExist) {
-            log.warn("[Token] Token not found in DB");
+        // 4. Fallback DB blacklist (Redis có thể miss sau restart)
+        if (blacklistRepositoryPort.isBlacklisted(jti)) {
+            log.warn("[Token] Blacklisted (DB hit), jti: {}", jti);
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * @deprecated
+     * Login flow đã handle save token. Giữ stub để tránh break TokenService interface.
+     * Sẽ xóa khi refactor TokenService interface (Bước 11).
+     */
+    @Override
+    @Deprecated
+    public String createToken(com.booking.domain.model.User user,
+                              String ipAddress,
+                              String userAgent) {
+        log.warn("[Token] createToken() is deprecated — use AuthServiceImpl.login() instead");
+        return jwtService.generateToken(user);
     }
 }

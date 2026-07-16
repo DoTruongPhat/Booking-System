@@ -69,8 +69,8 @@ export class UsersDetail implements OnInit {
   }
 
   getStatus(user: User): UserStatusKey {
-    if (!user.isActive) return 'inactive';
-    if (user.isLocked) return 'locked';
+    if (!user.active) return 'inactive';
+    if (user.locked) return 'locked';
     return 'active';
   }
 

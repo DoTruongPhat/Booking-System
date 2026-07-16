@@ -8,12 +8,16 @@
 
     <!-- Main Navigation -->
     <nav class="main-nav">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-item" (click)="closeDropdown()">
+      <a
+        routerLink="/"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-item"
+        (click)="closeDropdown()"
+      >
         Trang chủ
       </a>
-      <a routerLink="/user/booking/new" class="nav-item" (click)="closeDropdown()">
-        Đặt phòng
-      </a>
+      <a routerLink="/user/booking/new" class="nav-item" (click)="closeDropdown()"> Đặt phòng </a>
 
       <!-- Khách sạn Dropdown -->
       <div class="nav-item-dropdown" [class.is-open]="openDropdown() === hotelsDropdown.label">
@@ -36,10 +40,17 @@
                 [routerLink]="item.link"
                 (click)="closeDropdown()"
               >
-                <span class="dropdown-item-icon" nz-icon [nzType]="item.icon" nzTheme="outline"></span>
+                <span
+                  class="dropdown-item-icon"
+                  nz-icon
+                  [nzType]="item.icon"
+                  nzTheme="outline"
+                ></span>
                 <div class="dropdown-item-content">
                   <span class="dropdown-item-label">{{ item.label }}</span>
-                  <span class="dropdown-item-desc" *ngIf="item.description">{{ item.description }}</span>
+                  <span class="dropdown-item-desc" *ngIf="item.description">{{
+                    item.description
+                  }}</span>
                 </div>
               </a>
             </div>
@@ -71,10 +82,17 @@
                 [routerLink]="item.link"
                 (click)="handleItemAction(item.action); closeDropdown()"
               >
-                <span class="dropdown-item-icon" nz-icon [nzType]="item.icon" nzTheme="outline"></span>
+                <span
+                  class="dropdown-item-icon"
+                  nz-icon
+                  [nzType]="item.icon"
+                  nzTheme="outline"
+                ></span>
                 <div class="dropdown-item-content">
                   <span class="dropdown-item-label">{{ item.label }}</span>
-                  <span class="dropdown-item-desc" *ngIf="item.description">{{ item.description }}</span>
+                  <span class="dropdown-item-desc" *ngIf="item.description">{{
+                    item.description
+                  }}</span>
                 </div>
               </a>
             </div>
@@ -87,24 +105,79 @@
     <div class="navbar-actions">
       <ng-container *ngIf="!user; else loggedIn">
         <button class="action-btn action-btn-ghost" (click)="goToLogin()">
-          <span nz-icon nzType="user"></span>
           <span class="action-label">Đăng nhập</span>
         </button>
         <a class="action-btn action-btn-primary" routerLink="/auth/register">
           <span class="action-label">Đăng ký</span>
         </a>
       </ng-container>
+
       <ng-template #loggedIn>
-        <button class="action-btn action-btn-icon" aria-label="Tìm kiếm">
-          <span nz-icon nzType="search"></span>
-        </button>
+        <!-- Dashboard shortcut (admin/host only) -->
+        <a *ngIf="isAdminOrHost" class="action-btn action-btn-ghost" routerLink="/admin/dashboard">
+          <span nz-icon nzType="dashboard"></span>
+          <span class="action-label">Dashboard</span>
+        </a>
+
+        <!-- Notification -->
         <button class="action-btn action-btn-icon" aria-label="Thông báo">
           <span nz-icon nzType="bell"></span>
           <span class="notification-dot"></span>
         </button>
-        <button class="action-btn action-btn-icon" aria-label="Đăng xuất" (click)="logout()">
-          <span nz-icon nzType="logout"></span>
-        </button>
+
+        <!-- Avatar Dropdown -->
+        <div
+          class="user-avatar-menu"
+          nz-dropdown
+          [nzDropdownMenu]="avatarMenu"
+          nzTrigger="click"
+          nzPlacement="bottomRight"
+        >
+          <nz-avatar
+            [nzText]="userInitial"
+            nzSize="small"
+            style="background-color: #1890ff; cursor: pointer"
+          ></nz-avatar>
+          <span class="avatar-username">{{ user?.username }}</span>
+          <span nz-icon nzType="down" style="font-size: 10px; margin-left: 4px"></span>
+        </div>
+
+        <nz-dropdown-menu #avatarMenu="nzDropdownMenu">
+          <ul nz-menu style="min-width: 180px">
+            <!-- User info header -->
+            <li nz-menu-item disabled style="cursor: default; opacity: 0.7">
+              <span nz-icon nzType="mail" style="margin-right: 8px"></span>
+              <span style="font-size: 12px">{{ user?.email }}</span>
+            </li>
+            <li nz-menu-divider></li>
+
+            <!-- Hồ sơ -->
+            <li nz-menu-item (click)="goToProfile()">
+              <span nz-icon nzType="user" style="margin-right: 8px"></span>
+              <span>Hồ sơ của tôi</span>
+            </li>
+
+            <!-- Dashboard (admin/host) -->
+            <li *ngIf="isAdminOrHost" nz-menu-item routerLink="/admin/dashboard">
+              <span nz-icon nzType="dashboard" style="margin-right: 8px"></span>
+              <span>Dashboard</span>
+            </li>
+
+            <!-- Đặt phòng của tôi (user) -->
+            <li nz-menu-item routerLink="/user/bookings">
+              <span nz-icon nzType="calendar" style="margin-right: 8px"></span>
+              <span>Đặt phòng của tôi</span>
+            </li>
+
+            <li nz-menu-divider></li>
+
+            <!-- Đăng xuất -->
+            <li nz-menu-item nzDanger (click)="logout()">
+              <span nz-icon nzType="logout" style="margin-right: 8px"></span>
+              <span>Đăng xuất</span>
+            </li>
+          </ul>
+        </nz-dropdown-menu>
       </ng-template>
     </div>
   </div>

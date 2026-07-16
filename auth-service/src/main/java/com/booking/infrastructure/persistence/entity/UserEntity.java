@@ -33,11 +33,11 @@ public class UserEntity {
     private String email;
 
     @JsonIgnore
-    @Column(name = "password_hash", nullable = false, length = 500)
+    @Column(name = "password_hash", length = 500)
     private String passwordHash;
 
     @JsonIgnore
-    @Column(name = "password_salt", nullable = false, length = 255)
+    @Column(name = "password_salt", length = 255)
     private String passwordSalt;
 
     @Column(name = "is_active", nullable = false)
@@ -72,25 +72,17 @@ public class UserEntity {
     @Column(name = "two_factor_enabled", nullable = false)
     private boolean twoFactorEnabled = false;
 
-    // ── V8: Keycloak sync fields ───────────────────────────
-
     @Column(name = "phone", length = 20)
     private String phone;
 
-    @Column(name = "kc_user_id", length = 100)
-    private String kcUserId;
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
 
-    @Column(name = "kc_synced_at")
-    private ZonedDateTime kcSyncedAt;
+    @Column(name = "first_name", length = 100)
+    private String firstName;
 
-    @Column(name = "sync_status", nullable = false, length = 20)
-    private String syncStatus = "PENDING";
-
-    @Column(name = "sync_version", nullable = false)
-    private long syncVersion = 0L;
-
-    @Column(name = "auth_source", nullable = false, length = 20)
-    private String authSource = "LOCAL";
+    @Column(name = "last_name", length = 100)
+    private String lastName;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_roles", schema = "auth",
@@ -169,13 +161,10 @@ public class UserEntity {
         this.email = email; }
 
     public String getPasswordHash() { return passwordHash; }
+
     public void setPasswordHash(String passwordHash) {
-        if (passwordHash == null || passwordHash.isBlank())
-            throw new UserException(
-                    ErrorCode.USR_008,
-                    ErrorCode.USR_008_MSG
-            );
-        this.passwordHash = passwordHash; }
+        this.passwordHash = passwordHash;
+    }
 
     public String getPasswordSalt() { return passwordSalt; }
     public void setPasswordSalt(String passwordSalt) { this.passwordSalt = passwordSalt; }
@@ -220,18 +209,12 @@ public class UserEntity {
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
 
-    public String getKcUserId() { return kcUserId; }
-    public void setKcUserId(String kcUserId) { this.kcUserId = kcUserId; }
+    public boolean isEmailVerified() { return emailVerified; }
+    public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
 
-    public ZonedDateTime getKcSyncedAt() { return kcSyncedAt; }
-    public void setKcSyncedAt(ZonedDateTime kcSyncedAt) { this.kcSyncedAt = kcSyncedAt; }
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
 
-    public String getSyncStatus() { return syncStatus; }
-    public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
-
-    public long getSyncVersion() { return syncVersion; }
-    public void setSyncVersion(long syncVersion) { this.syncVersion = syncVersion; }
-
-    public String getAuthSource() { return authSource; }
-    public void setAuthSource(String authSource) { this.authSource = authSource; }
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
 }

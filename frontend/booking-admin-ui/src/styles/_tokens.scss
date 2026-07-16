@@ -1,13 +1,12 @@
 // ═══════════════════════════════════════════════════════════
 // DESIGN TOKENS - Single source of truth
-// Import file này ở đầu mỗi component SCSS:
-// @use '../../../styles/tokens' as t;
-// Hoặc trong global styles.scss:
-// @import './styles/tokens';
+// Mọi component SCSS đều @use '...' as t; để dùng biến này
+// Nền chính: TRẮNG, accent: GREEN PASTEL, tinh tế & sang trọng
 // ═══════════════════════════════════════════════════════════
 
 // === FONT FAMILY ===
 $font-family-base: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-family-heading: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
 $font-family-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
 
 // === FONT SIZE ===
@@ -45,25 +44,25 @@ $letter-spacing-wide: 0.02em;
 $letter-spacing-wider: 0.06em;
 $letter-spacing-uppercase: 0.08em;
 
-// === BRAND COLORS - Primary (Blue) ===
-$color-primary-50: #F0F7FF;
-$color-primary-100: #E3F0FF;
-$color-primary-200: #C8DEFF;
-$color-primary-300: #9EC3FF;
-$color-primary-400: #6FA1FF;
-$color-primary: #0064D2;
-$color-primary-hover: #0052AB;
-$color-primary-active: #003E85;
-$color-primary-dark: #002F66;
+// ═══════════════════════════════════════════════════════════
+// BRAND COLORS - GREEN PASTEL (Primary)
+// Nền trắng, green pastel làm accent
+// ═══════════════════════════════════════════════════════════
+$color-primary-50: #F2FAF3;
+$color-primary-100: #E3F4E5;
+$color-primary-200: #C7E9CB;
+$color-primary-300: #9FD5A6;
+$color-primary-400: #6FBF73;
+$color-primary: #6FBF73;
+$color-primary-hover: #5BAA60;
+$color-primary-active: #4A8F4F;
+$color-primary-dark: #3D7A41;
 
-// === ACCENT COLORS - Green Pastel ===
-$color-accent-50: #F0FAF1;
-$color-accent-100: #E0F3E2;
-$color-accent-200: #C8E8CB;
-$color-accent-300: #A5D6AA;
-$color-accent: #6FBF73;
-$color-accent-hover: #5BAA60;
-$color-accent-active: #4A8F4F;
+// Secondary blue (info, link phụ)
+$color-secondary-50: #F0F7FF;
+$color-secondary-100: #E3F0FF;
+$color-secondary: #1890ff;
+$color-secondary-hover: #096DD9;
 
 // === SEMANTIC COLORS ===
 $color-success-light: #E5F7EF;
@@ -82,51 +81,49 @@ $color-info-light: #E8F4FE;
 $color-info: #2196F3;
 $color-info-hover: #1976D2;
 
-// === NEUTRAL COLORS ===
+// === NEUTRAL COLORS - Nền chính là TRẮNG ===
 $color-white: #FFFFFF;
 $color-black: #000000;
 
 $color-gray-50: #FAFAFA;
-$color-gray-100: #F5F5F5;
-$color-gray-200: #EEEEEE;
-$color-gray-300: #E0E0E0;
+$color-gray-100: #F5F7F5;
+$color-gray-200: #EEF1EE;
+$color-gray-300: #E0E4E0;
 $color-gray-400: #BDBDBD;
 $color-gray-500: #999999;
-$color-gray-600: #666666;
+$color-gray-600: #6B7280;
 $color-gray-700: #4A4A4A;
-$color-gray-800: #333333;
+$color-gray-800: #2A2A2E;
 $color-gray-900: #1A1A2E;
 
-$color-bg: #{$color-gray-100};
+$color-bg: #FFFFFF;
 $color-bg-soft: #FAFAFA;
 $color-bg-card: #FFFFFF;
-$color-bg-overlay: rgba(15, 35, 70, 0.7);
+$color-bg-overlay: rgba(255, 255, 255, 0.85);
 
-$color-text-primary: #333333;
-$color-text-secondary: #666666;
+$color-text-primary: #1A1A2E;
+$color-text-secondary: #4A4A4A;
 $color-text-muted: #999999;
 $color-text-inverse: #FFFFFF;
 
-$color-border: #E0E0E0;
-$color-border-light: #EEEEEE;
-$color-border-dark: #BDBDBD;
+$color-border: #E8EBE8;
+$color-border-light: #F0F3F0;
+$color-border-dark: #C8CCC8;
 
-// === GRADIENTS ===
+// === GRADIENTS - Tinh tế ===
 $gradient-primary: linear-gradient(135deg, #{$color-primary} 0%, #{$color-primary-hover} 100%);
-$gradient-accent: linear-gradient(135deg, #{$color-accent} 0%, #{$color-accent-hover} 100%);
-$gradient-hero: linear-gradient(135deg, #F0F9F8 0%, #E0F2F1 100%);
-$gradient-cta-blue: linear-gradient(135deg, #0064D2 0%, #0052AB 100%);
-$gradient-banner-dark: linear-gradient(135deg, rgba(15, 35, 70, 0.72) 0%, rgba(30, 60, 110, 0.62) 50%, rgba(20, 45, 90, 0.7) 100%);
+$gradient-hero: linear-gradient(180deg, #FFFFFF 0%, #F2FAF3 100%);
+$gradient-card: linear-gradient(135deg, #FFFFFF 0%, #F2FAF3 100%);
+$gradient-overlay: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(74, 138, 79, 0.35) 100%);
 
-// === SHADOWS ===
-$shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-$shadow-md: 0 2px 6px -1px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
-$shadow-lg: 0 4px 12px -2px rgba(0, 0, 0, 0.10), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
-$shadow-xl: 0 8px 24px -4px rgba(0, 0, 0, 0.12), 0 16px 32px -8px rgba(0, 0, 0, 0.10);
-$shadow-primary: 0 2px 8px rgba(0, 100, 210, 0.18);
-$shadow-primary-lg: 0 6px 16px rgba(0, 100, 210, 0.32);
-$shadow-accent: 0 4px 12px rgba(111, 191, 115, 0.28);
+// === SHADOWS - Nhẹ, tinh tế ===
+$shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+$shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+$shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.06);
+$shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.10), 0 16px 48px rgba(0, 0, 0, 0.08);
+$shadow-primary: 0 2px 8px rgba(111, 191, 115, 0.18);
+$shadow-primary-lg: 0 4px 16px rgba(111, 191, 115, 0.28);
 
 // === BORDER RADIUS ===
 $radius-xs: 4px;
@@ -165,17 +162,12 @@ $container-xl: 1280px;
 $header-height: 64px;
 $header-height-lg: 72px;
 $sidebar-width: 240px;
-$sidebar-width-collapsed: 64px;
 
-// === TRANSITIONS ===
-$transition-fast: all 0.15s ease-out;
-$transition-base: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-$transition-smooth: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-$transition-spring: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-$transition-fast-duration: 0.15s;
-$transition-base-duration: 0.25s;
-$transition-slow-duration: 0.35s;
+// === TRANSITIONS - Subtle ===
+$transition-fast: all 0.15s ease;
+$transition-base: all 0.2s ease;
+$transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
 // === Z-INDEX ===
 $z-hide: -1;
@@ -186,7 +178,6 @@ $z-fixed: 300;
 $z-modal: 1000;
 $z-popover: 1100;
 $z-tooltip: 1200;
-$z-toast: 1300;
 
 // === BREAKPOINTS ===
 $breakpoint-sm: 576px;
@@ -206,5 +197,19 @@ $input-height-md: 40px;
 $input-height-lg: 48px;
 
 $navbar-bg: rgba(255, 255, 255, 0.85);
-$navbar-bg-scrolled: rgba(255, 255, 255, 0.95);
-$navbar-blur: saturate(180%) blur(12px);
+$navbar-bg-scrolled: rgba(255, 255, 255, 0.98);
+
+// === BOOKING STATUS COLORS ===
+$color-status-pending: #FFA500;
+$color-status-confirmed: #1890ff;
+$color-status-checked-in: #6FBF73;
+$color-status-checked-out: #6B7280;
+$color-status-cancelled: #E53935;
+$color-status-no-show: #999999;
+
+// === ANIMATION TIMINGS ===
+$anim-duration-fast: 0.15s;
+$anim-duration-base: 0.25s;
+$anim-duration-slow: 0.4s;
+$anim-ease: cubic-bezier(0.4, 0, 0.2, 1);
+$anim-ease-out: cubic-bezier(0.16, 1, 0.3, 1);

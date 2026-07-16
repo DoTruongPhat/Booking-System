@@ -1,8 +1,8 @@
 <div class="login-page">
-  <div class="login-card">
-    <div class="login-header">
-      <h1 class="brand">SmartBooking</h1>
-      <p class="subtitle">Sign in to your account</p>
+  <div class="login-form">
+    <div class="form-header">
+      <h2 class="form-title">Đăng nhập</h2>
+      <p class="form-subtitle">Chào mừng bạn quay lại SmartBooking</p>
     </div>
 
     <nz-alert
@@ -10,58 +10,95 @@
       nzType="error"
       [nzMessage]="errorMessage"
       nzShowIcon
-      class="login-alert"
+      class="form-alert"
     ></nz-alert>
 
+    <!-- ═══ SSO Login — KC form có Google + username/password ═══ -->
+    <button
+      type="button"
+      nz-button
+      nzType="primary"
+      nzSize="large"
+      nzBlock
+      class="submit-btn form-field form-field-1"
+      (click)="loginWithKeycloak()"
+    >
+      <span nz-icon nzType="login"></span>
+      Đăng nhập
+    </button>
+
+    <!-- ═══════════════════════════════════════════════════════
+         LOCAL LOGIN FORM — COMMENT LẠI
+         Bật lại khi cần fallback (KC chết) hoặc feature flag LOCAL mode
+
     <form nz-form [formGroup]="loginForm" (ngSubmit)="onSubmit()" nzLayout="vertical">
-      <nz-form-item>
-        <nz-form-label nzRequired>Username</nz-form-label>
-        <nz-form-control nzErrorTip="Please input your username!">
+      <nz-form-item class="form-field form-field-1">
+        <nz-form-label nzRequired>
+          <span nz-icon nzType="user" class="form-label-icon"></span>
+          Tên đăng nhập
+        </nz-form-label>
+        <nz-form-control
+          [nzErrorTip]="
+            loginForm.get('username')?.errors?.['minlength']
+              ? 'Tên đăng nhập phải có ít nhất 3 ký tự!'
+              : 'Vui lòng nhập tên đăng nhập!'
+          "
+        >
           <input
             nz-input
             formControlName="username"
-            placeholder="Enter username"
+            placeholder="Nhập tên đăng nhập"
             size="large"
             autocomplete="username"
           />
         </nz-form-control>
       </nz-form-item>
 
-      <nz-form-item>
-        <nz-form-label nzRequired>Password</nz-form-label>
-        <nz-form-control nzErrorTip="Please input your password!">
+      <nz-form-item class="form-field form-field-2">
+        <nz-form-label nzRequired>
+          <span nz-icon nzType="lock" class="form-label-icon"></span>
+          Mật khẩu
+        </nz-form-label>
+        <nz-form-control nzErrorTip="Vui lòng nhập mật khẩu!">
           <input
             nz-input
             type="password"
             formControlName="password"
-            placeholder="Enter password"
+            placeholder="Nhập mật khẩu"
             size="large"
             autocomplete="current-password"
           />
         </nz-form-control>
       </nz-form-item>
 
-      <div class="login-options">
-        <label nz-checkbox formControlName="remember">Remember me</label>
-        <a class="forgot-link" (click)="$event.preventDefault()">Forgot password?</a>
+      <div class="form-options form-field form-field-3">
+        <label class="remember-me">
+          <input type="checkbox" formControlName="remember" />
+          <span>Ghi nhớ đăng nhập</span>
+        </label>
+        <a class="forgot-link" routerLink="/auth/forgot-password">Quên mật khẩu?</a>
       </div>
 
       <button
+        type="submit"
         nz-button
         nzType="primary"
         nzSize="large"
         nzBlock
         [nzLoading]="isSubmitting"
-        type="submit"
         [disabled]="loginForm.invalid"
+        class="submit-btn form-field form-field-4"
       >
-        {{ isSubmitting ? 'Signing in...' : 'Sign in' }}
+        <span *ngIf="!isSubmitting" nz-icon nzType="login"></span>
+        {{ isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập' }}
       </button>
     </form>
 
-    <div class="login-footer">
-      <span>Don't have an account?</span>
-      <a>Sign up</a>
+    ═══════════════════════════════════════════════════════ -->
+
+    <div class="form-footer">
+      <span>Chưa có tài khoản?</span>
+      <a routerLink="/auth/register" class="signup-link">Đăng ký ngay</a>
     </div>
   </div>
 </div>

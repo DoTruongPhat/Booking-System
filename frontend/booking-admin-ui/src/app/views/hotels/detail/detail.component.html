@@ -1,0 +1,341 @@
+<div class="detail-page">
+  <app-navbar></app-navbar>
+
+  <!-- Loading -->
+  <div class="detail-loading" *ngIf="loading">
+    <nz-spin nzSimple [nzSize]="'large'"></nz-spin>
+  </div>
+
+  <div class="detail-container" *ngIf="!loading && room">
+    <!-- === BREADCRUMB === -->
+    <nav class="breadcrumb">
+      <a routerLink="/">Trang chủ</a>
+      <span>/</span>
+      <a routerLink="/hotels">Khách sạn</a>
+      <span>/</span>
+      <span class="current">{{ room.name }}</span>
+    </nav>
+
+    <!-- === HEADER === -->
+    <header class="hotel-header">
+      <div class="hotel-header-info">
+        <h1 class="hotel-name">{{ room.name }}</h1>
+        <div class="hotel-meta" *ngIf="room.hotel">
+          <span class="stars" *ngIf="room.hotel.starRating">
+            <span
+              nz-icon
+              nzType="star"
+              nzTheme="fill"
+              *ngFor="let s of getStars(room.hotel.starRating)"
+            ></span>
+          </span>
+          <span class="rating-badge" *ngIf="room.hotel.userRating">
+            <span class="rating-score">{{ room.hotel.userRating | number: '1.1-1' }}</span>
+            <span class="rating-label">
+              {{
+                room.hotel.userRating >= 9
+                  ? 'Xuất sắc'
+                  : room.hotel.userRating >= 8
+                    ? 'Rất tốt'
+                    : 'Tốt'
+              }}
+            </span>
+          </span>
+          <span class="review-count" *ngIf="room.hotel.reviewCount">
+            ({{ room.hotel.reviewCount }} đánh giá)
+          </span>
+        </div>
+        <p class="hotel-address" *ngIf="room.hotel">
+          <span nz-icon nzType="aim"></span>
+          {{ room.hotel.name }} · {{ room.hotel.address }}, {{ room.hotel.city }}
+        </p>
+      </div>
+      <div class="hotel-header-actions">
+        <button class="action-btn">
+          <span nz-icon nzType="heart"></span>
+          Yêu thích
+        </button>
+        <button class="action-btn">
+          <span nz-icon nzType="share-alt"></span>
+          Chia sẻ
+        </button>
+      </div>
+    </header>
+
+    <!-- === IMAGE GALLERY === -->
+    <section class="gallery" *ngIf="allImages.length > 0">
+      <div class="gallery-main">
+        <img [src]="allImages[activeImageIndex]" [alt]="room.name" />
+      </div>
+      <div class="gallery-thumbs" *ngIf="allImages.length > 1">
+        <button
+          *ngFor="let img of allImages; let i = index"
+          class="thumb"
+          [class.active]="i === activeImageIndex"
+          (click)="selectImage(i)"
+        >
+          <img [src]="img" [alt]="'Ảnh ' + (i + 1)" />
+        </button>
+      </div>
+    </section>
+
+    <div class="detail-grid">
+      <!-- === MAIN CONTENT === -->
+      <main class="detail-main">
+        <!-- Room Description -->
+        <section class="detail-section">
+          <h2 class="section-title">Thông tin phòng</h2>
+          <p class="hotel-description">{{ room.description }}</p>
+          <div class="room-meta-grid">
+            <div class="room-meta-item">
+              <span nz-icon nzType="home"></span>
+              <div>
+                <strong>Diện tích</strong>
+                <span>{{ room.size }}m²</span>
+              </div>
+            </div>
+            <div class="room-meta-item">
+              <span nz-icon nzType="user"></span>
+              <div>
+                <strong>Sức chứa</strong>
+                <span
+                  >{{ room.maxAdults }} người lớn
+                  <span *ngIf="room.maxChildren > 0">, {{ room.maxChildren }} trẻ em</span>
+                </span>
+              </div>
+            </div>
+            <div class="room-meta-item">
+              <span nz-icon nzType="layout"></span>
+              <div>
+                <strong>Giường</strong>
+                <span>{{ room.bedType }}</span>
+              </div>
+            </div>
+            <div class="room-meta-item">
+              <span nz-icon nzType="tag"></span>
+              <div>
+                <strong>Loại phòng</strong>
+                <span>{{ room.roomType }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Room Amenities -->
+        <section class="detail-section">
+          <h2 class="section-title">Tiện nghi phòng</h2>
+          <div class="amenities-grid">
+            <div class="amenity-item" *ngFor="let a of room.amenities">
+              <span nz-icon nzType="check-circle" nzTheme="fill"></span>
+              <span>{{ getAmenityLabel(a) }}</span>
+            </div>
+          </div>
+          <div class="room-extra-tags">
+            <nz-tag *ngIf="room.breakfastIncluded" nzColor="green">Bao gồm bữa sáng</nz-tag>
+            <nz-tag *ngIf="room.freeCancellation" nzColor="blue">Hủy miễn phí</nz-tag>
+          </div>
+        </section>
+
+        <!-- Hotel Info -->
+        <section class="detail-section" *ngIf="room.hotel">
+          <h2 class="section-title">Về khách sạn</h2>
+          <div class="hotel-info-card">
+            <img
+              class="hotel-info-thumb"
+              [src]="room.hotel.thumbnail"
+              [alt]="room.hotel.name"
+              *ngIf="room.hotel.thumbnail"
+            />
+            <div class="hotel-info-text">
+              <h3>{{ room.hotel.name }}</h3>
+              <p>{{ room.hotel.address }}, {{ room.hotel.city }}</p>
+              <div class="hotel-info-amenities">
+                <span *ngFor="let a of room.hotel.amenities.slice(0, 6)" class="amenity-tag">
+                  <span nz-icon nzType="check-circle"></span>
+                  {{ getAmenityLabel(a) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Policies -->
+        <section class="detail-section" *ngIf="room.hotel">
+          <h2 class="section-title">Chính sách</h2>
+          <div class="policies-grid">
+            <div class="policy-item" *ngIf="room.hotel.checkInTime">
+              <span nz-icon nzType="login" class="policy-icon"></span>
+              <div>
+                <strong>Nhận phòng</strong>
+                <span>Sau {{ room.hotel.checkInTime }}</span>
+              </div>
+            </div>
+            <div class="policy-item" *ngIf="room.hotel.checkOutTime">
+              <span nz-icon nzType="logout" class="policy-icon"></span>
+              <div>
+                <strong>Trả phòng</strong>
+                <span>Trước {{ room.hotel.checkOutTime }}</span>
+              </div>
+            </div>
+            <div class="policy-item">
+              <span nz-icon nzType="close-circle" class="policy-icon"></span>
+              <div>
+                <strong>Hủy phòng</strong>
+                <span>Miễn phí ≥48h, hoàn 50% 24-48h, không hoàn &lt;24h</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Availability Calendar -->
+        <section class="detail-section" *ngIf="availability.length > 0">
+          <h2 class="section-title">Tình trạng phòng (30 ngày tới)</h2>
+          <div class="avail-calendar">
+            <div
+              *ngFor="let day of availability"
+              class="avail-day"
+              [class.avail-day--available]="getDayStatus(day) === 'available'"
+              [class.avail-day--limited]="getDayStatus(day) === 'limited'"
+              [class.avail-day--blocked]="getDayStatus(day) === 'blocked'"
+              [title]="
+                day.date + ' - ' + formatPrice(day.price) + (day.blocked ? ' (Hết phòng)' : '')
+              "
+            >
+              <span class="avail-day__dow">{{ getDayOfWeek(day.date) }}</span>
+              <span class="avail-day__num">{{ getDayLabel(day.date) }}</span>
+              <span class="avail-day__price" *ngIf="!day.blocked">
+                {{ day.price / 1000000 | number: '1.1-1' }}tr
+              </span>
+              <span class="avail-day__price" *ngIf="day.blocked">—</span>
+            </div>
+          </div>
+          <div class="avail-legend">
+            <span class="avail-legend__item avail-legend__item--available">Còn phòng</span>
+            <span class="avail-legend__item avail-legend__item--limited">Sắp hết</span>
+            <span class="avail-legend__item avail-legend__item--blocked">Hết phòng</span>
+          </div>
+        </section>
+      </main>
+
+      <!-- === BOOKING SIDEBAR === -->
+      <aside class="booking-sidebar">
+        <div class="booking-card">
+          <div class="booking-price-display">
+            <span class="booking-price-from">Giá từ</span>
+            <span class="booking-price-value">{{ formatPrice(room.basePrice) }}</span>
+            <span class="booking-price-unit">/đêm</span>
+          </div>
+
+          <div class="booking-form">
+            <div class="booking-field">
+              <label>Nhận phòng</label>
+              <input type="date" [(ngModel)]="checkIn" name="checkIn" />
+            </div>
+            <div class="booking-field">
+              <label>Trả phòng</label>
+              <input type="date" [(ngModel)]="checkOut" name="checkOut" />
+            </div>
+            <div class="booking-row">
+              <div class="booking-field">
+                <label>Người lớn</label>
+                <select [(ngModel)]="guests.adults" name="adults">
+                  <option *ngFor="let n of [1, 2, 3, 4, 5, 6]" [ngValue]="n">{{ n }}</option>
+                </select>
+              </div>
+              <div class="booking-field">
+                <label>Trẻ em</label>
+                <select [(ngModel)]="guests.children" name="children">
+                  <option *ngFor="let n of [0, 1, 2, 3]" [ngValue]="n">{{ n }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="booking-field">
+              <label>Số phòng</label>
+              <select [(ngModel)]="guests.rooms" name="rooms">
+                <option *ngFor="let n of [1, 2, 3, 4, 5]" [ngValue]="n">{{ n }}</option>
+              </select>
+            </div>
+
+            <!-- Thông tin khách hàng -->
+            <div class="booking-field">
+              <label>Họ và tên *</label>
+              <input
+                type="text"
+                [(ngModel)]="guestName"
+                name="guestName"
+                placeholder="Nhập họ và tên"
+              />
+            </div>
+            <div class="booking-field">
+              <label>Email *</label>
+              <input
+                type="email"
+                [(ngModel)]="guestEmail"
+                name="guestEmail"
+                placeholder="Nhập email"
+              />
+            </div>
+            <div class="booking-field">
+              <label>Số điện thoại</label>
+              <input
+                type="tel"
+                [(ngModel)]="guestPhone"
+                name="guestPhone"
+                placeholder="Nhập số điện thoại"
+              />
+            </div>
+
+            <!-- Yêu cầu đặc biệt -->
+            <div class="booking-field">
+              <label>Yêu cầu đặc biệt</label>
+              <textarea
+                [(ngModel)]="specialRequests"
+                name="specialRequests"
+                rows="2"
+                placeholder="Phòng tầng cao, giường phụ..."
+              ></textarea>
+            </div>
+
+            <!-- Booking summary -->
+            <div class="booking-summary" *ngIf="nights > 0">
+              <div class="summary-row">
+                <span
+                  >{{ formatPrice(room.basePrice) }} × {{ nights }} đêm
+                  <span *ngIf="guests.rooms > 1"> × {{ guests.rooms }} phòng</span>
+                </span>
+                <strong>{{ formatPrice(totalPrice) }}</strong>
+              </div>
+              <div class="summary-row">
+                <span>Thuế & phí (10%)</span>
+                <strong>{{ formatPrice(taxAmount) }}</strong>
+              </div>
+              <div class="summary-divider"></div>
+              <div class="summary-total">
+                <span>Tổng cộng</span>
+                <strong class="total-price">{{ formatPrice(finalPrice) }}</strong>
+              </div>
+            </div>
+
+            <button class="book-now-btn" [disabled]="booking || nights <= 0" (click)="bookNow()">
+              <span nz-icon [nzType]="booking ? 'loading' : 'check-circle'"></span>
+              {{ booking ? 'Đang xử lý...' : 'Đặt phòng ngay' }}
+            </button>
+
+            <p class="booking-note">
+              <span nz-icon nzType="safety-certificate"></span>
+              Thanh toán an toàn · PENDING sẽ hết hạn sau 15 phút
+            </p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div class="detail-error" *ngIf="!loading && !room">
+    <span nz-icon nzType="frown" class="error-icon"></span>
+    <h3>Không tìm thấy thông tin phòng</h3>
+    <p>Phòng này có thể đã bị xóa hoặc không tồn tại.</p>
+    <button class="reset-btn-large" routerLink="/hotels">Quay lại tìm kiếm</button>
+  </div>
+</div>

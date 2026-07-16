@@ -13,8 +13,8 @@ public interface UserManagementService {
     void deactivateUser(UUID userId);
     User assignRole(UUID userId, String roleCode);
     User getProfile(String username);
-    User updateProfile(String username, String email, String timezone);
-
+    User updateProfile(String username, String email, String timezone,
+                       String phone, String firstName, String lastName);
     void changePassword(String username, String currentPassword, String newPassword);
     void adminResetPassword(UUID userId, String newPassword);
 

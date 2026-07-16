@@ -1,4 +1,4 @@
-# Stage 1: Build
+    # Stage 1: Build
 FROM maven:3.9.6-eclipse-temurin-21 AS builder
 WORKDIR /app
 
@@ -34,6 +34,6 @@ ENV JAVA_OPTS="\
     -XX:+HeapDumpOnOutOfMemoryError \
     -Djava.security.egd=file:/dev/./urandom"
 
-EXPOSE 8080
+EXPOSE 8081
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

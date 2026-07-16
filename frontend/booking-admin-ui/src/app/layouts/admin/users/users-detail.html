@@ -1,8 +1,6 @@
 <div class="users-detail">
   <div class="page-header">
-    <button nz-button (click)="goBack()">
-      <span nz-icon nzType="arrow-left"></span> Back
-    </button>
+    <button nz-button (click)="goBack()"><span nz-icon nzType="arrow-left"></span> Back</button>
   </div>
 
   <nz-spin [nzSpinning]="isLoading">
@@ -13,9 +11,7 @@
           <nz-avatar
             [nzSize]="80"
             [nzText]="user.username.charAt(0).toUpperCase()"
-            [style.background-color]="
-              getStatus(user) === 'active' ? '#1890ff' : '#bfbfbf'
-            "
+            [style.background-color]="getStatus(user) === 'active' ? '#1890ff' : '#bfbfbf'"
           ></nz-avatar>
           <div class="profile-info">
             <h2>{{ user.username }}</h2>
@@ -33,7 +29,7 @@
                 nz-popconfirm
                 nzPopconfirmTitle="Deactivate this user?"
                 (nzOnConfirm)="deactivate()"
-                [disabled]="!user.isActive"
+                [disabled]="!user.active"
               >
                 <span nz-icon nzType="stop"></span> Deactivate
               </button>
@@ -53,12 +49,8 @@
       </nz-card>
 
       <!-- ═══ DETAILS ═══ -->
-      <nz-card nzTitle="Account Information" style="margin-top: 16px;">
-        <nz-descriptions
-          [nzColumn]="{ xs: 1, sm: 2, md: 2, lg: 3 }"
-          nzBordered
-          nzSize="small"
-        >
+      <nz-card nzTitle="Account Information" style="margin-top: 16px">
+        <nz-descriptions [nzColumn]="{ xs: 1, sm: 2, md: 2, lg: 3 }" nzBordered nzSize="small">
           <nz-descriptions-item nzTitle="User ID">
             <code>{{ user.id }}</code>
           </nz-descriptions-item>
@@ -112,27 +104,22 @@
       </nz-card>
 
       <!-- ═══ ROLES ═══ -->
-      <nz-card nzTitle="Roles & Permissions" style="margin-top: 16px;">
+      <nz-card nzTitle="Roles & Permissions" style="margin-top: 16px">
         <ng-container *ngIf="user.roles.length; else noRoles">
           <div *ngFor="let role of user.roles" class="role-block">
             <div class="role-header">
               <nz-tag
                 [nzColor]="role.code === 'ADMIN_ALL' ? 'red' : 'blue'"
-                style="font-size: 14px; padding: 4px 12px;"
+                style="font-size: 14px; padding: 4px 12px"
               >
                 {{ role.code }}
               </nz-tag>
               <strong>{{ role.name }}</strong>
-              <span class="text-muted" *ngIf="role.description">
-                — {{ role.description }}
-              </span>
+              <span class="text-muted" *ngIf="role.description"> — {{ role.description }} </span>
             </div>
 
             <div class="permissions" *ngIf="role.permissions && role.permissions.length">
-              <nz-tag
-                *ngFor="let perm of role.permissions"
-                nzColor="default"
-              >
+              <nz-tag *ngFor="let perm of role.permissions" nzColor="default">
                 {{ perm.code }}
               </nz-tag>
             </div>

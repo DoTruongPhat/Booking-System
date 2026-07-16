@@ -3,6 +3,11 @@
 // Endpoint: /api/admin/users
 // Filter: server-side (keyword, isActive, isLocked)
 // Roles: load từ /api/admin/roles khi mở modal Assign Role
+//
+// Phase A.1: Mở rộng bảng Account
+// - Cột "Tên" = firstName + lastName (từ Keycloak), fallback username
+// - Cột "Role Permission" = aggregate permissions từ tất cả role
+// - Actions: Khóa/Mở khóa nhanh + Kích hoạt/Vô hiệu nhanh
 // ═══════════════════════════════════════════════════════════
 
 import { Component, OnInit, inject } from '@angular/core';
@@ -30,7 +35,7 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { UserService } from '../../../core/services/user';
 import { RoleService } from '../../../core/services/role';
-import { Role, User, UserStatusKey } from '../../../core/models/auth.model';
+import { Permission, Role, User, UserStatusKey } from '../../../core/models/auth.model';
 import { extractErrorMessage } from '../../../core/utils/error.util';
 
 @Component({
@@ -73,7 +78,7 @@ export class Users implements OnInit {
   isLoading = false;
 
   // ── Paging ─────────────────────────────────────────────
-  pageIndex = 1;        // nz-pagination: 1-based
+  pageIndex = 1; // nz-pagination: 1-based
   pageSize = 10;
   total = 0;
 
@@ -85,12 +90,16 @@ export class Users implements OnInit {
   isEditModalOpen = false;
   isRoleModalOpen = false;
   isPasswordModalOpen = false;
+  isPermissionsModalOpen = false; // A.1: xem tất cả permission
   isSubmitting = false;
   selectedUser: User | null = null;
+  selectedPermissions: Permission[] = []; // A.1
 
   // ── Forms ──────────────────────────────────────────────
   editForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
+    firstName: [''],
+    lastName: [''],
     timezone: ['UTC'],
     active: [true],
   });
@@ -125,7 +134,7 @@ export class Users implements OnInit {
 
     this.userService
       .getUsers(
-        this.pageIndex - 1,         // backend 0-based
+        this.pageIndex - 1, // backend 0-based
         this.pageSize,
         this.keyword || undefined,
         isActive,
@@ -175,8 +184,8 @@ export class Users implements OnInit {
 
   // ── STATUS ─────────────────────────────────────────────
   getStatus(user: User): UserStatusKey {
-    if (!user.isActive) return 'inactive';
-    if (user.isLocked) return 'locked';
+    if (!user.active) return 'inactive';
+    if (user.locked) return 'locked';
     return 'active';
   }
 
@@ -189,13 +198,53 @@ export class Users implements OnInit {
     return map[status];
   }
 
+  // ── A.1: TÊN ───────────────────────────────────────────
+  // Lấy firstName + lastName, fallback username
+  getDisplayName(user: User): string {
+    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    return fullName || user.username;
+  }
+
+  // ── A.1: ROLE PERMISSION (aggregate) ───────────────────
+  // Gộp permissions từ tất cả role, dedupe theo code
+  getAggregatedPermissions(user: User): Permission[] {
+    const map = new Map<string, Permission>();
+    for (const role of user.roles ?? []) {
+      for (const perm of role.permissions ?? []) {
+        if (!map.has(perm.code)) {
+          map.set(perm.code, perm);
+        }
+      }
+    }
+    return Array.from(map.values());
+  }
+
+  // Hiển thị tối đa 5 tag, nếu hơn thì tag cuối là "+N"
+  getVisiblePermissions(user: User): Permission[] {
+    return this.getAggregatedPermissions(user).slice(0, 5);
+  }
+
+  getHiddenPermissionCount(user: User): number {
+    const total = this.getAggregatedPermissions(user).length;
+    return Math.max(0, total - 5);
+  }
+
+  // Mở modal xem tất cả permission
+  openPermissionsModal(user: User) {
+    this.selectedUser = user;
+    this.selectedPermissions = this.getAggregatedPermissions(user);
+    this.isPermissionsModalOpen = true;
+  }
+
   // ── EDIT MODAL ─────────────────────────────────────────
   openEditModal(user: User) {
     this.selectedUser = user;
     this.editForm.reset({
       email: user.email,
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
       timezone: user.timezone ?? 'UTC',
-      active: user.isActive,
+      active: user.active,
     });
     this.isEditModalOpen = true;
   }
@@ -242,20 +291,18 @@ export class Users implements OnInit {
   submitRole() {
     if (this.roleForm.invalid || !this.selectedUser) return;
     this.isSubmitting = true;
-    this.userService
-      .assignRole(this.selectedUser.id, this.roleForm.value.roleCode!)
-      .subscribe({
-        next: () => {
-          this.isSubmitting = false;
-          this.message.success('Role assigned');
-          this.isRoleModalOpen = false;
-          this.loadUsers();
-        },
-        error: (err) => {
-          this.isSubmitting = false;
-          this.message.error(extractErrorMessage(err, 'Assign role failed'));
-        },
-      });
+    this.userService.assignRole(this.selectedUser.id, this.roleForm.value.roleCode!).subscribe({
+      next: () => {
+        this.isSubmitting = false;
+        this.message.success('Role assigned');
+        this.isRoleModalOpen = false;
+        this.loadUsers();
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        this.message.error(extractErrorMessage(err, 'Assign role failed'));
+      },
+    });
   }
 
   // ── RESET PASSWORD MODAL ───────────────────────────────
@@ -267,13 +314,11 @@ export class Users implements OnInit {
 
   submitPassword() {
     if (this.passwordForm.invalid || !this.selectedUser) return;
-
     const { newPassword, confirmPassword } = this.passwordForm.getRawValue();
     if (newPassword !== confirmPassword) {
-      this.message.error('Passwords do not match');
+      this.message.error('Mật khẩu xác nhận không khớp');
       return;
     }
-
     this.isSubmitting = true;
     this.userService.resetPassword(this.selectedUser.id, newPassword).subscribe({
       next: () => {
@@ -284,6 +329,20 @@ export class Users implements OnInit {
       error: (err) => {
         this.isSubmitting = false;
         this.message.error(extractErrorMessage(err, 'Reset password failed'));
+      },
+    });
+  }
+
+  // ── A.1: KHÓA / MỞ KHÓA NHANH ─────────────────────────
+  toggleLock(user: User) {
+    const willLock = !user.locked;
+    this.userService.updateUser(user.id, { active: user.active }).subscribe({
+      next: () => {
+        this.message.success(willLock ? `Đã khóa ${user.username}` : `Đã mở khóa ${user.username}`);
+        this.loadUsers();
+      },
+      error: (err) => {
+        this.message.error(extractErrorMessage(err, 'Toggle lock failed'));
       },
     });
   }
@@ -316,5 +375,18 @@ export class Users implements OnInit {
   // ── NAVIGATE TO DETAIL ─────────────────────────────────
   viewDetail(user: User) {
     this.router.navigate(['/admin/users', user.id]);
+  }
+
+  // ── DELETE USER ──────────────────────────────────────────
+  deleteUser(user: User) {
+    this.userService.deleteUser(user.id).subscribe({
+      next: () => {
+        this.message.success(`User ${user.username} deleted`);
+        this.loadUsers();
+      },
+      error: (err) => {
+        this.message.error(extractErrorMessage(err, 'Delete failed'));
+      },
+    });
   }
 }

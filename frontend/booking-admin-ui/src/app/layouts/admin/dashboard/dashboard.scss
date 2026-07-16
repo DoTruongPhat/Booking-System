@@ -1,50 +1,135 @@
-.dashboard {
-  padding: 0;
-}
+@use '../../../../styles/tokens' as t;
 
-.dashboard-header {
-  margin-bottom: 24px;
+.admin-page {
+  padding: t.$spacing-5;
 
-  h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #1f2328;
-    margin-bottom: 4px;
-  }
-
-  p {
-    color: #6b7280;
-    font-size: 14px;
+  &__title {
+    font-family: t.$font-family-heading;
+    font-size: t.$font-size-2xl;
+    font-weight: t.$font-weight-bold;
+    color: t.$color-text-primary;
+    margin: 0 0 t.$spacing-5;
   }
 }
 
+// === STATS ===
 .stats-row {
-  margin-bottom: 24px;
+  margin-bottom: t.$spacing-6;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: t.$spacing-4;
 }
 
 .stat-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: t.$radius-lg;
 
-  :host ::ng-deep {
-    .ant-statistic-title {
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    .ant-statistic-content {
-      font-size: 28px;
-      font-weight: 600;
-    }
+  &--warning ::ng-deep .ant-statistic-content-value {
+    color: #faad14;
   }
 }
 
-.content-row {
-  margin-bottom: 24px;
+// === SECTIONS ===
+.section-title {
+  font-family: t.$font-family-heading;
+  font-size: t.$font-size-lg;
+  font-weight: t.$font-weight-semibold;
+  color: t.$color-text-primary;
+  margin: 0 0 t.$spacing-4;
+  display: flex;
+  align-items: center;
+  gap: t.$spacing-2;
+
+  span[nz-icon] {
+    color: t.$color-primary;
+  }
 }
 
-.content-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  min-height: 400px;
+.hotel-section {
+  margin-bottom: t.$spacing-6;
+}
+
+.detail-section {
+  background: t.$color-white;
+  border: 1px solid t.$color-border-light;
+  border-radius: t.$radius-xl;
+  padding: t.$spacing-5;
+}
+
+// === HOTEL SELECTOR ===
+.hotel-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: t.$spacing-3;
+
+  &__card {
+    display: flex;
+    align-items: center;
+    gap: t.$spacing-3;
+    padding: t.$spacing-3;
+    background: t.$color-white;
+    border: 2px solid t.$color-border-light;
+    border-radius: t.$radius-lg;
+    cursor: pointer;
+    transition: t.$transition-base;
+    position: relative;
+
+    &:hover {
+      border-color: t.$color-primary-200;
+      box-shadow: t.$shadow-sm;
+    }
+
+    &.active {
+      border-color: t.$color-primary;
+      background: t.$color-primary-50;
+    }
+  }
+
+  &__thumb {
+    width: 64px;
+    height: 48px;
+    border-radius: t.$radius-sm;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+
+    strong {
+      font-size: t.$font-size-sm;
+      font-weight: t.$font-weight-semibold;
+      color: t.$color-text-primary;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    span {
+      font-size: t.$font-size-xs;
+      color: t.$color-text-muted;
+    }
+  }
+
+  &__status {
+    flex-shrink: 0;
+  }
+}
+
+// === TABLE HELPERS ===
+.booking-code {
+  font-size: t.$font-size-xs;
+  font-family: monospace;
+  color: t.$color-primary;
+}
+
+.price-cell {
+  font-weight: t.$font-weight-semibold;
+  color: t.$color-primary;
+  font-size: t.$font-size-sm;
 }

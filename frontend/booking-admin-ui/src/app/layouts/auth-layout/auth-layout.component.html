@@ -1,22 +1,95 @@
-<nz-layout class="auth-layout">
-  <!-- HEADER -->
-  <nz-header class="auth-header">
-    <div class="logo">
-      <a routerLink="/">SmartBooking</a>
-    </div>
-    <div class="nav">
-      <a routerLink="/auth/login">Login</a>
-      <a routerLink="/auth/register">Register</a>
-    </div>
-  </nz-header>
+<!-- Auth Layout: 2 cột với background animation + Form bên phải -->
+<div class="auth-layout">
+  <!-- === LEFT SIDE: Banner với animation === -->
+  <div class="auth-banner">
+    <!-- Background image blur -->
+    <div class="banner-bg"></div>
+    <!-- Overlay gradient -->
+    <div class="banner-overlay"></div>
 
-  <!-- CONTENT -->
-  <nz-content class="auth-content">
-    <div class="auth-container">
+    <!-- Floating orbs animation -->
+    <span class="banner-orb banner-orb-1"></span>
+    <span class="banner-orb banner-orb-2"></span>
+    <span class="banner-orb banner-orb-3"></span>
+    <span class="banner-orb banner-orb-4"></span>
+
+    <!-- Banner content -->
+    <div class="banner-content">
+      <a routerLink="/" class="logo" (click)="closeDropdown()">
+        <app-logo></app-logo>
+        <span class="logo-text">SmartBooking</span>
+      </a>
+
+      <!-- Hero text -->
+      <div class="banner-hero">
+        <div class="banner-badge">
+          <span class="badge-pulse"></span>
+          Nền tảng đặt phòng tại Việt Nam
+        </div>
+        <h1 class="banner-title">
+          Khám phá &amp; đặt phòng<br />
+          <span class="banner-accent">khách sạn tuyệt vời</span>
+        </h1>
+        <p class="banner-subtitle">
+          Hơn 10,000+ khách sạn với giá tốt nhất. Đặt phòng nhanh chóng, thanh toán an toàn.
+        </p>
+      </div>
+
+      <!-- Features list -->
+      <div class="banner-features">
+        <div class="banner-feature">
+          <div class="feature-icon-wrap">
+            <span nz-icon nzType="dollar-circle" nzTheme="fill"></span>
+          </div>
+          <div>
+            <strong>Giá tốt nhất</strong>
+            <span>Hoàn tiền chênh lệch nếu rẻ hơn</span>
+          </div>
+        </div>
+        <div class="banner-feature">
+          <div class="feature-icon-wrap">
+            <span nz-icon nzType="thunderbolt" nzTheme="fill"></span>
+          </div>
+          <div>
+            <strong>Đặt phòng nhanh</strong>
+            <span>Xác nhận tức thì qua email</span>
+          </div>
+        </div>
+        <div class="banner-feature">
+          <div class="feature-icon-wrap">
+            <span nz-icon nzType="customer-service" nzTheme="fill"></span>
+          </div>
+          <div>
+            <strong>Hỗ trợ 24/7</strong>
+            <span>Đội ngũ tư vấn luôn sẵn sàng</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="banner-stats">
+        <div class="stat-item">
+          <strong>10K+</strong>
+          <span>Khách sạn</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <strong>50K+</strong>
+          <span>Đánh giá</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <strong>4.8</strong>
+          <span>Sao trung bình</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === RIGHT SIDE: Form content === -->
+  <div class="auth-content">
+    <div class="auth-form-wrapper">
       <router-outlet></router-outlet>
     </div>
-  </nz-content>
-
-  <!-- FOOTER -->
-  <nz-footer class="auth-footer"> SmartBooking ©2024 </nz-footer>
-</nz-layout>
+  </div>
+</div>

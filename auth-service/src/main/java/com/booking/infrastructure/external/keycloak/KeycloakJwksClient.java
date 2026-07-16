@@ -2,7 +2,6 @@ package com.booking.infrastructure.external.keycloak;
 
 import com.booking.application.port.out.KeycloakJwksPort;
 import com.booking.infrastructure.config.AppProperties;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -38,14 +37,14 @@ public class KeycloakJwksClient implements KeycloakJwksPort {
     private Map<String, PublicKey> keyCache = new HashMap<>();
     private Instant cacheExpiry = Instant.EPOCH;
 
-    @PostConstruct
-    public void init() {
-        try {
-            refreshCache();
-        } catch (Exception e) {
-            log.warn("[KC] Initial JWKS load failed: {}", e.getMessage());
-        }
-    }
+//     @PostConstruct
+//     public void init() {
+//         try {
+//             refreshCache();
+//         } catch (Exception e) {
+//             log.warn("[KC] Initial JWKS load failed: {}", e.getMessage());
+//         }
+//     }
 
     @Override
     public PublicKey getPublicKey(String kid) {

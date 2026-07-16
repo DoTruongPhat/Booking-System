@@ -11,7 +11,6 @@ public interface TokenRepositoryPort {
     Token save(Token token);
     Optional<Token> findByTokenHash(String tokenHash);
     int deactivateAllByUserId(UUID userId, String reason);
-    void updateLastUsed(String tokenHash);
 
     /**
      * Tìm token đang active của user
@@ -37,4 +36,10 @@ public interface TokenRepositoryPort {
      * @return Optional<Token> → empty nếu không tìm thấy
      */
     Optional<Token> findByJti(String jti);
+
+ /**
+ * Deactivate 1 token theo JTI (logout, revoke)
+ * @return true nếu deactivate thành công
+ */
+ boolean deactivateByJti(String jti, String reason);
 }

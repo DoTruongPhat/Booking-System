@@ -10,4 +10,8 @@ import com.booking.presentation.request.ExchangeCodeRequest;
 public interface ExchangeKeycloakCodeUseCase {
 
     LoginResponse exchange(ExchangeCodeRequest request, String ipAddress, String userAgent);
+
+    String buildAuthorizationUrl(String state, String provider);
+
+    LoginResponse handleCallback(String code, String ipAddress, String userAgent);
 }

@@ -1,59 +1,479 @@
-.auth-layout {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+// ═══════════════════════════════════════════════════════════
+// AUTH LAYOUT - 2 cột: Banner trái (animation) + Form phải
+// Sử dụng design tokens
+// ═══════════════════════════════════════════════════════════
 
-.auth-header {
-  background: #fff;
-  padding: 0 24px;
+@use '../../../styles/tokens' as t;
+
+.logo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  gap: 8px;
+}
 
-  .logo a {
-    font-size: 20px;
-    font-weight: 600;
-    color: #1890ff;
-    text-decoration: none;
+.logo-text {
+  font-weight: t.$font-weight-bold;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-lg;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, t.$color-primary 0%, t.$color-primary-dark 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: opacity 0.2s ease;
+
+  .logo:hover & {
+    opacity: 0.85;
   }
+}
 
-  .nav {
-    display: flex;
-    gap: 16px;
+@media (max-width: 480px) {
+  .logo-text {
+    display: none;
+  }
+}
 
-    a {
-      color: #6b7280;
-      text-decoration: none;
-      padding: 8px 16px;
-      border-radius: 4px;
+.auth-layout {
+  font-family: t.$font-family-base;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: t.$color-bg;
 
-      &:hover {
-        color: #1890ff;
-        background: #f7f8fa;
-      }
+  @media (max-width: t.$breakpoint-lg) {
+    grid-template-columns: 1fr;
+
+    .auth-banner {
+      display: none;
     }
   }
 }
 
-.auth-content {
-  flex: 1;
+// ═══════════════════════════════════════════════════════════
+// === LEFT BANNER - ẢNH ĐỘNG + ANIMATION ===
+// ═══════════════════════════════════════════════════════════
+.auth-banner {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
+  padding: t.$spacing-12 t.$spacing-10;
+  isolation: isolate;
+  min-height: 100vh;
+  animation: auth-banner-fade-in 0.8s t.$anim-ease-out;
 }
 
-.auth-container {
-  width: 100%;
-  max-width: 420px;
+@keyframes auth-banner-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.auth-footer {
+// Ảnh nền mờ
+.banner-bg {
+  position: absolute;
+  inset: 0;
+  background-image: url('/images/LoginBg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(2px) brightness(0.5) saturate(1.1);
+  transform: scale(1.08);
+  z-index: t.$z-hide + 2;
+  animation: auth-bg-pan 30s ease-in-out infinite alternate;
+}
+
+@keyframes auth-bg-pan {
+  0% {
+    transform: scale(1.08) translateX(0);
+  }
+  100% {
+    transform: scale(1.12) translateX(-20px);
+  }
+}
+
+// Overlay gradient
+.banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(26, 26, 46, 0.85) 0%,
+    rgba(91, 170, 96, 0.55) 50%,
+    rgba(26, 26, 46, 0.78) 100%
+  );
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: t.$z-hide + 1;
+}
+
+// Floating orbs
+.banner-orb {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+  z-index: t.$z-hide + 1;
+
+  &.banner-orb-1 {
+    width: 360px;
+    height: 360px;
+    top: -100px;
+    right: -100px;
+    animation: orb-float-a 9s ease-in-out infinite;
+  }
+
+  &.banner-orb-2 {
+    width: 280px;
+    height: 280px;
+    bottom: -80px;
+    left: -80px;
+    animation: orb-float-b 11s ease-in-out infinite;
+  }
+
+  &.banner-orb-3 {
+    width: 180px;
+    height: 180px;
+    top: 35%;
+    right: 15%;
+    animation: orb-float-c 13s ease-in-out infinite;
+    animation-delay: 2.5s;
+  }
+
+  &.banner-orb-4 {
+    width: 140px;
+    height: 140px;
+    top: 60%;
+    left: 20%;
+    animation: orb-float-a 10s ease-in-out infinite;
+    animation-delay: 1.5s;
+  }
+}
+
+@keyframes orb-float-a {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-20px, 20px);
+  }
+}
+
+@keyframes orb-float-b {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(30px, -25px);
+  }
+}
+
+@keyframes orb-float-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-15px, -30px) scale(1.05);
+  }
+}
+
+// === Banner content ===
+.banner-content {
+  position: relative;
+  z-index: t.$z-base;
+  max-width: 480px;
+  color: t.$color-white;
+  animation: banner-content-in 0.8s t.$anim-ease-out both;
+  animation-delay: 0.2s;
+}
+
+@keyframes banner-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// === Brand ===
+.banner-brand {
+  display: flex;
+  align-items: center;
+  gap: t.$spacing-3;
+  margin-bottom: t.$spacing-10;
+  text-decoration: none;
+}
+
+.banner-logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  overflow: hidden;
+
+  border: 2px solid rgba(255, 255, 255, 0.8);
+
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.3),
+    0 0 40px rgba(255, 255, 255, 0.15);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.banner-brand:hover .banner-logo {
+  transform: rotate(-6deg) scale(1.05);
+}
+
+.banner-brand-text {
+  font-family: t.$font-family-heading;
+  font-size: t.$font-size-xl;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-text-inverse;
+  letter-spacing: t.$letter-spacing-tight;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+// === Hero ===
+.banner-hero {
+  margin-bottom: t.$spacing-8;
+}
+
+.banner-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$spacing-2;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: t.$spacing-2 t.$spacing-4;
+  border-radius: t.$radius-full;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-medium;
+  color: t.$color-white;
+  margin-bottom: t.$spacing-5;
+}
+
+.badge-pulse {
+  width: 8px;
+  height: 8px;
+  background: t.$color-primary-300;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(159, 213, 166, 0.7);
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(159, 213, 166, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(159, 213, 166, 0);
+  }
+}
+
+.banner-title {
+  font-family: t.$font-family-heading;
+  font-size: t.$font-size-5xl;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-white;
+  line-height: t.$line-height-tight;
+  letter-spacing: t.$letter-spacing-tight;
+  margin: 0 0 t.$spacing-4 0;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+
+  @media (max-width: t.$breakpoint-xl) {
+    font-size: t.$font-size-4xl;
+  }
+}
+
+.banner-accent {
+  color: t.$color-primary-200;
+  font-style: italic;
+  position: relative;
+  display: inline-block;
+}
+
+.banner-subtitle {
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-md;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: t.$line-height-relaxed;
+  margin: 0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+}
+
+// === Features ===
+.banner-features {
+  display: flex;
+  flex-direction: column;
+  gap: t.$spacing-4;
+  margin-bottom: t.$spacing-8;
+}
+
+.banner-feature {
+  display: flex;
+  align-items: center;
+  gap: t.$spacing-3;
+  padding: t.$spacing-3 t.$spacing-4;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: t.$radius-md;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: t.$transition-smooth;
+  animation: feature-slide-in 0.6s t.$anim-ease-out both;
+
+  &:nth-child(1) {
+    animation-delay: 0.3s;
+  }
+  &:nth-child(2) {
+    animation-delay: 0.45s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.6s;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(4px);
+  }
+
+  strong {
+    display: block;
+    font-family: t.$font-family-base;
+    font-size: t.$font-size-base;
+    font-weight: t.$font-weight-semibold;
+    color: t.$color-white;
+  }
+
+  span {
+    display: block;
+    font-size: t.$font-size-sm;
+    color: rgba(255, 255, 255, 0.75);
+  }
+}
+
+@keyframes feature-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// .feature-icon-wrap {
+//   width: 40px;
+//   height: 40px;
+//   background: rgba(111, 191, 115, 0.25);
+//   border-radius: t.$radius-md;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   font-size: t.$font-size-xl;
+//   color: t.$color-white;
+//   flex-shrink: 0;
+//   border: 1px solid rgba(255, 255, 255, 0.2);
+// }
+
+// === Stats ===
+.banner-stats {
+  display: flex;
+  align-items: center;
+  gap: t.$spacing-4;
+  padding: t.$spacing-4 t.$spacing-5;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: t.$radius-lg;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.stat-item {
+  flex: 1;
   text-align: center;
-  background: #fff;
-  padding: 16px;
-  color: #6b7280;
+
+  strong {
+    display: block;
+    font-family: t.$font-family-heading;
+    font-size: t.$font-size-2xl;
+    font-weight: t.$font-weight-bold;
+    color: t.$color-white;
+    line-height: t.$line-height-tight;
+  }
+
+  span {
+    display: block;
+    font-size: t.$font-size-xs;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 2px;
+  }
+}
+
+.stat-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+// ═══════════════════════════════════════════════════════════
+// === RIGHT SIDE: Form content ===
+// ═══════════════════════════════════════════════════════════
+.auth-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: t.$spacing-8 t.$spacing-6;
+  min-height: 100vh;
+  position: relative;
+  overflow-y: auto;
+}
+
+.auth-form-wrapper {
+  width: 100%;
+  max-width: 480px;
+  animation: form-page-in 0.5s t.$anim-ease-out;
+}
+
+@keyframes form-page-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// === Reduced motion ===
+@media (prefers-reduced-motion: reduce) {
+  .auth-banner,
+  .banner-content,
+  .banner-feature,
+  .banner-bg,
+  .banner-orb,
+  .badge-pulse,
+  .auth-form-wrapper {
+    animation: none !important;
+  }
 }

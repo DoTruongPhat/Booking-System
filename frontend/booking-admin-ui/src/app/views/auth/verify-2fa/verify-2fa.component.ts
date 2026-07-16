@@ -61,23 +61,24 @@ export class Verify2faComponent {
     const otp = this.otpForm.value.otp!;
     this.isSubmitting = true;
 
-    // Gọi backend verify OTP
+    // Gọi backend verify OTP (withCredentials để nhận HttpOnly cookie từ BE)
     this.http
-      .post<LoginResponse>('/api/auth/2fa/verify', {
-        sessionToken,
-        otp,
-      })
+      .post<LoginResponse>(
+        '/api/auth/2fa/verify',
+        { sessionToken, otp },
+        { withCredentials: true },
+      )
       .subscribe({
         next: (response) => {
           this.isSubmitting = false;
 
-          if (!response.token) {
+          if (!response.username) {
             this.message.error('Invalid OTP response.');
             return;
           }
 
-          // Lưu token + thông tin user
-          this.auth.saveToken(response.token);
+          // Token do BE set qua HttpOnly cookie → FE không lưu
+          // Chỉ lưu user info để hiển thị UI
           this.auth.saveUser({
             username: response.username,
             email: response.email,
@@ -88,6 +89,14 @@ export class Verify2faComponent {
           // Dọn session storage
           sessionStorage.removeItem('mfaSessionToken');
           sessionStorage.removeItem('mfaUsername');
+
+          // Phase 7: nếu user cần bổ sung phone → onboarding
+          if (response.phoneRequired) {
+            this.router.navigate(['/user/profile'], {
+              queryParams: { onboarding: 'true' },
+            });
+            return;
+          }
 
           const returnUrl =
             this.route.snapshot.queryParamMap.get('returnUrl') || '/admin/dashboard';

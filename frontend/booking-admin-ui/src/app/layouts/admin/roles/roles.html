@@ -1,0 +1,267 @@
+<div class="roles-page">
+  <!-- ═══ HEADER ═══ -->
+  <div class="page-header">
+    <div>
+      <h1>Roles & Permissions</h1>
+      <p class="subtitle">Quản lý vai trò và quyền hạn trong hệ thống</p>
+    </div>
+    <button nz-button nzType="primary" (click)="openCreateModal()">
+      <span nz-icon nzType="plus"></span> Tạo role mới
+    </button>
+  </div>
+
+  <!-- ═══ ALERT ═══ -->
+  <nz-alert
+    nzType="info"
+    nzShowIcon
+    nzMessage="Hệ thống có 3 role chính"
+    nzDescription="ADMIN: Toàn quyền · HOST: Quản lý khách sạn của mình · USER: Khách hàng. Không thể xóa role hệ thống, chỉ có thể sửa tên/mô tả/permission."
+    style="margin-bottom: 16px;"
+  ></nz-alert>
+
+  <!-- ═══ TABLE ═══ -->
+  <nz-card class="table-card">
+    <nz-table
+      [nzData]="roles"
+      [nzShowPagination]="false"
+      nzSize="middle"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="60px"></th>
+          <th>Code</th>
+          <th>Tên</th>
+          <th>Mô tả</th>
+          <th nzWidth="120px">Permissions</th>
+          <th nzWidth="100px">Trạng thái</th>
+          <th>Ngày tạo</th>
+          <th nzWidth="200px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let role of roles">
+          <td>
+            <nz-avatar
+              [nzText]="role.code.charAt(0)"
+              [style.background-color]="getRoleColor(role.code) === 'red' ? '#f5222d' :
+                                          getRoleColor(role.code) === 'orange' ? '#fa8c16' :
+                                          getRoleColor(role.code) === 'blue' ? '#1890ff' : '#8c8c8c'"
+            ></nz-avatar>
+          </td>
+          <td>
+            <nz-tag [nzColor]="getRoleColor(role.code)">
+              <strong>{{ role.code }}</strong>
+            </nz-tag>
+            <span *ngIf="isSystemRole(role.id)" class="system-badge">
+              <nz-tag nzColor="default">Hệ thống</nz-tag>
+            </span>
+          </td>
+          <td>
+            <div class="role-name">{{ role.name }}</div>
+          </td>
+          <td>
+            <div class="role-desc">{{ role.description }}</div>
+          </td>
+          <td>
+            <button
+              nz-button
+              nzType="link"
+              nzSize="small"
+              (click)="openPermissionDetail(role)"
+            >
+              <span nz-icon nzType="key"></span>
+              {{ role.permissions.length }} quyền
+            </button>
+          </td>
+          <td>
+            <nz-tag [nzColor]="role.active ? 'green' : 'default'">
+              {{ role.active ? 'Active' : 'Inactive' }}
+            </nz-tag>
+          </td>
+          <td>
+            <span class="text-muted">{{ formatDate(role.createdAt) }}</span>
+          </td>
+          <td>
+            <nz-space nzSize="small">
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Xem tất cả quyền"
+                (click)="openPermissionDetail(role)"
+              >
+                <span nz-icon nzType="eye"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Sửa role"
+                (click)="openEditModal(role)"
+              >
+                <span nz-icon nzType="edit"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nzDanger
+                nzType="primary"
+                nz-tooltip="Xóa role"
+                nz-popconfirm
+                nzPopconfirmTitle="Xóa role {{ role.name }}?"
+                nzPopconfirmDescription="Role sẽ bị xóa khỏi hệ thống. User đang dùng role này sẽ bị ảnh hưởng."
+                nzOkText="Xóa"
+                nzOkType="danger"
+                (nzOnConfirm)="deleteRole(role)"
+                [disabled]="isSystemRole(role.id)"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </nz-space>
+          </td>
+        </tr>
+
+        <tr *ngIf="!roles.length">
+          <td colspan="8" class="empty-row">
+            <nz-empty nzNotFoundContent="Chưa có role nào"></nz-empty>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+</div>
+
+<!-- ═══ CREATE / EDIT ROLE MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isFormModalOpen"
+  [nzTitle]="editingRole ? 'Sửa role: ' + editingRole.name : 'Tạo role mới'"
+  [nzOkLoading]="isSubmitting"
+  [nzOkText]="editingRole ? 'Cập nhật' : 'Tạo'"
+  nzWidth="900"
+  (nzOnCancel)="isFormModalOpen = false"
+  (nzOnOk)="submitForm()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="form" nzLayout="vertical">
+      <!-- CODE + NAME -->
+      <div class="form-row">
+        <nz-form-item class="form-col">
+          <nz-form-label nzRequired>Code (UPPERCASE)</nz-form-label>
+          <nz-form-control nzErrorTip="Chỉ chứa chữ hoa và dấu _">
+            <input
+              nz-input
+              formControlName="code"
+              placeholder="VD: MANAGER_NORTH"
+              style="text-transform: uppercase;"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item class="form-col">
+          <nz-form-label nzRequired>Tên hiển thị</nz-form-label>
+          <nz-form-control nzErrorTip="Tối thiểu 3 ký tự">
+            <input nz-input formControlName="name" placeholder="VD: Quản lý miền Bắc" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
+      <!-- DESCRIPTION -->
+      <nz-form-item>
+        <nz-form-label nzRequired>Mô tả</nz-form-label>
+        <nz-form-control nzErrorTip="Tối thiểu 5 ký tự">
+          <textarea
+            nz-input
+            formControlName="description"
+            rows="2"
+            placeholder="Mô tả ngắn về role này"
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+
+      <!-- ACTIVE -->
+      <nz-form-item>
+        <nz-form-label>Trạng thái</nz-form-label>
+        <nz-form-control>
+          <nz-switch formControlName="active"></nz-switch>
+          <span class="switch-hint">
+            {{ form.value.active ? 'Role đang hoạt động' : 'Role bị vô hiệu hóa' }}
+          </span>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-divider nzText="Permissions ({{ getSelectedPermissionCount() }})"></nz-divider>
+
+      <!-- PERMISSION GROUPS -->
+      <div class="permission-groups">
+        <div class="perm-group" *ngFor="let group of permissionGroups">
+          <div class="group-header">
+            <label nz-checkbox
+              [ngModel]="isGroupAllChecked(group)"
+              [nzIndeterminate]="isGroupIndeterminate(group)"
+              (ngModelChange)="toggleGroup(group, $event)"
+              [ngModelOptions]="{standalone: true}">
+              <span class="group-title">
+                <span nz-icon [nzType]="group.icon"></span>
+                {{ group.label }}
+                <nz-tag>{{ group.permissions.length }}</nz-tag>
+              </span>
+            </label>
+          </div>
+          <div class="group-items">
+            <label nz-checkbox
+              *ngFor="let p of group.permissions"
+              [ngModel]="permissionChecks[p.code]"
+              (ngModelChange)="permissionChecks[p.code] = $event"
+              [ngModelOptions]="{standalone: true}"
+              class="perm-checkbox">
+              <div class="perm-content">
+                <div class="perm-code">{{ p.code }}</div>
+                <div class="perm-name">{{ p.name }}</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </form>
+  </ng-container>
+</nz-modal>
+
+<!-- ═══ VIEW PERMISSIONS DETAIL MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isPermissionDetailModalOpen"
+  [nzTitle]="'Tất cả quyền của role: ' + (selectedRole?.name || '')"
+  [nzFooter]="null"
+  nzWidth="700"
+  (nzOnCancel)="isPermissionDetailModalOpen = false"
+>
+  <ng-container *nzModalContent>
+    <div class="detail-summary">
+      <nz-tag [nzColor]="getRoleColor(selectedRole?.code || '')" class="role-tag">
+        <strong>{{ selectedRole?.code }}</strong>
+      </nz-tag>
+      <nz-tag nzColor="purple">
+        Tổng: {{ selectedPermissions.length }} permission
+      </nz-tag>
+    </div>
+
+    <div class="detail-groups">
+      <div class="detail-group" *ngFor="let group of permissionGroups">
+        <ng-container *ngIf="hasAnyPermissionInGroup(group)">
+          <div class="detail-group-title">
+            <span nz-icon [nzType]="group.icon"></span>
+            {{ group.label }}
+          </div>
+          <div class="detail-items">
+            <div class="detail-item" *ngFor="let p of group.permissions">
+              <ng-container *ngIf="isPermissionInRole(p)">
+                <div class="detail-code">{{ p.code }}</div>
+                <div class="detail-name">{{ p.name }}</div>
+                <nz-tag nzColor="cyan" *ngIf="p.action">{{ p.action }}</nz-tag>
+              </ng-container>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </ng-container>
+</nz-modal>

@@ -1,14 +1,23 @@
+// ═══════════════════════════════════════════════════════════
+// API KEY INTERCEPTOR
+// Gắn header X-API-KEY vào request đến BE (/api/*).
+// Bỏ qua request đến domain khác (Keycloak, CDN, etc).
+// ═══════════════════════════════════════════════════════════
+
 import { HttpInterceptorFn } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 export const apiKeyInterceptor: HttpInterceptorFn = (req, next) => {
-  // Lấy API key từ environment
-  const apiKey = 'dev-api-key-abc123';
+  // Chỉ gắn cho request đến BE của mình
+  if (!req.url.startsWith('/api/') && !req.url.startsWith(environment.apiBaseUrl)) {
+    return next(req);
+  }
 
-  const cloned = req.clone({
-    setHeaders: {
-      'X-API-KEY': apiKey,
-    },
-  });
-
-  return next(cloned);
+  return next(
+    req.clone({
+      setHeaders: {
+        'X-API-KEY': environment.apiKey,
+      },
+    }),
+  );
 };

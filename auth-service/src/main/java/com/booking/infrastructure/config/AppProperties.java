@@ -25,6 +25,7 @@ public class AppProperties {
     @Data
     public static class KeycloakProps {
         private String url;
+        private String issuerUrl;
         private String realm;
         private String clientId;
         private String clientSecret;
@@ -32,7 +33,9 @@ public class AppProperties {
         private String adminUsername;       // Admin user
         private String adminPassword;
         private int jwksCacheTtl = 3600;    // JWKS cache TTL (giây)
-        private int sessionTtl = 3600;      // Session TTL (giây)
+        private int sessionTtl = 3600;
+        private String bffCallbackUrl = "http://localhost:8081/api/auth/sso/callback";// Session TTL (giây)
+
     }
 
     @Data
@@ -54,6 +57,7 @@ public class AppProperties {
     @Data
     public static class JwtProps {
         private String secretKey;
+        private long ttlSeconds = 3600;
     }
 
 }

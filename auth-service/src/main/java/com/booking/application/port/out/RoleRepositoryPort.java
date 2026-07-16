@@ -1,6 +1,8 @@
 package com.booking.application.port.out;
 
 import com.booking.domain.model.Role;
+
+import java.util.List;
 import java.util.Optional;
 
 public interface RoleRepositoryPort {
@@ -9,4 +11,5 @@ public interface RoleRepositoryPort {
      * Dùng khi register: gán role USER mặc định
      */
     Optional<Role> findByCode(String code);
+    List<Role> findAll();
 }

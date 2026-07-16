@@ -1,0 +1,453 @@
+<div class="bookings-page">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <h1>Quản lý đơn đặt phòng</h1>
+      <p class="subtitle">
+        <ng-container *ngIf="isHost; else adminSubtitle">
+          Bookings của các khách sạn bạn sở hữu
+        </ng-container>
+        <ng-template #adminSubtitle> Tất cả đơn đặt phòng trong hệ thống </ng-template>
+      </p>
+    </div>
+    <!-- EXPORT BUTTONS -->
+    <nz-space *ngIf="isAdmin()">
+      <button *nzSpaceItem nz-button nzType="default" (click)="onExportExcel()">
+        <span nz-icon nzType="file-excel"></span> Export Excel
+      </button>
+      <button *nzSpaceItem nz-button nzType="default" (click)="onExportRevenuePdf()">
+        <span nz-icon nzType="bar-chart"></span> Revenue PDF
+      </button>
+      <button *nzSpaceItem nz-button nzType="default" (click)="onExportRevenueExcel()">
+        <span nz-icon nzType="fund"></span> Revenue Excel
+      </button>
+    </nz-space>
+  </div>
+
+  <!-- ALERT cho HOST -->
+  <nz-alert
+    *ngIf="isHost"
+    nzType="info"
+    nzShowIcon
+    nzMessage="Bạn đang xem ở chế độ Host"
+    nzDescription="Chỉ hiển thị các booking thuộc khách sạn của bạn. Bạn có thể hủy đơn. Refund chỉ admin."
+    style="margin-bottom: 16px"
+  ></nz-alert>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Tổng bookings</div>
+      <div class="stat-value">{{ bookings.length }}</div>
+    </div>
+    <div class="stat-card stat-pending">
+      <div class="stat-label">Chờ xác nhận</div>
+      <div class="stat-value">{{ countByStatus('PENDING') }}</div>
+    </div>
+    <div class="stat-card stat-confirmed">
+      <div class="stat-label">Đã xác nhận</div>
+      <div class="stat-value">{{ countByStatus('CONFIRMED') }}</div>
+    </div>
+    <div class="stat-card stat-completed">
+      <div class="stat-label">Hoàn thành</div>
+      <div class="stat-value">{{ countByStatus('COMPLETED') }}</div>
+    </div>
+    <div class="stat-card stat-revenue">
+      <div class="stat-label">Doanh thu (PAID)</div>
+      <div class="stat-value">{{ formatVND(totalRevenue) }}</div>
+    </div>
+  </div>
+
+  <!-- FILTER -->
+  <nz-card class="filter-card">
+    <div class="filter-bar">
+      <nz-input-group [nzPrefix]="searchPrefix" class="search-input">
+        <input
+          nz-input
+          placeholder="Tìm theo ID, tên, khách sạn..."
+          [(ngModel)]="keyword"
+          (keyup.enter)="onSearch()"
+        />
+        <ng-template #searchPrefix><span nz-icon nzType="search"></span></ng-template>
+      </nz-input-group>
+
+      <nz-select
+        [(ngModel)]="filterStatus"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Status"
+        class="filter-select"
+      >
+        <nz-option nzValue="all" nzLabel="Tất cả status"></nz-option>
+        <nz-option
+          *ngFor="let s of allStatuses"
+          [nzValue]="s"
+          [nzLabel]="statusConfig[s].label"
+        ></nz-option>
+      </nz-select>
+
+      <nz-select
+        [(ngModel)]="filterPayment"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Payment"
+        class="filter-select"
+      >
+        <nz-option nzValue="all" nzLabel="Tất cả payment"></nz-option>
+        <nz-option
+          *ngFor="let p of allPaymentStatuses"
+          [nzValue]="p"
+          [nzLabel]="paymentConfig[p].label"
+        ></nz-option>
+      </nz-select>
+
+      <nz-select
+        [(ngModel)]="filterHotel"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Hotel"
+        class="filter-select"
+      >
+        <nz-option nzValue="all" nzLabel="Tất cả hotel"></nz-option>
+        <nz-option *ngFor="let h of uniqueHotels" [nzValue]="h.id" [nzLabel]="h.name"></nz-option>
+      </nz-select>
+
+      <nz-range-picker
+        [(ngModel)]="dateRange"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Khoảng ngày"
+      ></nz-range-picker>
+
+      <button nz-button nzType="primary" (click)="onSearch()">
+        <span nz-icon nzType="search"></span> Tìm
+      </button>
+      <button nz-button (click)="resetFilter()"><span nz-icon nzType="reload"></span> Reset</button>
+      <button nz-button (click)="loadBookings()" nz-tooltip="Reload">
+        <span nz-icon nzType="sync"></span>
+      </button>
+    </div>
+  </nz-card>
+
+  <!-- TABLE -->
+  <nz-card class="table-card">
+    <nz-table
+      [nzData]="bookings"
+      [nzLoading]="isLoading"
+      [nzShowPagination]="false"
+      nzSize="middle"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="100px">ID</th>
+          <th>Khách hàng</th>
+          <th>Khách sạn</th>
+          <th nzWidth="100px">Phòng</th>
+          <th nzWidth="200px">Check-in → out</th>
+          <th nzWidth="140px" nzRight>Doanh thu</th>
+          <th nzWidth="120px">Status</th>
+          <th nzWidth="120px">Payment</th>
+          <th nzWidth="200px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let b of bookings" (click)="viewDetail(b)" class="booking-row">
+          <td>
+            <code class="booking-id">{{ b.id }}</code>
+          </td>
+          <td>
+            <div class="customer-name">{{ b.guestInfo.fullName }}</div>
+            <div class="customer-meta text-muted">{{ b.guestInfo.email }}</div>
+          </td>
+          <td>
+            <div class="hotel-name">{{ b.hotelName }}</div>
+            <div class="text-muted small">{{ b.hotelAddress }}</div>
+          </td>
+          <td>
+            <div>{{ b.roomName }}</div>
+            <div class="text-muted small">
+              {{ b.guests.adults || 0 }} người lớn
+              <ng-container *ngIf="b.guests.children">
+                · {{ b.guests.children }} trẻ em
+              </ng-container>
+            </div>
+          </td>
+          <td>
+            <div class="date-range">
+              <span class="text-muted">In:</span> {{ formatDate(b.checkIn) }}
+            </div>
+            <div class="date-range">
+              <span class="text-muted">Out:</span> {{ formatDate(b.checkOut) }}
+            </div>
+            <div class="text-muted small">{{ b.nights }} đêm</div>
+          </td>
+          <td nzRight>
+            <div class="revenue">{{ formatVND(b.finalPrice) }}</div>
+            <div class="text-muted small">{{ b.paymentMethod }}</div>
+          </td>
+          <td>
+            <nz-tag [nzColor]="statusConfig[b.status].color">
+              {{ statusConfig[b.status].label }}
+            </nz-tag>
+          </td>
+          <td>
+            <nz-tag [nzColor]="paymentConfig[b.paymentStatus].color">
+              {{ paymentConfig[b.paymentStatus].label }}
+            </nz-tag>
+          </td>
+          <td (click)="$event.stopPropagation()">
+            <nz-space nzSize="small">
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Xem chi tiết"
+                (click)="viewDetail(b)"
+              >
+                <span nz-icon nzType="eye"></span>
+              </button>
+
+              <!-- CONFIRM (admin only, PENDING only) -->
+              <ng-container *ngIf="isAdmin() && b.status === 'PENDING'">
+                <button
+                  *nzSpaceItem
+                  nz-button
+                  nzSize="small"
+                  nzType="primary"
+                  nz-tooltip="Xác nhận booking"
+                  nz-popconfirm
+                  nzPopconfirmTitle="Xác nhận booking này?"
+                  (nzOnConfirm)="onConfirmBooking(b)"
+                >
+                  <span nz-icon nzType="check-circle"></span>
+                </button>
+              </ng-container>
+
+              <!-- DOWNLOAD PDF (CONFIRMED/COMPLETED) -->
+              <ng-container
+                *ngIf="
+                  b.status === 'CONFIRMED' || b.status === 'COMPLETED' || b.status === 'CANCELLED'
+                "
+              >
+                <button
+                  *nzSpaceItem
+                  nz-button
+                  nzSize="small"
+                  nz-tooltip="Download PDF"
+                  (click)="onDownloadPdf(b)"
+                >
+                  <span nz-icon nzType="file-pdf"></span>
+                </button>
+              </ng-container>
+
+              <!-- DOWNLOAD RECEIPT (CONFIRMED/COMPLETED only) -->
+              <ng-container *ngIf="b.status === 'CONFIRMED' || b.status === 'COMPLETED'">
+                <button
+                  *nzSpaceItem
+                  nz-button
+                  nzSize="small"
+                  nz-tooltip="Download Receipt"
+                  (click)="onDownloadReceipt(b)"
+                >
+                  <span nz-icon nzType="dollar"></span>
+                </button>
+              </ng-container>
+
+              <!-- FORCE CANCEL (host/admin, PENDING/CONFIRMED) -->
+              <ng-container *ngIf="availableNextStatusesForBooking(b).length > 0">
+                <button
+                  *nzSpaceItem
+                  nz-button
+                  nzSize="small"
+                  nzDanger
+                  nz-tooltip="Hủy booking"
+                  (click)="openCancelModal(b)"
+                >
+                  <span nz-icon nzType="close-circle"></span>
+                </button>
+              </ng-container>
+
+              <!-- REFUND (admin only) -->
+              <ng-container
+                *ngIf="isAdmin() && b.paymentStatus === 'PAID' && b.status !== 'CANCELLED'"
+              >
+                <button
+                  *nzSpaceItem
+                  nz-button
+                  nzSize="small"
+                  nzDanger
+                  nzType="primary"
+                  nz-tooltip="Hoàn tiền"
+                  (click)="openRefundModal(b)"
+                >
+                  <span nz-icon nzType="rollback"></span>
+                </button>
+              </ng-container>
+            </nz-space>
+          </td>
+        </tr>
+        <tr *ngIf="!isLoading && !bookings.length">
+          <td colspan="9" class="empty-row">
+            <nz-empty nzNotFoundContent="Không có booking nào"></nz-empty>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+
+    <!-- PAGINATION -->
+    <div class="pagination-wrapper">
+      <nz-pagination
+        [nzPageIndex]="pageIndex"
+        [nzTotal]="total"
+        [nzPageSize]="pageSize"
+        [nzShowSizeChanger]="true"
+        [nzPageSizeOptions]="[10, 20, 50]"
+        (nzPageIndexChange)="onPageChange($event)"
+        (nzPageSizeChange)="onPageSizeChange($event)"
+        [nzShowTotal]="totalTemplate"
+      ></nz-pagination>
+      <ng-template #totalTemplate let-total let-range="range">
+        {{ range[0] }}-{{ range[1] }} of {{ total }} bookings
+      </ng-template>
+    </div>
+  </nz-card>
+</div>
+
+<!-- ═══ STATUS CHANGE MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isStatusModalOpen"
+  [nzTitle]="'Đổi trạng thái: ' + (selectedBooking?.id || '')"
+  [nzOkLoading]="isSubmitting"
+  nzOkText="Cập nhật"
+  (nzOnCancel)="isStatusModalOpen = false"
+  (nzOnOk)="submitStatusChange()"
+>
+  <ng-container *nzModalContent>
+    <nz-alert
+      *ngIf="selectedBooking"
+      nzType="info"
+      nzShowIcon
+      nzMessage="Workflow thủ công"
+      [nzDescription]="
+        'Hiện tại: ' +
+        statusConfig[selectedBooking.status].label +
+        ' → Có thể chuyển sang: ' +
+        (availableNextStatuses.length || 0) +
+        ' trạng thái'
+      "
+      style="margin-bottom: 16px"
+    ></nz-alert>
+
+    <form nz-form [formGroup]="statusForm" nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label nzRequired>Trạng thái mới</nz-form-label>
+        <nz-form-control>
+          <nz-select formControlName="newStatus" nzPlaceHolder="Chọn trạng thái">
+            <nz-option
+              *ngFor="let s of availableNextStatuses"
+              [nzValue]="s"
+              [nzLabel]="statusConfig[s].label"
+            ></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Ghi chú (optional)</nz-form-label>
+        <nz-form-control>
+          <textarea
+            nz-input
+            formControlName="note"
+            rows="2"
+            placeholder="VD: Đã chuẩn bị phòng 1208, view biển"
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal>
+
+<!-- ═══ CANCEL MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isCancelModalOpen"
+  [nzTitle]="'Hủy booking: ' + (selectedBooking?.id || '')"
+  [nzOkLoading]="isSubmitting"
+  nzOkText="Xác nhận hủy"
+  nzOkType="primary"
+  (nzOnCancel)="isCancelModalOpen = false"
+  (nzOnOk)="submitCancel()"
+>
+  <ng-container *nzModalContent>
+    <nz-alert
+      nzType="warning"
+      nzShowIcon
+      nzMessage="Hành động này không thể hoàn tác"
+      nzDescription="Booking sẽ được đánh dấu CANCELLED. Nếu đã thanh toán, cần refund riêng."
+      style="margin-bottom: 16px"
+    ></nz-alert>
+
+    <form nz-form [formGroup]="cancelForm2" nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label nzRequired>Lý do hủy</nz-form-label>
+        <nz-form-control nzErrorTip="Tối thiểu 5 ký tự">
+          <textarea
+            nz-input
+            formControlName="reason"
+            rows="3"
+            placeholder="Nhập lý do hủy booking..."
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal>
+
+<!-- ═══ PAY MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isPayModalOpen"
+  [nzTitle]="'Xác nhận thanh toán: ' + (selectedBooking?.id || '')"
+  [nzOkLoading]="isSubmitting"
+  nzOkText="Đã nhận tiền"
+  nzOkType="primary"
+  (nzOnCancel)="isPayModalOpen = false"
+  (nzOnOk)="confirmPay()"
+>
+  <ng-container *nzModalContent>
+    <p>
+      Xác nhận rằng khoản thanh toán
+      <strong>{{ formatVND(selectedBooking?.finalPrice || 0) }}</strong> của khách đã được nhận?
+    </p>
+    <p class="text-muted">Hành động này sẽ đánh dấu booking là PAID và ghi nhận vào timeline.</p>
+  </ng-container>
+</nz-modal>
+
+<!-- ═══ REFUND MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isRefundModalOpen"
+  [nzTitle]="'Hoàn tiền: ' + (selectedBooking?.id || '')"
+  [nzOkLoading]="isSubmitting"
+  nzOkText="Xác nhận hoàn tiền"
+  nzOkType="primary"
+  (nzOnCancel)="isRefundModalOpen = false"
+  (nzOnOk)="submitRefund()"
+>
+  <ng-container *nzModalContent>
+    <nz-alert
+      nzType="error"
+      nzShowIcon
+      nzMessage="Hoàn tiền (chỉ admin)"
+      [nzDescription]="'Sẽ hoàn ' + formatVND(selectedBooking?.finalPrice || 0) + ' cho khách'"
+      style="margin-bottom: 16px"
+    ></nz-alert>
+
+    <form nz-form [formGroup]="refundForm" nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label nzRequired>Lý do hoàn tiền</nz-form-label>
+        <nz-form-control nzErrorTip="Tối thiểu 5 ký tự">
+          <textarea
+            nz-input
+            formControlName="reason"
+            rows="3"
+            placeholder="Nhập lý do hoàn tiền..."
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal>

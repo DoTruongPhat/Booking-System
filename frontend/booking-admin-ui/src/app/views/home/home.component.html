@@ -1,50 +1,77 @@
 <div class="home-page">
-  <!-- === TOP BANNER (xanh teal + chữ chạy tự động) === -->
-  <div class="top-banner">
-    <div class="banner-marquee">
-      <span class="banner-text">SALE 50% - Đặt phòng hôm nay, tiết kiệm ngay!</span>
-      <span class="banner-text">Miễn phí hủy phòng trong 24h</span>
-      <span class="banner-text">Tặng bữa sáng miễn phí cho thành viên mới</span>
-      <span class="banner-text">SALE 50% - Đặt phòng hôm nay, tiết kiệm ngay!</span>
-      <span class="banner-text">Miễn phí hủy phòng trong 24h</span>
-      <span class="banner-text">Tặng bữa sáng miễn phí cho thành viên mới</span>
-    </div>
-  </div>
-
-  <!-- === NAVBAR dùng chung === -->
+  <!-- === NAVBAR === -->
   <app-navbar></app-navbar>
 
-  <!-- === HERO BANNER === -->
+  <!-- === HERO SECTION === -->
   <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+
+    <span class="hero-orb hero-orb-1"></span>
+    <span class="hero-orb hero-orb-2"></span>
+    <span class="hero-orb hero-orb-3"></span>
+
     <div class="hero-container">
-      <div class="hero-image">
-        <img
-          src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800"
-          alt="Luxury hotel"
-        />
-      </div>
       <div class="hero-content">
-        <h1>Đặt phòng khách sạn dễ dàng</h1>
-        <p class="hero-subtitle">
-          Khám phá hàng ngàn khách sạn với giá tốt nhất. Đặt phòng nhanh chóng, thanh toán an toàn.
-        </p>
-        <div class="hero-features">
-          <div class="hero-feature">
-            <span nz-icon nzType="check-circle" nzTheme="fill"></span>
-            <span>Miễn phí hủy phòng</span>
-          </div>
-          <div class="hero-feature">
-            <span nz-icon nzType="check-circle" nzTheme="fill"></span>
-            <span>Giá tốt nhất đảm bảo</span>
-          </div>
-          <div class="hero-feature">
-            <span nz-icon nzType="check-circle" nzTheme="fill"></span>
-            <span>Hỗ trợ 24/7</span>
-          </div>
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          Nền tảng đặt phòng tại Việt Nam
         </div>
-        <button class="hero-cta" (click)="goToDashboard()">
-          <span>Bắt đầu đặt phòng</span>
-        </button>
+        <h1 class="hero-title">
+          Khám phá &amp; đặt phòng<br />
+          <span class="hero-accent">khách sạn tuyệt vời</span>
+        </h1>
+        <p class="hero-subtitle">
+          Hơn 10,000+ khách sạn với giá tốt nhất. Đặt phòng nhanh chóng, thanh toán an toàn, hỗ trợ
+          24/7.
+        </p>
+
+        <!-- === SEARCH BAR === -->
+        <div class="search-bar">
+          <div class="search-field">
+            <span class="search-icon" nz-icon nzType="environment" nzTheme="outline"></span>
+            <div class="search-input-wrap">
+              <label>Điểm đến</label>
+              <input
+                type="text"
+                placeholder="Bạn muốn đi đâu?"
+                [(ngModel)]="searchCity"
+                name="searchCity"
+              />
+            </div>
+          </div>
+          <div class="search-field">
+            <span class="search-icon" nz-icon nzType="calendar" nzTheme="outline"></span>
+            <div class="search-input-wrap">
+              <label>Nhận phòng</label>
+              <input type="date" [(ngModel)]="searchCheckIn" name="searchCheckIn" />
+            </div>
+          </div>
+          <div class="search-field">
+            <span class="search-icon" nz-icon nzType="calendar" nzTheme="outline"></span>
+            <div class="search-input-wrap">
+              <label>Trả phòng</label>
+              <input type="date" [(ngModel)]="searchCheckOut" name="searchCheckOut" />
+            </div>
+          </div>
+          <div class="search-field">
+            <span class="search-icon" nz-icon nzType="user" nzTheme="outline"></span>
+            <div class="search-input-wrap">
+              <label>Khách</label>
+              <input
+                type="number"
+                [min]="1"
+                [max]="20"
+                [(ngModel)]="searchGuests"
+                name="searchGuests"
+              />
+            </div>
+          </div>
+          <button class="search-btn" (click)="onSearchSubmit()">
+            <span nz-icon nzType="search"></span>
+            Tìm kiếm
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -52,30 +79,27 @@
   <!-- === FEATURES === -->
   <section class="features-section">
     <div class="container">
-      <h2 class="section-title">Tại sao chọn SmartBooking?</h2>
       <div class="features-grid">
         <div class="feature-card">
-          <div class="feature-icon-wrapper">
-            <span nz-icon nzType="dollar" nzTheme="fill"></span>
+          <div class="feature-icon-wrap">
+            <span nz-icon nzType="dollar-circle" nzTheme="fill"></span>
           </div>
           <h3>Giá tốt nhất</h3>
-          <p>
-            Cam kết giá rẻ nhất. Nếu tìm thấy giá thấp hơn, chúng tôi hoàn tiền phần chênh lệch.
-          </p>
+          <p>Cam kết giá rẻ nhất, hoàn tiền chênh lệch nếu tìm thấy rẻ hơn.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon-wrapper">
-            <span nz-icon nzType="safety" nzTheme="fill"></span>
+          <div class="feature-icon-wrap">
+            <span nz-icon nzType="thunderbolt" nzTheme="fill"></span>
           </div>
-          <h3>Thanh toán an toàn</h3>
-          <p>Mã hóa SSL 256-bit, hỗ trợ nhiều phương thức thanh toán: Visa, Master, Momo, VNPay.</p>
+          <h3>Đặt phòng nhanh chóng</h3>
+          <p>Chỉ với 3 bước đơn giản, xác nhận tức thì qua email.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon-wrapper">
+          <div class="feature-icon-wrap">
             <span nz-icon nzType="customer-service" nzTheme="fill"></span>
           </div>
           <h3>Hỗ trợ 24/7</h3>
-          <p>Đội ngũ tư vấn viên 24/7 qua hotline, chat, email. Sẵn sàng hỗ trợ bạn mọi lúc.</p>
+          <p>Đội ngũ tư vấn viên luôn sẵn sàng hỗ trợ bạn mọi lúc.</p>
         </div>
       </div>
     </div>
@@ -84,46 +108,67 @@
   <!-- === POPULAR DESTINATIONS === -->
   <section class="destinations-section">
     <div class="container">
-      <h2 class="section-title">Điểm đến phổ biến</h2>
+      <div class="section-header">
+        <h2 class="section-title">Điểm đến phổ biến</h2>
+        <p class="section-subtitle">Khám phá những địa điểm hot nhất hiện nay</p>
+      </div>
       <div class="destinations-grid">
-        <div class="destination-card">
-          <img
-            src="https://images.unsplash.com/photo-1559592413-7c4d2b1c3b73?w=400"
-            alt="Nha Trang"
-          />
-          <div class="destination-info">
-            <h3>Nha Trang</h3>
-            <p>Biển xanh cát trắng</p>
+        <div class="destination-card" *ngFor="let dest of destinations">
+          <img [src]="dest.image" [alt]="dest.name" />
+          <div class="destination-overlay">
+            <h3>{{ dest.name }}</h3>
+            <p>{{ dest.count }} khách sạn</p>
           </div>
         </div>
-        <div class="destination-card">
-          <img
-            src="https://images.unsplash.com/photo-1573270689103-d7a4e42b7498?w=400"
-            alt="Đà Nẵng"
-          />
-          <div class="destination-info">
-            <h3>Đà Nẵng</h3>
-            <p>Thành phố đáng sống</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- === FEATURED HOTELS === -->
+  <section class="hotels-section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Khách sạn nổi bật</h2>
+        <p class="section-subtitle">Được đánh giá cao bởi du khách</p>
+      </div>
+      <div class="hotels-grid">
+        <div *ngFor="let hotel of featuredHotels" class="hotel-card" (click)="viewHotel(hotel.id)">
+          <div class="hotel-image">
+            <img [src]="hotel.thumbnail" [alt]="hotel.name" />
+            <div class="hotel-badge" *ngIf="hotel.discountPercent">
+              -{{ hotel.discountPercent }}%
+            </div>
+            <button
+              class="hotel-favorite"
+              aria-label="Yêu thích"
+              (click)="$event.stopPropagation()"
+            >
+              <span nz-icon nzType="heart"></span>
+            </button>
           </div>
-        </div>
-        <div class="destination-card">
-          <img
-            src="https://images.unsplash.com/photo-1528127269322-539801943592?w=400"
-            alt="Hà Nội"
-          />
-          <div class="destination-info">
-            <h3>Hà Nội</h3>
-            <p>Thủ đô nghìn năm văn hiến</p>
-          </div>
-        </div>
-        <div class="destination-card">
-          <img
-            src="https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=400"
-            alt="Hồ Chí Minh"
-          />
-          <div class="destination-info">
-            <h3>TP. Hồ Chí Minh</h3>
-            <p>Thành phố không ngủ</p>
+          <div class="hotel-info">
+            <div class="hotel-rating">
+              <span class="stars">
+                <span
+                  nz-icon
+                  nzType="star"
+                  nzTheme="fill"
+                  *ngFor="let s of getStars(hotel.starRating)"
+                ></span>
+              </span>
+              <span class="rating-score">{{ hotel.userRating }}</span>
+              <span class="rating-count">({{ hotel.reviewCount }})</span>
+            </div>
+            <h3 class="hotel-name">{{ hotel.name }}</h3>
+            <p class="hotel-location">
+              <span nz-icon nzType="environment"></span>
+              {{ hotel.city }}
+            </p>
+            <div class="hotel-price">
+              <span class="price-from">Từ</span>
+              <span class="price-value">{{ hotel.pricePerNight | number }}đ</span>
+              <span class="price-unit">/đêm</span>
+            </div>
           </div>
         </div>
       </div>
@@ -136,7 +181,7 @@
       <div class="footer-grid">
         <div class="footer-col">
           <h4>SmartBooking</h4>
-          <p>Nền tảng đặt phòng khách sạn hàng đầu Việt Nam</p>
+          <p>Nền tảng đặt phòng khách sạn hàng đầu Việt Nam với hơn 10,000+ khách sạn.</p>
         </div>
         <div class="footer-col">
           <h4>Về chúng tôi</h4>
@@ -146,9 +191,9 @@
         </div>
         <div class="footer-col">
           <h4>Hỗ trợ</h4>
+          <a routerLink="/user/tickets">Tạo phiếu hỗ trợ</a>
           <a>Trung tâm trợ giúp</a>
           <a>Điều khoản</a>
-          <a>Chính sách</a>
         </div>
         <div class="footer-col">
           <h4>Liên hệ</h4>
@@ -156,7 +201,17 @@
           <p>Hotline: 1900-1234</p>
         </div>
       </div>
-      <div class="footer-bottom">© 2026 SmartBooking</div>
+      <div class="footer-bottom">© 2026 SmartBooking. All rights reserved.</div>
     </div>
   </footer>
+
+  <!-- === FLOAT BUTTON HỖ TRỢ 24/7 === -->
+  <div class="support-float" nz-tooltip [nzTooltipTitle]="'Hỗ trợ 24/7'">
+    <nz-float-button
+      nzType="primary"
+      nzIcon="customer-service"
+      [nzShape]="'circle'"
+      [nzHref]="'tel:19001234'"
+    />
+  </div>
 </div>

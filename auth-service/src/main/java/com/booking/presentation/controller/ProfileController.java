@@ -42,10 +42,9 @@ public class ProfileController {
         String username = SecurityContextHolder.getContext()
                 .getAuthentication().getName();
         return ResponseEntity.ok(
-                updateProfileUseCase.updateProfile(
-                        username,
-                        request.getEmail(),
-                        request.getTimezone()));
+                updateProfileUseCase.updateProfile(username, request.getEmail(),
+                        request.getTimezone(), request.getPhone(),
+                        request.getFirstName(), request.getLastName()));
     }
     @PutMapping("/password")
     public ResponseEntity<Map<String, String>> changePassword(

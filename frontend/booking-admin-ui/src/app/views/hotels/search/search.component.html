@@ -1,0 +1,192 @@
+<div class="search-page">
+  <app-navbar></app-navbar>
+
+  <!-- === TOP BAR (compact search) === -->
+  <section class="search-top">
+    <div class="container">
+      <div class="search-top-bar">
+        <div class="search-top-field">
+          <span nz-icon nzType="aim"></span>
+          <input
+            type="text"
+            placeholder="Tìm kiếm khách sạn, điểm đến..."
+            [(ngModel)]="searchQuery"
+            name="searchQuery"
+            (keyup.enter)="onSearch()"
+          />
+        </div>
+        <button class="search-top-btn" (click)="onSearch()">
+          <span nz-icon nzType="search"></span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="search-container">
+    <!-- === FILTER SIDEBAR === -->
+    <aside class="filter-sidebar">
+      <div class="filter-header">
+        <h3>Bộ lọc</h3>
+        <button class="reset-btn" (click)="resetFilters()">Đặt lại</button>
+      </div>
+
+      <!-- City -->
+      <div class="filter-section">
+        <h4>Thành phố</h4>
+        <div class="filter-options">
+          <button
+            *ngFor="let city of cities"
+            class="filter-chip"
+            [class.active]="selectedCity === city.value"
+            (click)="selectCity(city.value)"
+          >
+            {{ city.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Price -->
+      <div class="filter-section">
+        <h4>Khoảng giá</h4>
+        <div class="price-display">
+          <span>{{ formatPrice(priceRange[0]) }}</span>
+          <span>{{ formatPrice(priceRange[1]) }}</span>
+        </div>
+        <nz-slider
+          [nzMin]="0"
+          [nzMax]="20000000"
+          [nzStep]="500000"
+          nzRange
+          [(ngModel)]="priceRange"
+          (nzOnAfterChange)="onSearch()"
+        ></nz-slider>
+      </div>
+
+      <!-- Stars -->
+      <div class="filter-section">
+        <h4>Hạng sao</h4>
+        <div class="stars-filter">
+          <button
+            *ngFor="let star of [5, 4, 3, 2, 1]"
+            class="star-chip"
+            [class.active]="selectedStars.includes(star)"
+            (click)="toggleStar(star)"
+          >
+            <span nz-icon nzType="star" nzTheme="fill"></span>
+            {{ star }} sao
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- === RESULTS === -->
+    <main class="results">
+      <div class="results-header">
+        <div>
+          <h2 *ngIf="!loading">
+            {{ totalElements }} phòng
+            <span *ngIf="selectedCity"> tại {{ selectedCity }}</span>
+          </h2>
+          <h2 *ngIf="loading">Đang tìm kiếm...</h2>
+          <p *ngIf="!loading && totalElements > 0">Kết quả phù hợp với yêu cầu của bạn</p>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <nz-spin [nzSpinning]="loading" nzTip="Đang tìm kiếm...">
+        <!-- Room cards -->
+        <div class="hotels-grid" *ngIf="rooms.length > 0; else emptyState">
+          <article *ngFor="let room of rooms" class="hotel-card" (click)="viewRoom(room.id)">
+            <div class="hotel-image">
+              <img
+                [src]="
+                  (room.images && room.images[0]) ||
+                  room.hotelThumbnail ||
+                  'assets/placeholder-room.jpg'
+                "
+                [alt]="room.name"
+                loading="lazy"
+              />
+              <div class="hotel-badge" *ngIf="room.freeCancellation">Hủy miễn phí</div>
+              <button
+                class="hotel-favorite"
+                (click)="$event.stopPropagation()"
+                aria-label="Yêu thích"
+              >
+                <span nz-icon nzType="heart"></span>
+              </button>
+            </div>
+
+            <div class="hotel-body">
+              <!-- Rating -->
+              <div class="hotel-rating">
+                <span class="rating-score">{{ room.hotelRating | number: '1.1-1' }}</span>
+                <span class="rating-count">{{ getRatingLabel(room.hotelRating) }}</span>
+              </div>
+
+              <!-- Room name + hotel name -->
+              <h3 class="hotel-name">{{ room.name }}</h3>
+              <p class="hotel-location">
+                <span nz-icon nzType="aim"></span>
+                {{ room.hotelName }} · {{ room.hotelCity }}
+              </p>
+
+              <!-- Room details -->
+              <div class="hotel-amenities">
+                <span class="amenity-tag">
+                  <span nz-icon nzType="team"></span>
+                  {{ room.maxAdults }} người
+                </span>
+                <span class="amenity-tag">
+                  <span nz-icon nzType="layout"></span>
+                  {{ room.size }}m²
+                </span>
+                <span class="amenity-tag" *ngIf="room.breakfastIncluded">
+                  <span nz-icon nzType="coffee"></span>
+                  Bữa sáng
+                </span>
+                <span class="amenity-tag" *ngFor="let a of room.amenities | slice: 0 : 2">
+                  <span nz-icon nzType="check-circle"></span>
+                  {{ getAmenityLabel(a) }}
+                </span>
+              </div>
+
+              <!-- Price -->
+              <div class="hotel-price-row">
+                <div class="hotel-price">
+                  <span class="price-from">Từ</span>
+                  <span class="price-value">{{ formatPrice(room.basePrice) }}</span>
+                  <span class="price-unit">/đêm</span>
+                </div>
+                <span class="room-avail-label" *ngIf="room.available > 0 && room.available <= 3">
+                  Chỉ còn {{ room.available }} phòng
+                </span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Empty state -->
+        <ng-template #emptyState>
+          <div class="empty-state" *ngIf="!loading">
+            <span nz-icon nzType="search" class="empty-icon"></span>
+            <h3>Không tìm thấy phòng phù hợp</h3>
+            <p>Vui lòng thử điều chỉnh bộ lọc hoặc thay đổi điểm đến</p>
+            <button class="reset-btn-large" (click)="resetFilters()">Đặt lại bộ lọc</button>
+          </div>
+        </ng-template>
+      </nz-spin>
+
+      <!-- Pagination -->
+      <div class="search-pagination" *ngIf="totalElements > pageSize">
+        <nz-pagination
+          [nzPageIndex]="currentPage"
+          [nzTotal]="totalElements"
+          [nzPageSize]="pageSize"
+          [nzShowSizeChanger]="false"
+          (nzPageIndexChange)="onPageChange($event)"
+        ></nz-pagination>
+      </div>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,113 @@
+.booking-detail-page {
+  padding: 0;
+}
+
+.back-btn {
+  margin-bottom: 12px;
+  padding-left: 0;
+}
+
+.header-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  ::ng-deep .ant-card-body { padding: 20px 24px; }
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.booking-id {
+  font-family: monospace;
+  font-size: 12px;
+  background: #f5f5f5;
+  padding: 4px 10px;
+  border-radius: 12px;
+  color: #1f2328;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.booking-customer {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2328;
+  margin: 0 0 12px 0;
+}
+
+.header-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.header-revenue {
+  text-align: right;
+  .revenue-label {
+    font-size: 12px;
+    color: #6b7280;
+  }
+  .revenue-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #722ed1;
+    line-height: 1.2;
+  }
+  .revenue-breakdown {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+}
+
+.info-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.text-muted {
+  color: #8c8c8c;
+}
+.small {
+  font-size: 12px;
+}
+.text-purple {
+  color: #722ed1;
+}
+
+// ═══ TIMELINE ═══
+.timeline-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.timeline-from {
+  font-size: 12px;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.timeline-meta {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.timeline-note {
+  font-size: 13px;
+  color: #1f2328;
+  background: #fafafa;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border-left: 3px solid #1890ff;
+  margin-top: 4px;
+}

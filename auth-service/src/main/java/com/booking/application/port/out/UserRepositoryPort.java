@@ -1,8 +1,11 @@
 package com.booking.application.port.out;
 
 import com.booking.domain.model.User;
+import com.booking.infrastructure.persistence.entity.UserEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -14,7 +17,7 @@ import java.util.UUID;
  * → Application layer không biết JPA tồn tại
  * → Không phụ thuộc infrastructure
  * → Có thể swap JPA sang MongoDB
- *   mà không cần sửa application layer
+ * mà không cần sửa application layer
  *
  * Dependency Rule:
  * application/ → chỉ biết domain/
@@ -22,24 +25,31 @@ import java.util.UUID;
  */
 public interface UserRepositoryPort {
 
-    Optional<User> findByUsername(String username);
+ Optional<User> findByUsername(String username);
 
-    Optional<User> findByEmail(String email);
+ Optional<User> findByEmail(String email);
 
-    Optional<User> findById(UUID id);
+ Optional<User> findById(UUID id);
 
-    /**
-     * V8: Tìm user theo Keycloak user id (dùng cho sync từ KC)
-     */
-    Optional<User> findByKcUserId(String kcUserId);
 
-    User save(User user);
+ Optional<User> findByEmailIgnoreCase(String email);
 
-    boolean existsByUsername(String username);
+ User save(User user);
 
-    boolean existsByEmail(String email);
+ boolean existsByUsername(String username);
 
-    Optional<User> findByIdWithRoles(UUID id);
+ boolean existsByEmail (String email);
 
-    Page<User> findAll(Pageable pageable);
+ Optional<User> findByIdWithRoles(UUID id);
+
+ Page<User> findAll(Pageable pageable);
+
+ /**
+ * Đếm tổng số user trong hệ thống (cho dashboard)
+ */
+ long count();
+ void deleteById(UUID id);
+ // Repository JPA
+ @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.roles WHERE u.username = :username")
+ Optional<User> findByUsernameWithRoles(@Param("username") String username);
 }

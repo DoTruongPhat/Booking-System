@@ -1,0 +1,552 @@
+<div class="rooms-page">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <h1>Quản lý phòng</h1>
+      <p class="subtitle">Flat table - CRUD phòng cho tất cả khách sạn</p>
+    </div>
+    <button nz-button nzType="primary" (click)="openCreateModal()">
+      <span nz-icon nzType="plus"></span> Thêm phòng
+    </button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Tổng phòng (còn)</div>
+      <div class="stat-value">{{ totalAvailable() }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tổng số phòng</div>
+      <div class="stat-value">{{ totalRooms() }}</div>
+    </div>
+    <div class="stat-card stat-active">
+      <div class="stat-label">Đang hoạt động</div>
+      <div class="stat-value">{{ countActive() }}</div>
+    </div>
+    <div class="stat-card stat-hotel">
+      <div class="stat-label">Số khách sạn</div>
+      <div class="stat-value">{{ hotelOptions.length }}</div>
+    </div>
+  </div>
+
+  <!-- FILTER -->
+  <nz-card class="filter-card">
+    <div class="filter-bar">
+      <nz-input-group [nzPrefix]="searchPrefix" class="search-input">
+        <input
+          nz-input
+          placeholder="Tìm theo tên hoặc mô tả..."
+          [(ngModel)]="keyword"
+          (keyup.enter)="onFilterChange()"
+        />
+        <ng-template #searchPrefix><span nz-icon nzType="search"></span></ng-template>
+      </nz-input-group>
+
+      <nz-select
+        [(ngModel)]="filterHotel"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Khách sạn"
+        class="filter-select"
+      >
+        <nz-option nzValue="all" nzLabel="Tất cả khách sạn"></nz-option>
+        <nz-option *ngFor="let h of hotelOptions" [nzValue]="h.id" [nzLabel]="h.name"></nz-option>
+      </nz-select>
+
+      <nz-select
+        [(ngModel)]="filterRoomType"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Loại phòng"
+        class="filter-select"
+      >
+        <nz-option nzValue="all" nzLabel="Tất cả loại"></nz-option>
+        <nz-option
+          *ngFor="let t of allRoomTypes"
+          [nzValue]="t"
+          [nzLabel]="roomTypeLabels[t]"
+        ></nz-option>
+      </nz-select>
+
+      <nz-select
+        [(ngModel)]="filterActive"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Trạng thái"
+        class="filter-select"
+      >
+        <nz-option nzValue="all" nzLabel="Tất cả"></nz-option>
+        <nz-option nzValue="active" nzLabel="Đang hoạt động"></nz-option>
+        <nz-option nzValue="inactive" nzLabel="Ngừng hoạt động"></nz-option>
+      </nz-select>
+
+      <button nz-button (click)="resetFilter()"><span nz-icon nzType="reload"></span> Reset</button>
+    </div>
+  </nz-card>
+
+  <!-- TABLE -->
+  <nz-card class="table-card">
+    <nz-table [nzData]="rooms" [nzLoading]="isLoading" [nzShowPagination]="false" nzSize="middle">
+      <thead>
+        <tr>
+          <th nzWidth="80px">Ảnh</th>
+          <th>Tên phòng</th>
+          <th>Khách sạn</th>
+          <th nzWidth="100px">Loại</th>
+          <th nzWidth="140px" nzRight>Giá/đêm</th>
+          <th nzWidth="120px">Sức chứa</th>
+          <th nzWidth="100px">Còn/Tổng</th>
+          <th nzWidth="200px">Tiện ích</th>
+          <th nzWidth="100px">Trạng thái</th>
+          <th nzWidth="180px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of rooms">
+          <td>
+            <nz-avatar
+              *ngIf="r.images[0]; else noImage"
+              [nzSrc]="r.images[0] || ''"
+              nzSize="large"
+              shape="square"
+              (click)="openViewModal(r)"
+              style="cursor: pointer"
+            ></nz-avatar>
+            <ng-template #noImage>
+              <div class="no-image">
+                <span nz-icon nzType="picture"></span>
+              </div>
+            </ng-template>
+          </td>
+          <td>
+            <div class="room-name">{{ r.name }}</div>
+            <div class="text-muted small">{{ r.bedType }} · {{ r.size }}m²</div>
+          </td>
+          <td>
+            <div>{{ getHotelName(r.hotelId) }}</div>
+          </td>
+          <td>
+            <nz-tag [nzColor]="getRoomTypeColor(r.roomType)">
+              {{ roomTypeLabels[r.roomType] }}
+            </nz-tag>
+          </td>
+          <td nzRight>
+            <div class="price">{{ formatVND(r.pricePerNight) }}</div>
+            <div *ngIf="r.originalPrice && getDiscountPercent(r) > 0" class="discount-badge">
+              <nz-tag nzColor="red">-{{ getDiscountPercent(r) }}%</nz-tag>
+              <span class="original-price">{{ formatVND(r.originalPrice) }}</span>
+            </div>
+          </td>
+          <td>
+            <div>{{ r.maxAdults }} người lớn</div>
+            <div class="text-muted small" *ngIf="r.maxChildren > 0">
+              +{{ r.maxChildren }} trẻ em
+            </div>
+          </td>
+          <td>
+            <div class="stock">
+              <strong>{{ r.available }}</strong> / {{ r.totalRooms }}
+            </div>
+            <nz-progress
+              [nzPercent]="(r.available / r.totalRooms) * 100"
+              [nzShowInfo]="false"
+              [nzStrokeWidth]="4"
+              nzStatus="normal"
+            ></nz-progress>
+          </td>
+          <td>
+            <div class="amenities-preview">
+              <nz-tag
+                *ngFor="let a of (r.amenities || []).slice(0, 3)"
+                nzColor="blue"
+                class="amenity-tag"
+              >
+                {{ getAmenityLabel(a) }}
+              </nz-tag>
+              <nz-tag *ngIf="(r.amenities || []).length > 3" nzColor="default" class="amenity-more">
+                +{{ r.amenities.length - 3 }}
+              </nz-tag>
+            </div>
+          </td>
+          <td>
+            <nz-tag [nzColor]="r.active ? 'green' : 'default'">
+              {{ r.active ? 'Active' : 'Inactive' }}
+            </nz-tag>
+          </td>
+          <td>
+            <nz-space nzSize="small">
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Xem chi tiết"
+                (click)="openViewModal(r)"
+              >
+                <span nz-icon nzType="eye"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Sửa"
+                (click)="openEditModal(r)"
+              >
+                <span nz-icon nzType="edit"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nzDanger
+                nzType="primary"
+                nz-tooltip="Xóa"
+                nz-popconfirm
+                nzPopconfirmTitle="Xóa phòng {{ r.name }}?"
+                nzPopconfirmDescription="Phòng sẽ bị xóa khỏi hệ thống"
+                nzOkText="Xóa"
+                nzOkType="danger"
+                (nzOnConfirm)="deleteRoom(r)"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </nz-space>
+          </td>
+        </tr>
+        <tr *ngIf="!isLoading && !rooms.length">
+          <td colspan="10" class="empty-row">
+            <nz-empty nzNotFoundContent="Không có phòng nào"></nz-empty>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+</div>
+
+<!-- ═══ VIEW DETAIL MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isViewModalOpen"
+  [nzTitle]="selectedRoom?.name || ''"
+  [nzFooter]="null"
+  nzWidth="800"
+  (nzOnCancel)="isViewModalOpen = false"
+>
+  <ng-container *nzModalContent>
+    <ng-container *ngIf="selectedRoom">
+      <!-- GALLERY -->
+      <div class="gallery" *ngIf="selectedRoom.images.length">
+        <nz-image-group>
+          <div class="image-grid">
+            <img
+              *ngFor="let img of selectedRoom.images"
+              [src]="img"
+              nz-image
+              class="gallery-img"
+              alt="room image"
+            />
+          </div>
+        </nz-image-group>
+      </div>
+
+      <nz-divider></nz-divider>
+
+      <nz-descriptions [nzColumn]="{ xs: 1, sm: 2, md: 2 }" nzBordered>
+        <nz-descriptions-item nzTitle="Khách sạn" [nzSpan]="2">
+          {{ getHotelName(selectedRoom.hotelId) }}
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Loại phòng">
+          <nz-tag [nzColor]="getRoomTypeColor(selectedRoom.roomType)">
+            {{ roomTypeLabels[selectedRoom.roomType] }}
+          </nz-tag>
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Diện tích">
+          {{ selectedRoom.size }} m²
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Loại giường" [nzSpan]="2">
+          {{ selectedRoom.bedType }}
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Sức chứa">
+          {{ selectedRoom.maxAdults }} người lớn
+          <ng-container *ngIf="selectedRoom.maxChildren > 0">
+            · {{ selectedRoom.maxChildren }} trẻ em
+          </ng-container>
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Số phòng còn">
+          {{ selectedRoom.available }} / {{ selectedRoom.totalRooms }}
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Giá/đêm">
+          <strong class="text-purple">{{ formatVND(selectedRoom.pricePerNight) }}</strong>
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Giá gốc" *ngIf="selectedRoom.originalPrice">
+          <s class="text-muted">{{ formatVND(selectedRoom.originalPrice) }}</s>
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Mô tả" [nzSpan]="2">
+          {{ selectedRoom.description }}
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Tiện ích" [nzSpan]="2">
+          <nz-tag *ngFor="let a of selectedRoom.amenities" nzColor="blue">{{
+            getAmenityLabel(a)
+          }}</nz-tag>
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Bao gồm bữa sáng">
+          <nz-tag [nzColor]="selectedRoom.breakfastIncluded ? 'green' : 'default'">
+            {{ selectedRoom.breakfastIncluded ? 'Có' : 'Không' }}
+          </nz-tag>
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Hủy miễn phí">
+          <nz-tag [nzColor]="selectedRoom.freeCancellation ? 'green' : 'default'">
+            {{ selectedRoom.freeCancellation ? 'Có' : 'Không' }}
+          </nz-tag>
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Trả tại khách sạn">
+          <nz-tag [nzColor]="selectedRoom.payLater ? 'green' : 'default'">
+            {{ selectedRoom.payLater ? 'Có' : 'Không' }}
+          </nz-tag>
+        </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Trạng thái">
+          <nz-tag [nzColor]="selectedRoom.active ? 'green' : 'default'">
+            {{ selectedRoom.active ? 'Đang hoạt động' : 'Ngừng hoạt động' }}
+          </nz-tag>
+        </nz-descriptions-item>
+      </nz-descriptions>
+    </ng-container>
+  </ng-container>
+</nz-modal>
+
+<!-- ═══ CREATE / EDIT MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isFormModalOpen"
+  [nzTitle]="editingRoom ? 'Sửa phòng: ' + editingRoom.name : 'Thêm phòng mới'"
+  [nzOkLoading]="isSubmitting"
+  [nzOkText]="editingRoom ? 'Cập nhật' : 'Tạo'"
+  nzWidth="900"
+  (nzOnCancel)="isFormModalOpen = false"
+  (nzOnOk)="submitForm()"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="form" nzLayout="vertical">
+      <!-- HOTEL + NAME -->
+      <div class="form-row">
+        <nz-form-item class="form-col">
+          <nz-form-label nzRequired>Khách sạn</nz-form-label>
+          <nz-form-control>
+            <nz-select formControlName="hotelId" nzPlaceHolder="Chọn khách sạn">
+              <nz-option
+                *ngFor="let h of hotelOptions"
+                [nzValue]="h.id"
+                [nzLabel]="h.name"
+              ></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item class="form-col">
+          <nz-form-label nzRequired>Tên phòng</nz-form-label>
+          <nz-form-control nzErrorTip="Tối thiểu 3 ký tự">
+            <input nz-input formControlName="name" placeholder="VD: Deluxe Ocean View" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
+      <!-- DESCRIPTION -->
+      <nz-form-item>
+        <nz-form-label nzRequired>Mô tả</nz-form-label>
+        <nz-form-control nzErrorTip="Tối thiểu 10 ký tự">
+          <textarea
+            nz-input
+            formControlName="description"
+            rows="2"
+            placeholder="Mô tả chi tiết về phòng..."
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+
+      <!-- ROOM TYPE + BED TYPE + SIZE -->
+      <div class="form-row-3">
+        <nz-form-item>
+          <nz-form-label nzRequired>Loại phòng</nz-form-label>
+          <nz-form-control>
+            <nz-select formControlName="roomType">
+              <nz-option
+                *ngFor="let t of allRoomTypes"
+                [nzValue]="t"
+                [nzLabel]="roomTypeLabels[t]"
+              ></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label nzRequired>Loại giường</nz-form-label>
+          <nz-form-control>
+            <nz-select formControlName="bedType">
+              <nz-option *ngFor="let b of bedTypeOptions" [nzValue]="b" [nzLabel]="b"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label nzRequired>Diện tích (m²)</nz-form-label>
+          <nz-form-control>
+            <nz-input-number
+              formControlName="size"
+              [nzMin]="1"
+              [nzMax]="1000"
+              style="width: 100%"
+            ></nz-input-number>
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
+      <!-- CAPACITY -->
+      <div class="form-row-3">
+        <nz-form-item>
+          <nz-form-label nzRequired>Max người lớn</nz-form-label>
+          <nz-form-control>
+            <nz-input-number
+              formControlName="maxAdults"
+              [nzMin]="1"
+              [nzMax]="10"
+              style="width: 100%"
+            ></nz-input-number>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label>Max trẻ em</nz-form-label>
+          <nz-form-control>
+            <nz-input-number
+              formControlName="maxChildren"
+              [nzMin]="0"
+              [nzMax]="10"
+              style="width: 100%"
+            ></nz-input-number>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label nzRequired>Tổng số phòng</nz-form-label>
+          <nz-form-control>
+            <nz-input-number
+              formControlName="totalRooms"
+              [nzMin]="1"
+              [nzMax]="100"
+              style="width: 100%"
+            ></nz-input-number>
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
+      <!-- PRICING -->
+      <div class="form-row-2">
+        <nz-form-item>
+          <nz-form-label nzRequired>Giá/đêm (VND)</nz-form-label>
+          <nz-form-control nzErrorTip="Phải >= 0">
+            <nz-input-number
+              formControlName="pricePerNight"
+              [nzMin]="0"
+              [nzStep]="100000"
+              style="width: 100%"
+            ></nz-input-number>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label>Giá gốc (nếu có discount)</nz-form-label>
+          <nz-form-control>
+            <nz-input-number
+              formControlName="originalPrice"
+              [nzMin]="0"
+              [nzStep]="100000"
+              style="width: 100%"
+            ></nz-input-number>
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
+      <!-- AVAILABLE -->
+      <nz-form-item>
+        <nz-form-label nzRequired>Số phòng còn (available)</nz-form-label>
+        <nz-form-control>
+          <nz-input-number
+            formControlName="available"
+            [nzMin]="0"
+            [nzMax]="100"
+            style="width: 200px"
+          ></nz-input-number>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-divider nzText="Tiện ích"></nz-divider>
+
+      <!-- AMENITIES (multi-checkbox) -->
+      <div formArrayName="amenities" class="amenities-grid">
+        <label
+          nz-checkbox
+          *ngFor="let a of amenityOptions"
+          [ngModel]="form.value.amenities?.includes(a.value)"
+          (ngModelChange)="toggleAmenity(a.value, $event)"
+          [ngModelOptions]="{ standalone: true }"
+        >
+          {{ a.label }}
+        </label>
+      </div>
+
+      <nz-divider nzText="Hình ảnh"></nz-divider>
+
+      <!-- IMAGES -->
+      <div class="image-uploader">
+        <div class="image-list" *ngIf="imagePreviews.length">
+          <div *ngFor="let img of imagePreviews; let i = index" class="image-item">
+            <img [src]="img" alt="preview" />
+            <button
+              type="button"
+              nz-button
+              nzSize="small"
+              nzDanger
+              nzType="primary"
+              class="remove-btn"
+              (click)="removeImage(i)"
+            >
+              <span nz-icon nzType="close"></span>
+            </button>
+          </div>
+        </div>
+        <label class="upload-btn">
+          <input
+            type="file"
+            accept="image/*"
+            (change)="onFileSelected($event)"
+            style="display: none"
+          />
+          <span nz-icon nzType="upload"></span> Tải ảnh lên (max 2MB)
+        </label>
+        <p class="text-muted small" style="margin-top: 8px">
+          Có thể thêm nhiều ảnh. Ảnh sẽ được lưu dạng base64 trong cache.
+        </p>
+      </div>
+
+      <nz-divider nzText="Chính sách"></nz-divider>
+
+      <!-- POLICIES -->
+      <div class="form-row-3">
+        <nz-form-item>
+          <nz-form-label>Bao gồm bữa sáng</nz-form-label>
+          <nz-form-control>
+            <nz-switch formControlName="breakfastIncluded"></nz-switch>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label>Hủy miễn phí</nz-form-label>
+          <nz-form-control>
+            <nz-switch formControlName="freeCancellation"></nz-switch>
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label>Trả tại khách sạn</nz-form-label>
+          <nz-form-control>
+            <nz-switch formControlName="payLater"></nz-switch>
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
+      <nz-form-item>
+        <nz-form-label>Đang hoạt động</nz-form-label>
+        <nz-form-control>
+          <nz-switch formControlName="active"></nz-switch>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+</nz-modal>

@@ -16,9 +16,7 @@
 .navbar {
   background: t.$color-white;
   border-bottom: 1px solid transparent;
-  transition:
-    box-shadow 0.3s ease,
-    border-color 0.3s ease;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
   animation: slideDownFade 0.4s ease-out both;
 
   &.is-scrolled {
@@ -70,23 +68,28 @@
     transform: translateY(-1px);
 
     app-logo ::ng-deep .brand-logo {
-      transform: rotate(-8deg) scale(1.06);
+      transform: rotate(-6deg) scale(1.08);
     }
   }
 
   .logo-text {
     font-weight: t.$font-weight-bold;
     font-family: t.$font-family-base;
-    background: linear-gradient(135deg, #5b8ff9 0%, #4364d8 100%);
+    font-size: t.$font-size-lg;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, t.$color-primary 0%, t.$color-primary-dark 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    transition: opacity 0.2s ease;
+
+    .logo:hover & {
+      opacity: 0.85;
+    }
   }
 
   @media (max-width: 480px) {
-    .logo-text {
-      display: none;
-    }
+    .logo-text { display: none; }
   }
 }
 
@@ -218,10 +221,7 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition:
-    opacity 0.2s ease,
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    visibility 0.2s;
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
   z-index: t.$z-dropdown;
   font-family: t.$font-family-base;
   border: 1px solid t.$color-border-light;
@@ -274,9 +274,7 @@
   text-decoration: none;
   color: t.$color-text-primary;
   cursor: pointer;
-  transition:
-    background 0.15s ease,
-    transform 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
   font-family: t.$font-family-base;
   position: relative;
   overflow: hidden;
@@ -313,9 +311,7 @@
   color: t.$color-text-secondary;
   margin-top: 1px;
   flex-shrink: 0;
-  transition:
-    color 0.2s ease,
-    transform 0.2s ease;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .dropdown-item-content {
@@ -440,8 +436,7 @@
 }
 
 @keyframes pulse {
-  0%,
-  100% {
+  0%, 100% {
     transform: scale(1);
     opacity: 1;
   }

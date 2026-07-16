@@ -6,7 +6,7 @@
 // ── ROLE ────────────────────────────────────────────────────
 export interface Role {
   id: string;
-  code: string;          // VD: "ADMIN_ALL", "STAFF", "USER"
+  code: string; // VD: "ADMIN_ALL", "STAFF", "USER"
   name: string;
   description?: string;
   active: boolean;
@@ -16,28 +16,33 @@ export interface Role {
 
 export interface Permission {
   id: string;
-  code: string;           // VD: "USER_UPDATE", "ROLE_CREATE"
-  name: string;           // VD: "Update user"
-  resource?: string;      // VD: "user", "role"
-  action?: string;        // VD: "update", "create", "delete"
+  code: string; // VD: "USER_UPDATE", "ROLE_CREATE"
+  name: string; // VD: "Update user"
+  resource?: string; // VD: "user", "role"
+  action?: string; // VD: "update", "create", "delete"
   description?: string;
   createdAt?: string;
 }
 
 // ── USER ────────────────────────────────────────────────────
 export interface User {
-  id: string;                    // UUID
+  id: string; // UUID
   username: string;
   email: string;
-  isActive: boolean;             // field boolean primitive trong backend
-  isLocked: boolean;
+  active: boolean;
+  locked: boolean;
   failedAttempts: number;
-  lockedUntil: string | null;    // ZonedDateTime -> ISO string
+  lockedUntil: string | null; // ZonedDateTime -> ISO string
   timezone: string | null;
   twoFactorEnabled: boolean;
   createdAt: string;
   updatedAt: string;
   roles: Role[];
+  /** Phase 7: phone của user (optional). */
+  phone?: string | null;
+  /** Phase A.1: firstName + lastName từ Keycloak (optional). */
+  firstName?: string | null;
+  lastName?: string | null;
 }
 
 // User thô lưu trong localStorage (sau login) - roles chỉ là string[] (code)
@@ -47,6 +52,10 @@ export interface AuthUser {
   email: string;
   roles?: string[];
   timezone?: string;
+  /** Phase 7: phone của user (vd KC sync lần đầu chưa có). */
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 // ── SUPPORT TICKET ────────────────────────────────────────
@@ -59,7 +68,7 @@ export interface SupportTicket {
   description: string;
   status: TicketStatus;
   priority: TicketPriority;
-  createdBy: string;          // UUID của user tạo
+  createdBy: string; // UUID của user tạo
   assignedTo: string | null; // UUID của staff được assign
   createdAt: string;
   updatedAt: string;
@@ -75,7 +84,7 @@ export interface SpringPage<T> {
   totalElements: number;
   totalElements2?: number;
   totalPages: number;
-  number: number;                // current page (0-based)
+  number: number; // current page (0-based)
   size: number;
   first: boolean;
   last: boolean;
@@ -116,19 +125,53 @@ export interface ChangePasswordRequest {
 
 // ── LOGIN RESPONSE ─────────────────────────────────────────
 export interface LoginResponse {
-  token: string;
+  token?: string;
   username: string;
   email: string;
   roles: string[];
   timezone?: string;
   twoFactorRequired: boolean;
   mfaSessionToken?: string;
+  /** Phase 7: true nếu user cần bổ sung phone (vd mới sync từ KC). */
+  phoneRequired?: boolean;
+  phone?: string;
+  passwordRequired?: boolean;
+  firstName?: string;
+  lastName?: string;
+}
+
+// ── REGISTER REQUEST / RESPONSE ───────────────────────────
+export interface RegisterRequest {
+  fullName: string;
+  username: string;
+  email: string;
+  phone: string;
+  password: string;
+  timeZone?: string;
+}
+
+export interface RegisterResponse {
+  success: boolean;
+  message: string;
+  userId?: string;
+  username?: string;
+}
+
+// ── FORGOT / RESET PASSWORD ────────────────────────────────
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  otp: string;
+  newPassword: string;
 }
 
 // ── ERROR RESPONSE (BE chuẩn) ───────────────────────────────
 export interface ErrorResponse {
   success: boolean;
-  errorCode: string;     // VD: "USR_001"
+  errorCode: string; // VD: "USR_001"
   message: string;
   timestamp: string;
   requestId?: string;

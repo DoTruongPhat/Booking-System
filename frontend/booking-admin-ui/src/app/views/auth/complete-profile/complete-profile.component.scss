@@ -1,0 +1,305 @@
+@use '../../../../styles/tokens' as t;
+
+.reset-page {
+  font-family: t.$font-family-base;
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: t.$color-bg;
+  padding: t.$spacing-4;
+}
+
+.reset-card {
+  width: 100%;
+  max-width: 480px;
+  background: t.$color-bg-card;
+  border-radius: t.$radius-2xl;
+  padding: t.$spacing-8 t.$spacing-6;
+  box-shadow: t.$shadow-lg;
+  border: 1px solid t.$color-border-light;
+  animation: form-fade-in 0.5s t.$anim-ease-out both;
+}
+
+@keyframes form-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// === Header ===
+.reset-header {
+  text-align: center;
+  margin-bottom: t.$spacing-6;
+}
+
+.reset-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: t.$color-primary-50;
+  border-radius: t.$radius-full;
+  margin-bottom: t.$spacing-3;
+  animation: success-pop 0.6s t.$anim-ease-out both;
+}
+
+.reset-icon {
+  font-size: 32px;
+  color: t.$color-primary;
+}
+
+@keyframes success-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.reset-title {
+  font-family: t.$font-family-heading;
+  font-size: t.$font-size-2xl;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-text-primary;
+  margin: 0 0 t.$spacing-2 0;
+  letter-spacing: t.$letter-spacing-tight;
+}
+
+.reset-subtitle {
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-base;
+  color: t.$color-text-secondary;
+  margin: 0;
+}
+
+// === Alert ===
+.reset-alert {
+  margin-bottom: t.$spacing-4;
+  border-radius: t.$radius-md !important;
+  animation: alert-shake 0.4s ease-out;
+}
+
+@keyframes alert-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+// === Override ng-zorro ===
+::ng-deep {
+  .reset-card {
+    .ant-form-item-label > label {
+      font-family: t.$font-family-base !important;
+      font-size: t.$font-size-sm !important;
+      font-weight: t.$font-weight-medium !important;
+      color: t.$color-text-primary !important;
+    }
+
+    .ant-input {
+      font-family: t.$font-family-base !important;
+      font-size: t.$font-size-base !important;
+      padding: t.$spacing-2 t.$spacing-3 !important;
+      border-radius: t.$radius-md !important;
+      border-color: t.$color-border !important;
+      transition: t.$transition-base !important;
+
+      &::placeholder {
+        color: t.$color-text-muted !important;
+      }
+
+      &:hover:not(:focus) {
+        border-color: t.$color-primary-300 !important;
+      }
+
+      &:focus {
+        border-color: t.$color-primary !important;
+        box-shadow: 0 0 0 3px t.$color-primary-100 !important;
+      }
+    }
+
+    .ant-input-lg {
+      padding: t.$spacing-3 !important;
+      font-size: t.$font-size-md !important;
+    }
+
+    .ant-form-item {
+      margin-bottom: t.$spacing-4 !important;
+    }
+  }
+}
+
+// === Password strength ===
+.password-strength {
+  display: flex;
+  align-items: center;
+  gap: t.$spacing-2;
+  margin-top: t.$spacing-1;
+
+  ::ng-deep .ant-progress {
+    flex: 1;
+    margin-bottom: 0;
+  }
+
+  .strength-label {
+    font-family: t.$font-family-base;
+    font-size: t.$font-size-xs;
+    font-weight: t.$font-weight-semibold;
+    min-width: 60px;
+    text-align: right;
+  }
+}
+
+// === Submit button ===
+.submit-btn {
+  width: 100%;
+  height: t.$button-height-lg !important;
+  font-size: t.$font-size-md !important;
+  font-weight: t.$font-weight-semibold !important;
+  font-family: t.$font-family-base !important;
+  background: linear-gradient(135deg, t.$color-primary 0%, t.$color-primary-hover 100%) !important;
+  border: none !important;
+  border-radius: t.$radius-md !important;
+  box-shadow: t.$shadow-primary !important;
+  transition: t.$transition-smooth !important;
+  margin-top: t.$spacing-3;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px) !important;
+    box-shadow: t.$shadow-primary-lg !important;
+    background: linear-gradient(
+      135deg,
+      t.$color-primary-hover 0%,
+      t.$color-primary-active 100%
+    ) !important;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) !important;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// === Success state ===
+.success-state {
+  text-align: center;
+  padding: t.$spacing-4 0;
+}
+
+.success-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: t.$color-primary-50;
+  border-radius: t.$radius-full;
+  margin-bottom: t.$spacing-4;
+  animation: success-pop 0.6s t.$anim-ease-out both;
+}
+
+.success-icon {
+  font-size: 48px;
+  color: t.$color-primary;
+}
+
+.success-title {
+  font-family: t.$font-family-heading;
+  font-size: t.$font-size-xl;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-text-primary;
+  margin: 0 0 t.$spacing-2 0;
+}
+
+.success-desc {
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-base;
+  color: t.$color-text-secondary;
+  margin: 0 0 t.$spacing-5 0;
+  line-height: t.$line-height-relaxed;
+
+  strong {
+    color: t.$color-primary;
+    font-weight: t.$font-weight-bold;
+  }
+}
+
+// === Footer ===
+.reset-footer {
+  margin-top: t.$spacing-5;
+  text-align: center;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-sm;
+
+  a {
+    color: t.$color-primary;
+    text-decoration: none;
+    font-weight: t.$font-weight-medium;
+    transition: t.$transition-base;
+    display: inline-flex;
+    align-items: center;
+    gap: t.$spacing-1;
+
+    &:hover {
+      color: t.$color-primary-hover;
+      text-decoration: underline;
+    }
+  }
+}
+
+// === Stagger animation cho form fields ===
+.form-field-1 {
+  animation: field-slide-in 0.4s t.$anim-ease-out 0.1s both;
+}
+.form-field-2 {
+  animation: field-slide-in 0.4s t.$anim-ease-out 0.2s both;
+}
+.form-field-3 {
+  animation: field-slide-in 0.4s t.$anim-ease-out 0.3s both;
+}
+
+@keyframes field-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reset-card,
+  .reset-alert,
+  .reset-icon-wrap,
+  .success-icon-wrap,
+  .form-field-1,
+  .form-field-2,
+  .form-field-3 {
+    animation: none !important;
+  }
+}

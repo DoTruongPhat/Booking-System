@@ -1,0 +1,205 @@
+<div class="hotels-page">
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <h1>{{ isAdmin ? 'Quản lý khách sạn' : 'Khách sạn của tôi' }}</h1>
+      <p class="subtitle">
+        {{ isAdmin ? 'Tất cả khách sạn trong hệ thống' : 'Quản lý các khách sạn bạn sở hữu' }}
+      </p>
+    </div>
+    <div class="header-actions">
+      <!-- ADMIN: status filter -->
+      <nz-select
+        *ngIf="isAdmin"
+        [(ngModel)]="statusFilter"
+        (ngModelChange)="onFilterChange()"
+        style="width: 160px"
+        nzPlaceHolder="Trạng thái"
+      >
+        <nz-option
+          *ngFor="let opt of statusOptions"
+          [nzValue]="opt.value"
+          [nzLabel]="opt.label"
+        ></nz-option>
+      </nz-select>
+
+      <!-- HOST: add hotel button -->
+      <button *ngIf="isHost" nz-button nzType="primary" (click)="openCreateHotelModal()">
+        <span nz-icon nzType="plus"></span> Thêm khách sạn
+      </button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <nz-card class="table-card">
+    <nz-table
+      #hotelTable
+      [nzData]="hotels"
+      [nzLoading]="loading"
+      [nzFrontPagination]="!isAdmin"
+      [nzTotal]="totalElements"
+      [nzPageIndex]="currentPage"
+      [nzPageSize]="pageSize"
+      (nzPageIndexChange)="onPageChange($event)"
+      nzSize="middle"
+      [nzShowPagination]="totalElements > pageSize"
+    >
+      <thead>
+        <tr>
+          <th>Khách sạn</th>
+          <th>Thành phố</th>
+          <th nzWidth="80px">Sao</th>
+          <th>Giá thấp nhất</th>
+          <th nzWidth="120px" *ngIf="isAdmin">Trạng thái</th>
+          <th nzWidth="140px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let h of hotelTable.data">
+          <td>
+            <div class="hotel-cell">
+              <img
+                class="hotel-thumb"
+                [src]="h.thumbnail || 'assets/placeholder-room.jpg'"
+                [alt]="h.name"
+              />
+              <div class="hotel-info">
+                <strong>{{ h.name }}</strong>
+                <span class="text-muted small">{{ h.address }}</span>
+              </div>
+            </div>
+          </td>
+          <td>{{ h.city }}</td>
+          <td>
+            <span class="stars-inline">
+              {{ h.starRating }} <span nz-icon nzType="star" nzTheme="fill"></span>
+            </span>
+          </td>
+          <td>{{ formatPrice(h.pricePerNight) }}</td>
+
+          <td *ngIf="isAdmin">
+            <nz-tag [nzColor]="getStatusColor($any(h).status || 'ACTIVE')">
+              {{ getStatusLabel($any(h).status || 'ACTIVE') }}
+            </nz-tag>
+          </td>
+
+          <td>
+            <button
+              *ngIf="isAdmin && $any(h).status === 'PENDING_APPROVAL'"
+              nz-button
+              nzType="primary"
+              nzSize="small"
+              (click)="approveHotel(h)"
+            >
+              <span nz-icon nzType="check"></span> Duyệt
+            </button>
+            <button *ngIf="isHost" nz-button nzType="default" nzSize="small" (click)="openEditHotelModal(h)">
+              <span nz-icon nzType="edit"></span> Sửa
+            </button>
+            <span *ngIf="isAdmin && $any(h).status !== 'PENDING_APPROVAL'" class="text-muted">—</span>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+
+  <nz-modal
+    [(nzVisible)]="isFormModalOpen"
+    [nzTitle]="editingHotel ? 'Sua khach san' : 'Them khach san'"
+    [nzOkText]="editingHotel ? 'Cap nhat' : 'Tao'"
+    [nzOkLoading]="isSubmitting"
+    nzWidth="760"
+    (nzOnCancel)="isFormModalOpen = false"
+    (nzOnOk)="submitHotelForm()"
+  >
+    <ng-container *nzModalContent>
+      <form nz-form [formGroup]="hotelForm" nzLayout="vertical" class="hotel-form">
+        <div class="form-row">
+          <nz-form-item>
+            <nz-form-label nzRequired>Ten khach san</nz-form-label>
+            <nz-form-control nzErrorTip="Nhap ten khach san">
+              <input nz-input formControlName="name" placeholder="VD: Paradise Hotel" />
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label nzRequired>Quoc gia</nz-form-label>
+            <nz-form-control nzErrorTip="Nhap quoc gia">
+              <input nz-input formControlName="country" placeholder="Vietnam" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+
+        <nz-form-item>
+          <nz-form-label>Mo ta</nz-form-label>
+          <nz-form-control>
+            <textarea
+              nz-input
+              formControlName="description"
+              rows="3"
+              placeholder="Mo ta ngan ve khach san"
+            ></textarea>
+          </nz-form-control>
+        </nz-form-item>
+
+        <div class="form-row">
+          <nz-form-item>
+            <nz-form-label nzRequired>Dia chi</nz-form-label>
+            <nz-form-control nzErrorTip="Nhap dia chi">
+              <input nz-input formControlName="address" placeholder="123 Nguyen Hue" />
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label nzRequired>Thanh pho</nz-form-label>
+            <nz-form-control nzErrorTip="Nhap thanh pho">
+              <input nz-input formControlName="city" placeholder="Ho Chi Minh" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+
+        <div class="form-row">
+          <nz-form-item>
+            <nz-form-label nzRequired>Check-in</nz-form-label>
+            <nz-form-control>
+              <input nz-input type="time" formControlName="checkInTime" />
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label nzRequired>Check-out</nz-form-label>
+            <nz-form-control>
+              <input nz-input type="time" formControlName="checkOutTime" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+
+        <div class="form-row">
+          <nz-form-item>
+            <nz-form-label>Tien ich</nz-form-label>
+            <nz-form-control>
+              <textarea
+                nz-input
+                formControlName="amenitiesText"
+                rows="4"
+                placeholder="Wifi&#10;Pool&#10;Parking"
+              ></textarea>
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label>URL hinh anh</nz-form-label>
+            <nz-form-control>
+              <textarea
+                nz-input
+                formControlName="imagesText"
+                rows="4"
+                placeholder="https://example.com/hotel.jpg"
+              ></textarea>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+      </form>
+    </ng-container>
+  </nz-modal>
+</div>

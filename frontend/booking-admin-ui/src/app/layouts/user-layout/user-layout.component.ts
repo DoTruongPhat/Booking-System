@@ -6,6 +6,7 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { Auth } from '../../core/services/auth';
 
 @Component({
@@ -19,6 +20,7 @@ import { Auth } from '../../core/services/auth';
     NzMenuModule,
     NzAvatarModule,
     NzDropDownModule,
+    NzTooltipModule,
   ],
   templateUrl: './user-layout.component.html',
   styleUrl: './user-layout.component.scss',
@@ -27,9 +29,10 @@ export class UserLayoutComponent {
   user: any;
 
   navItems = [
-    { path: '/user/booking/my', label: 'Đặt phòng của tôi', icon: 'calendar' },
+    { path: '/user/bookings', label: 'Đặt phòng của tôi', icon: 'calendar' },
     { path: '/user/booking/new', label: 'Đặt phòng mới', icon: 'plus-circle' },
     { path: '/user/profile', label: 'Tài khoản', icon: 'user' },
+    { path: '/user/tickets', label: 'Hỗ trợ', icon: 'inbox' },
   ];
 
   constructor(
@@ -37,6 +40,12 @@ export class UserLayoutComponent {
     private router: Router,
   ) {
     this.user = this.auth.getUser();
+  }
+
+  /** User có role admin/manager/staff thì được vào admin */
+  canAccessAdmin(): boolean {
+    const roles = this.user?.roles || [];
+    return roles.includes('ADMIN_ALL') || roles.includes('MANAGER') || roles.includes('STAFF');
   }
 
   logout(): void {

@@ -1,9 +1,10 @@
 // =====================================================
 // BOOKING MODEL
-// Cấu trúc đặt phòng
+// Cấu trúc đặt phòng — ALIGNED với backend Phase E
 // =====================================================
 
-export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCELLED' | 'NO_SHOW';
+// ── Backend chỉ có 5 status (không có CHECKED_IN, CHECKED_OUT) ──
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
 export type PaymentMethod = 'CREDIT_CARD' | 'BANK_TRANSFER' | 'MOMO' | 'VNPAY' | 'PAY_AT_HOTEL';
 
@@ -15,15 +16,15 @@ export interface Booking {
   hotelName: string;
   hotelAddress: string;
   roomName: string;
-  checkIn: string;              // ISO date
-  checkOut: string;
+  checkIn: string; // ISO date (checkInDate from backend)
+  checkOut: string; // ISO date (checkOutDate from backend)
   nights: number;
   guests: {
     adults: number;
     children: number;
     childrenAges?: number[];
   };
-  rooms: number;                // Số phòng đặt
+  rooms: number; // numRooms
   pricePerNight: number;
   totalPrice: number;
   taxAmount: number;
@@ -38,45 +39,55 @@ export interface Booking {
   confirmedAt?: string;
   cancelledAt?: string;
   cancellationReason?: string;
+  /** Phần trăm hoàn tiền (100%, 50%, 0%) — backend tính */
+  refundPercent?: number;
+  /** Số tiền hoàn — backend tính */
+  refundAmount?: number;
 }
 
 export interface GuestInfo {
   fullName: string;
   email: string;
   phone: string;
-  countryCode?: string;         // +84, +1, ...
-  estimatedArrivalTime?: string; // '14:00 - 18:00'
+  countryCode?: string;
+  estimatedArrivalTime?: string;
+}
+
+export interface CreateBookingRequest {
+  roomId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  numGuests: number;
+  numRooms: number;
+  specialRequest?: string;
+  guestName: string;
+  guestEmail: string;
+  guestPhone?: string;
+}
+
+/** Request body cho POST /api/user/bookings/{id}/cancel */
+export interface CancelBookingRequest {
+  reason: string;
 }
 
 export interface BookingFilter {
   city?: string;
   checkIn?: string;
   checkOut?: string;
-  guests?: {
-    adults: number;
-    children: number;
-  };
+  guests?: number;
   priceMin?: number;
   priceMax?: number;
-  starRatings?: number[];        // [3, 4, 5]
-  amenities?: string[];          // ['wifi', 'pool', ...]
-  sortBy?: string;               // 'recommended' | 'price_low' | 'rating_high'
+  minRating?: number;
+  sortBy?: string;
+  page?: number;
+  size?: number;
 }
 
-export interface SearchResult {
-  hotels: import('./hotel.model').Hotel[];
-  total: number;
-  page: number;
-  pageSize: number;
-  filters: BookingFilter;
-}
-
-// === STATUS LABELS ===
+// === STATUS LABELS (aligned với 5 status backend) ===
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   PENDING: 'Chờ xác nhận',
   CONFIRMED: 'Đã xác nhận',
-  CHECKED_IN: 'Đã nhận phòng',
-  CHECKED_OUT: 'Đã trả phòng',
+  COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy',
   NO_SHOW: 'Không đến',
 };
@@ -84,8 +95,7 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
 export const BOOKING_STATUS_COLORS: Record<BookingStatus, string> = {
   PENDING: 'orange',
   CONFIRMED: 'green',
-  CHECKED_IN: 'blue',
-  CHECKED_OUT: 'default',
+  COMPLETED: 'blue',
   CANCELLED: 'red',
   NO_SHOW: 'red',
 };

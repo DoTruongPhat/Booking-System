@@ -13,5 +13,9 @@ public class ExchangeCodeRequest {
     private String codeVerifier;      // PKCE code_verifier
 
     @NotBlank
-    private String redirectUri;       // Phải match với KC client config
+    private String redirectUri;// Phải match với KC client config
+
+    private String timeZone;
+
 }
+

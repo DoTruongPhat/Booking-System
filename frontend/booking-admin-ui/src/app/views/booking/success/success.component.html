@@ -1,0 +1,113 @@
+<div class="success-page">
+  <app-navbar></app-navbar>
+
+  <div class="success-container">
+    <div class="success-card">
+      <!-- Success Icon -->
+      <div class="success-icon-wrapper">
+        <div class="success-icon">
+          <span nz-icon nzType="check" nzTheme="outline"></span>
+        </div>
+        <div class="success-rings">
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
+        </div>
+      </div>
+
+      <h1 class="success-title">Đặt phòng thành công!</h1>
+      <p class="success-subtitle">
+        Cảm ơn bạn đã đặt phòng. Thông tin xác nhận đã được gửi vào email của bạn.
+      </p>
+
+      <!-- Booking ID -->
+      <div class="booking-id-card">
+        <div class="booking-id-label">Mã đặt phòng</div>
+        <div class="booking-id-row">
+          <span class="booking-id-value">{{ bookingId }}</span>
+          <button class="copy-btn" (click)="copyBookingId()" title="Sao chép">
+            <span nz-icon nzType="copy"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div class="details-card">
+        <h3>Chi tiết đặt phòng</h3>
+
+        <div class="detail-row">
+          <span class="detail-label">Khách sạn</span>
+          <span class="detail-value">{{ hotelName }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Loại phòng</span>
+          <span class="detail-value">{{ roomName }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Nhận phòng</span>
+          <span class="detail-value">{{ formatDate(checkIn) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Trả phòng</span>
+          <span class="detail-value">{{ formatDate(checkOut) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Khách</span>
+          <span class="detail-value">{{ guests.adults }} người lớn<span *ngIf="guests.children > 0">, {{ guests.children }} trẻ em</span></span>
+        </div>
+
+        <div class="detail-divider"></div>
+
+        <div class="detail-row total-row">
+          <span class="detail-label">Tổng thanh toán</span>
+          <span class="detail-value total-value">{{ formatPrice(totalPrice) }}</span>
+        </div>
+      </div>
+
+      <!-- Next Steps -->
+      <div class="next-steps">
+        <h3>Bước tiếp theo</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-icon">
+              <span nz-icon nzType="mail"></span>
+            </div>
+            <div>
+              <strong>Kiểm tra email</strong>
+              <span>Chúng tôi đã gửi thông tin đặt phòng vào email của bạn</span>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-icon">
+              <span nz-icon nzType="calendar"></span>
+            </div>
+            <div>
+              <strong>Chuẩn bị cho chuyến đi</strong>
+              <span>Mang theo CCCD/CMND và mã đặt phòng khi nhận phòng</span>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-icon">
+              <span nz-icon nzType="customer-service"></span>
+            </div>
+            <div>
+              <strong>Hỗ trợ 24/7</strong>
+              <span>Liên hệ hotline 1900-1234 nếu cần hỗ trợ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-buttons">
+        <button class="btn-secondary" routerLink="/user/bookings">
+          <span nz-icon nzType="calendar"></span>
+          Xem đặt phòng của tôi
+        </button>
+        <button class="btn-primary" routerLink="/">
+          <span nz-icon nzType="home"></span>
+          Về trang chủ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

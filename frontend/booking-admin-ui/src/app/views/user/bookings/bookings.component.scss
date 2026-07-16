@@ -1,0 +1,336 @@
+@use '../../../../styles/tokens' as t;
+
+.bookings-page {
+  min-height: 100vh;
+  background: t.$color-bg-soft;
+  font-family: t.$font-family-base;
+  padding-bottom: t.$spacing-16;
+}
+
+.bookings-container {
+  max-width: t.$container-max;
+  margin: 0 auto;
+  padding: t.$spacing-6;
+}
+
+.page-header {
+  margin-bottom: t.$spacing-6;
+
+  h1 {
+    font-family: t.$font-family-heading;
+    font-size: t.$font-size-4xl;
+    font-weight: t.$font-weight-bold;
+    color: t.$color-text-primary;
+    margin: 0 0 t.$spacing-2 0;
+    letter-spacing: t.$letter-spacing-tight;
+  }
+
+  p {
+    font-family: t.$font-family-base;
+    font-size: t.$font-size-md;
+    color: t.$color-text-secondary;
+    margin: 0;
+  }
+}
+
+// === STATUS TABS ===
+.status-tabs {
+  display: flex;
+  gap: t.$spacing-2;
+  margin-bottom: t.$spacing-5;
+  overflow-x: auto;
+  padding-bottom: t.$spacing-2;
+}
+
+.tab-btn {
+  padding: t.$spacing-2 t.$spacing-4;
+  background: t.$color-white;
+  border: 1px solid t.$color-border-light;
+  border-radius: t.$radius-full;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-medium;
+  color: t.$color-text-secondary;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: t.$transition-base;
+
+  &:hover {
+    border-color: t.$color-primary;
+    color: t.$color-primary;
+  }
+
+  &.active {
+    background: t.$color-primary;
+    border-color: t.$color-primary;
+    color: t.$color-white;
+  }
+}
+
+// === BOOKING CARD ===
+.bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: t.$spacing-4;
+}
+
+.booking-card {
+  background: t.$color-white;
+  border: 1px solid t.$color-border-light;
+  border-radius: t.$radius-xl;
+  overflow: hidden;
+  transition: t.$transition-smooth;
+
+  &:hover {
+    box-shadow: t.$shadow-md;
+    border-color: t.$color-primary-200;
+  }
+}
+
+.booking-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: t.$spacing-4 t.$spacing-5;
+  background: t.$color-bg-soft;
+  border-bottom: 1px solid t.$color-border-light;
+
+  .booking-id {
+    display: flex;
+    gap: t.$spacing-2;
+    align-items: center;
+    font-family: t.$font-family-base;
+    font-size: t.$font-size-sm;
+
+    .label {
+      color: t.$color-text-muted;
+    }
+
+    .value {
+      color: t.$color-text-primary;
+      font-weight: t.$font-weight-semibold;
+    }
+  }
+}
+
+.booking-card-body {
+  padding: t.$spacing-5;
+}
+
+.booking-hotel-info {
+  margin-bottom: t.$spacing-4;
+
+  .hotel-name {
+    font-family: t.$font-family-heading;
+    font-size: t.$font-size-lg;
+    font-weight: t.$font-weight-semibold;
+    color: t.$color-text-primary;
+    margin: 0 0 t.$spacing-2 0;
+  }
+
+  .hotel-address,
+  .room-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: t.$font-family-base;
+    font-size: t.$font-size-sm;
+    color: t.$color-text-secondary;
+    margin: 0 0 t.$spacing-1 0;
+
+    span[nz-icon] {
+      color: t.$color-primary;
+    }
+  }
+}
+
+.booking-dates {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: t.$spacing-4;
+  background: t.$color-bg-soft;
+  border-radius: t.$radius-md;
+  margin-bottom: t.$spacing-3;
+}
+
+.date-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+
+  .date-label {
+    font-size: t.$font-size-xs;
+    color: t.$color-text-muted;
+    text-transform: uppercase;
+    letter-spacing: t.$letter-spacing-wider;
+  }
+
+  .date-value {
+    font-family: t.$font-family-heading;
+    font-size: t.$font-size-md;
+    font-weight: t.$font-weight-semibold;
+    color: t.$color-text-primary;
+  }
+
+  .date-time {
+    font-size: t.$font-size-xs;
+    color: t.$color-text-secondary;
+  }
+}
+
+.date-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0 t.$spacing-3;
+
+  span[nz-icon] {
+    color: t.$color-primary;
+    font-size: t.$font-size-lg;
+  }
+
+  .nights {
+    font-size: t.$font-size-xs;
+    color: t.$color-text-secondary;
+    font-weight: t.$font-weight-medium;
+  }
+}
+
+.booking-details-row {
+  display: flex;
+  gap: t.$spacing-4;
+  flex-wrap: wrap;
+}
+
+.detail-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-sm;
+  color: t.$color-text-secondary;
+
+  span[nz-icon] {
+    color: t.$color-primary;
+  }
+}
+
+.booking-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: t.$spacing-4 t.$spacing-5;
+  border-top: 1px solid t.$color-border-light;
+  background: t.$color-bg-soft;
+
+  @media (max-width: t.$breakpoint-sm) {
+    flex-direction: column;
+    gap: t.$spacing-3;
+    align-items: stretch;
+  }
+}
+
+.booking-price {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .price-label {
+    font-size: t.$font-size-xs;
+    color: t.$color-text-muted;
+    text-transform: uppercase;
+    letter-spacing: t.$letter-spacing-wider;
+  }
+
+  .price-value {
+    font-family: t.$font-family-heading;
+    font-size: t.$font-size-xl;
+    font-weight: t.$font-weight-bold;
+    color: t.$color-primary;
+  }
+}
+
+.booking-actions {
+  display: flex;
+  gap: t.$spacing-2;
+}
+
+.btn-text,
+.btn-primary,
+.btn-danger-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$spacing-1;
+  padding: t.$spacing-2 t.$spacing-3;
+  border-radius: t.$radius-md;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-medium;
+  cursor: pointer;
+  transition: t.$transition-base;
+}
+
+.btn-text {
+  background: transparent;
+  border: none;
+  color: t.$color-primary;
+
+  &:hover {
+    background: t.$color-primary-50;
+  }
+}
+
+.btn-primary {
+  background: t.$color-primary;
+  border: none;
+  color: t.$color-white;
+
+  &:hover {
+    background: t.$color-primary-hover;
+  }
+}
+
+.btn-danger-outline {
+  background: transparent;
+  border: 1px solid t.$color-danger;
+  color: t.$color-danger;
+
+  &:hover {
+    background: t.$color-danger-light;
+  }
+}
+
+// === EMPTY STATE ===
+.empty-state {
+  background: t.$color-white;
+  border: 1px solid t.$color-border-light;
+  border-radius: t.$radius-xl;
+  padding: t.$spacing-16 t.$spacing-6;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 64px;
+    color: t.$color-text-muted;
+    opacity: 0.5;
+    display: block;
+    margin-bottom: t.$spacing-4;
+  }
+
+  h3 {
+    font-family: t.$font-family-heading;
+    font-size: t.$font-size-xl;
+    font-weight: t.$font-weight-semibold;
+    color: t.$color-text-primary;
+    margin: 0 0 t.$spacing-2 0;
+  }
+
+  p {
+    font-family: t.$font-family-base;
+    font-size: t.$font-size-base;
+    color: t.$color-text-secondary;
+    margin: 0 0 t.$spacing-5 0;
+  }
+}

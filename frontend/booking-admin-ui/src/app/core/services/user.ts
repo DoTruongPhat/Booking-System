@@ -34,9 +34,7 @@ export class UserService {
     isActive?: boolean,
     isLocked?: boolean,
   ): Observable<SpringPage<User>> {
-    let params = new HttpParams()
-      .set('page', String(page))
-      .set('size', String(size));
+    let params = new HttpParams().set('page', String(page)).set('size', String(size));
 
     if (keyword && keyword.trim()) {
       params = params.set('keyword', keyword.trim());
@@ -104,13 +102,26 @@ export class UserService {
     return this.http.get<User>('/api/users/me');
   }
 
-  // BE: PUT /api/users/me body: { email, timezone }
-  updateMyProfile(body: { email?: string; timezone?: string }): Observable<User> {
+  // BE: PUT /api/users/me body: { email, timezone, phone }
+  updateMyProfile(body: {
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    timezone?: string;
+  }): Observable<User> {
     return this.http.put<User>('/api/users/me', body);
   }
 
   // BE: PUT /api/users/me/password body: { currentPassword, newPassword }
   changeMyPassword(body: ChangePasswordRequest): Observable<{ message: string }> {
     return this.http.put<{ message: string }>('/api/users/me/password', body);
+  }
+  deleteUser(id: string) {
+    return this.http.delete(`/api/admin/users/${id}/hard`);
+  }
+
+  toggle2FA(enable: boolean): Observable<void> {
+    return this.http.put<void>('/api/users/me/2fa', { enabled: enable });
   }
 }

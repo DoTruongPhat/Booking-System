@@ -23,13 +23,11 @@ public interface KeycloakTokenService {
      * Thông tin user extract từ id_token
      */
     record IdTokenClaims(
-        String sub,                  // KC user id
-        String email,
-        boolean emailVerified,
-        String username,
-        String firstName,
-        String lastName,
-        List<String> roles,
-        long expiresAt
+            String       sub,
+            String       email,
+            boolean      emailVerified,
+            List<String> roles,
+            String       provider,
+            String       preferredUsername
     ) {}
 }

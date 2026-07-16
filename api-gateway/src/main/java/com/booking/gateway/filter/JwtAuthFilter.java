@@ -39,12 +39,18 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     // → Không cần JWT để gọi các endpoint này
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/login",
+            "/api/auth/refresh",
             "/api/auth/register",
+            "/api/auth/exchange",
+            "/api/auth/public-key",
             "/api/auth/forgot-password",
             "/api/auth/reset-password",
             "/api/auth/2fa/verify",
+            "/api/auth/sso",
             "/api/internal",
             "/api/composite",
+            "/api/rooms",
+            "/api/hotels",
             "/actuator"
     );
 

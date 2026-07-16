@@ -1,4 +1,4 @@
-<nz-layout class="app-layout">
+<nz-layout class="app-layout" [class.sidebar-collapsed]="isCollapsed">
   <!--Side Bar-->
   <nz-sider
     class="sidebar"
@@ -7,48 +7,98 @@
     [nzBreakpoint]="'lg'"
     [nzCollapsedWidth]="0"
   >
+    <!-- Logo -->
     <div class="sidebar-logo">
-      <span *ngIf="!isCollapsed">SmartBooking</span>
-      <span *ngIf="isCollapsed">SB</span>
+      <div class="logo-icon" *ngIf="!isCollapsed">
+        <img src="/images/Logo.jpg" />
+      </div>
+      <span *ngIf="!isCollapsed" class="logo-text">SmartBooking</span>
+      <span *ngIf="isCollapsed" class="logo-short">SB</span>
     </div>
 
     <ul nz-menu nzMode="inline" nzTheme="dark" class="sidebar-menu">
+      <!-- ============ TỔNG QUAN ============ -->
+      <li nz-menu-group nzTitle="Tổng quan" *ngIf="!isCollapsed"></li>
       <li nz-menu-item routerLink="/admin/dashboard" routerLinkActive="ant-menu-item-selected">
         <span nz-icon nzType="dashboard"></span>
-        <span *ngIf="!isCollapsed">DashBoard</span>
-      </li>
-      <li nz-menu-item routerLink="/admin/users" routerLinkActive="ant-menu-item-selected">
-        <span nz-icon nzType="user"></span>
-        <span *ngIf="!isCollapsed">Users</span>
+        <span *ngIf="!isCollapsed">Dashboard</span>
       </li>
 
-      <li nz-menu-item routerLink="/admin/bookings" routerLinkActive="ant-menu-item-selected">
-        <span nz-icon nzType="calendar"></span>
-        <span *ngIf="!isCollapsed">Bookings</span>
-      </li>
+      <!-- ============ QUẢN LÝ KHÁCH SẠN (ADMIN + HOST) ============ -->
+      <ng-container *ngIf="hasAnyRole(['ADMIN_ALL', 'ADMIN', 'HOST'])">
+        <li nz-menu-group nzTitle="Quản lý khách sạn" *ngIf="!isCollapsed"></li>
+        <li nz-menu-item routerLink="/admin/hotels" routerLinkActive="ant-menu-item-selected">
+          <span nz-icon nzType="home"></span>
+          <span *ngIf="!isCollapsed">Khách sạn</span>
+        </li>
+        <li nz-menu-item routerLink="/admin/rooms" routerLinkActive="ant-menu-item-selected">
+          <span nz-icon nzType="build"></span>
+          <span *ngIf="!isCollapsed">Phòng</span>
+        </li>
+        <li nz-menu-item routerLink="/admin/room-types" routerLinkActive="ant-menu-item-selected">
+          <span nz-icon nzType="appstore"></span>
+          <span *ngIf="!isCollapsed">Loại phòng</span>
+        </li>
+      </ng-container>
 
-      <li nz-menu-item routerLink="/admin/rooms" routerLinkActive="ant-menu-item-selected">
-        <span nz-icon nzType="home"></span>
-        <span *ngIf="!isCollapsed">Rooms</span>
-      </li>
+      <!-- ============ ĐẶT PHÒNG (ADMIN + HOST) ============ -->
+      <ng-container *ngIf="hasAnyRole(['ADMIN_ALL', 'ADMIN', 'HOST'])">
+        <li nz-menu-group nzTitle="Đặt phòng" *ngIf="!isCollapsed"></li>
+        <li nz-menu-item routerLink="/admin/bookings" routerLinkActive="ant-menu-item-selected">
+          <span nz-icon nzType="calendar"></span>
+          <span *ngIf="!isCollapsed">Đơn đặt phòng</span>
+        </li>
+        <li nz-menu-item routerLink="/admin/payments" routerLinkActive="ant-menu-item-selected">
+          <span nz-icon nzType="credit-card"></span>
+          <span *ngIf="!isCollapsed">Thanh toán</span>
+        </li>
+      </ng-container>
 
-      <li nz-menu-item routerLink="/admin/payments" routerLinkActive="ant-menu-item-selected">
-        <span nz-icon nzType="credit-card"></span>
-        <span *ngIf="!isCollapsed">Payments</span>
-      </li>
+      <!-- ============ QUẢN LÝ TÀI KHOẢN (ADMIN only) ============ -->
+      <ng-container *ngIf="hasAnyRole(['ADMIN_ALL', 'ADMIN'])">
+        <li nz-menu-group nzTitle="Quản lý tài khoản" *ngIf="!isCollapsed"></li>
+        <li nz-menu-item routerLink="/admin/users" routerLinkActive="ant-menu-item-selected">
+          <span nz-icon nzType="team"></span>
+          <span *ngIf="!isCollapsed">Tài khoản</span>
+        </li>
+        <li nz-menu-item routerLink="/admin/roles" routerLinkActive="ant-menu-item-selected">
+          <span nz-icon nzType="safety-certificate"></span>
+          <span *ngIf="!isCollapsed">Phân quyền</span>
+        </li>
+      </ng-container>
+
+      <!-- ============ MARKETING (ADMIN + HOST) ============ -->
+      <ng-container *ngIf="hasAnyRole(['ADMIN_ALL', 'ADMIN', 'HOST'])">
+        <li nz-menu-group nzTitle="Marketing" *ngIf="!isCollapsed"></li>
+        <li nz-menu-item routerLink="/admin/promotions" routerLinkActive="ant-menu-item-selected">
+          <span nz-icon nzType="gift"></span>
+          <span *ngIf="!isCollapsed">Khuyến mãi</span>
+        </li>
+        <li nz-menu-item routerLink="/admin/vouchers" routerLinkActive="ant-menu-item-selected">
+          <span nz-icon nzType="tags"></span>
+          <span *ngIf="!isCollapsed">Mã giảm giá</span>
+        </li>
+      </ng-container>
+
+      <!-- ============ HỖ TRỢ (ADMIN + HOST) ============ -->
+      <ng-container *ngIf="hasAnyRole(['ADMIN_ALL', 'ADMIN', 'HOST'])">
+        <li nz-menu-group nzTitle="Hỗ trợ" *ngIf="!isCollapsed"></li>
+        <li
+          nz-menu-item
+          routerLink="/admin/staff/tickets"
+          routerLinkActive="ant-menu-item-selected"
+        >
+          <span nz-icon nzType="inbox"></span>
+          <span *ngIf="!isCollapsed">Phiếu hỗ trợ</span>
+        </li>
+      </ng-container>
 
       <li nz-menu-divider></li>
 
-      <li nz-menu-item routerLink="/admin/staff/tickets" routerLinkActive="ant-menu-item-selected">
-        <span nz-icon nzType="inbox"></span>
-        <span *ngIf="!isCollapsed">My Tickets</span>
-      </li>
-
-      <li nz-menu-divider></li>
-
+      <!-- ============ ĐĂNG XUẤT ============ -->
       <li nz-menu-item (click)="logout()">
         <span nz-icon nzType="logout"></span>
-        <span *ngIf="!isCollapsed">Logout</span>
+        <span *ngIf="!isCollapsed">Đăng xuất</span>
       </li>
     </ul>
   </nz-sider>
@@ -61,8 +111,39 @@
         <span nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
       </span>
 
+      <!-- Welcome banner -->
+      <div class="welcome-banner">
+        <span class="welcome-greeting">Chào mừng trở lại,</span>
+        <span class="welcome-name">{{ user?.username || 'Admin' }}</span>
+        <span class="welcome-emoji">👋</span>
+      </div>
+
       <div class="header-right">
-        <span class="user-name">Admin</span>
+        <!-- Notifications -->
+        <button class="header-icon-btn" nz-tooltip="Thông báo">
+          <span nz-icon nzType="bell"></span>
+          <span class="badge">3</span>
+        </button>
+
+        <!-- User avatar + dropdown -->
+        <div class="user-menu" nz-dropdown [nzDropdownMenu]="userMenu" nzTrigger="click">
+          <div class="user-avatar">{{ userInitial }}</div>
+          <span class="user-name">{{ user?.username || 'Admin' }}</span>
+          <span nz-icon nzType="down" class="user-caret"></span>
+        </div>
+        <nz-dropdown-menu #userMenu="nzDropdownMenu">
+          <ul nz-menu class="user-dropdown">
+            <li nz-menu-item routerLink="/admin/profile">
+              <span nz-icon nzType="user"></span>
+              <span>Hồ sơ của tôi</span>
+            </li>
+            <li nz-menu-divider></li>
+            <li nz-menu-item (click)="logout()">
+              <span nz-icon nzType="logout"></span>
+              <span>Đăng xuất</span>
+            </li>
+          </ul>
+        </nz-dropdown-menu>
       </div>
     </nz-header>
 

@@ -1,23 +1,26 @@
-version: "3.9"
-
-# ============================================
-# Booking System — Local dev stack
-# ============================================
+# ============================================ #
+# Booking System — Local dev stack             #
+# ============================================ #
 # Chạy: docker compose up -d
-# Tắt:  docker compose down
+# Tắt: docker compose down
 # Reset: docker compose down -v
+# Rebuild: docker compose build tên-service
 #
 # Bao gồm:
-#   - postgres (5432)
-#   - redis (6379)
-#   - kafka (29092 external, 9092 internal)
-#   - keycloak (8180) với provider tùy chỉnh + realm preloaded
+# - postgres (5432)
+# - redis (6379)
+# - kafka (29092 external, 9092 internal)
+# - keycloak (8180) với provider tùy chỉnh + realm preloaded
 # ============================================
 
 services:
+  # ─── Database ────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: booking-postgres
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.5
     environment:
       POSTGRES_DB: ${DB_NAME:-booking_db}
       POSTGRES_USER: ${DB_USER:-booking_user}
@@ -28,14 +31,18 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-booking_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-booking_user} -d ${DB_NAME:-booking_db}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  # ─── Cache ──────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: booking-redis
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-RedisPass@2024}"]
     ports:
       - "${REDIS_PORT:-6379}:6379"
@@ -45,9 +52,36 @@ services:
       timeout: 3s
       retries: 10
 
+  redis-ui:
+    image: redis/redisinsight:latest
+    container_name: redis-ui
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    ports:
+      - "5540:5540"
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      - redis
+
+  # ─── Message Queue ──────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: booking-zookeeper
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: booking-kafka
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.5
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -62,32 +96,140 @@ services:
     depends_on:
       - zookeeper
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: booking-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-
+  # ─── Auth & Identity ─────────────────────────────────────────
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.3
     container_name: booking-keycloak
-    command: ["start-dev", "--http-port=8180", "--import-realm"]
+    restart: unless-stopped
+    mem_limit: 2g
+    cpus: 2
+    command: [ "start-dev", "--http-port=8180", "--import-realm" ]
     environment:
       KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-Admin@2024}
       KC_HEALTH_ENABLED: "true"
+      KC_URL: http://keycloak:8180
+      KC_HOSTNAME_URL: http://localhost:8180
+      KC_HOSTNAME_ADMIN_URL: http://localhost:8180
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-booking_db}
+      KC_DB_USERNAME: ${DB_USER:-booking_user}
+      KC_DB_PASSWORD: ${DB_PASSWORD:-BookingPass@2024}
     ports:
       - "${KC_PORT:-8180}:8180"
     volumes:
       - ./docker/keycloak/providers:/opt/keycloak/providers:ro
       - ./docker/keycloak/realms:/opt/keycloak/data/import:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8180/health/ready || exit 1"]
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/8180 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && cat <&3 | grep -q '\"status\":\"UP\"'" ]
       interval: 10s
       timeout: 5s
       retries: 20
       start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
 
+
+  auth-service:
+    build: ./auth-service
+    container_name: booking-auth
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 1
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_USER: ${DB_USER:-booking_user}
+      DB_PASSWORD: ${DB_PASSWORD:-BookingPass@2024}
+      DB_NAME: ${DB_NAME:-booking_db}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-RedisPass@2024}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-booking-system-jwt-secret-key-very-long-at-least-32-chars-2024}
+      KC_URL: http://keycloak:8180
+      KC_ISSUER_URL: http://localhost:8180
+      KC_ADMIN: ${KC_ADMIN:-admin}
+      KC_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-Admin@2024}
+      MAIL_HOST: smtp.gmail.com
+      MAIL_PORT: 587
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8081/api/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 45s
+
+  # ─── Booking Service ────────────────────────────────────────
+  booking-service:
+    build: ./booking-service
+    container_name: booking-service
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.5
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_USERNAME: ${DB_USERNAME:-booking_user}
+      DB_PASSWORD: ${DB_PASSWORD:-BookingPass@2024}
+      DB_NAME: ${DB_NAME:-booking_db}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-RedisPass@2024}
+      KAFKA_SERVERS: kafka:9092
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-booking-system-jwt-secret-key-very-long-at-least-32-chars-2024}
+      JWT_PUBLIC_KEY_URL: http://localhost:8081/api/auth/public-key
+      JWT_ISSUER_URI: http://auth-service:8081
+      JWT_JWK_SET_URI: http://auth-service:8081/api/auth/public-key
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      auth-service:
+        condition: service_healthy
+  # ─── API Gateway ─────────────────────────────────────────────
+  gateway:
+    build: ./api-gateway
+    container_name: booking-gateway
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-RedisPass@2024}
+      BOOKING_SERVICE_URL: http://booking-service:8082
+      AUTH_SERVICE_URL: http://auth-service:8081
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - booking-service
+
+  # ─── Mail (Dev) ─────────────────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog
+    container_name: booking-mailhog
+    ports:
+      - "1025:1025"   # SMTP server
+      - "8025:8025"   # Web UI
+
+  # ─── Volumes ────────────────────────────────────────────────
 volumes:
   postgres_data:
+  redisinsight_data:

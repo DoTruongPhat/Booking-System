@@ -1,29 +1,28 @@
 package com.booking.application.service.serviceimpl;
 
 import com.booking.application.port.in.*;
-import com.booking.application.port.out.DomainEventPublisher;
-import com.booking.application.port.out.RoleRepositoryPort;
-import com.booking.application.port.out.TokenRepositoryPort;
+import com.booking.application.port.out.*;
 import com.booking.application.service.*;
 import com.booking.application.validator.UserValidator;
+import com.booking.domain.enums.DeactivationReason;
 import com.booking.domain.event.UserRegisteredEvent;
 import com.booking.domain.exception.*;
 import com.booking.domain.model.Role;
+import com.booking.domain.model.Token;
 import com.booking.domain.model.User;
+import com.booking.domain.model.UserKcLink;
+import com.booking.infrastructure.external.cache.TokenCacheService;
 import com.booking.presentation.mapper.UserMapper;
-import com.booking.shared.util.MaskUtil;
 import com.booking.presentation.request.*;
 import com.booking.presentation.response.LoginResponse;
-import com.booking.application.port.out.UserRepositoryPort;
-import com.booking.infrastructure.external.cache.TokenCacheService;
 import com.booking.presentation.response.RegisterResponse;
+import com.booking.shared.util.MaskUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,7 +32,7 @@ import java.util.UUID;
 public class AuthServiceImpl implements
         AuthService,
         LoginUseCase,
-        RegisterUseCase{
+        RegisterUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
     private final TokenRepositoryPort tokenRepositoryPort;
@@ -44,11 +43,16 @@ public class AuthServiceImpl implements
     private final UserMapper mapper;
     private final TwoFactorService twoFactorService;
     private final SystemParamService systemParamService;
-    private final SessionService sessionService;
     private final JwtService jwtService;
 
     private final UserValidator userValidator;
     private final DomainEventPublisher eventPublisher;
+
+    // ═══ MỚI — KC sync ═══
+    private final KeycloakAdminPort kcAdminClient;
+    private final UserKcLinkRepositoryPort kcLinkRepo;
+
+    private static final int REFRESH_TTL_DAYS = 7;
 
     @Override
     @Transactional(rollbackFor = DomainException.class)
@@ -59,24 +63,23 @@ public class AuthServiceImpl implements
         String username = request.getUsername();
         log.info("[Auth] Login attempt: {}", MaskUtil.maskUsername(username));
 
-        // Bước 1: Tìm user trong DB
         User user = userRepositoryPort.findByUsername(username)
                 .orElseThrow(() -> {
                     log.warn("[Auth] User not found: {}", MaskUtil.maskUsername(username));
-                    return new AuthException(
-                            ErrorCode.AUTH_001,
-                            ErrorCode.AUTH_001_MSG);
+                    return new AuthException(ErrorCode.AUTH_001, ErrorCode.AUTH_001_MSG);
                 });
 
-        // Bước 2: Kiểm tra account
         if (user.isAccountLocked()) {
             log.warn("[Auth] Account locked: {}", MaskUtil.maskUsername(username));
-            throw new AuthException(
-                    ErrorCode.AUTH_002,
-                    ErrorCode.AUTH_002_MSG);
+            throw new AuthException(ErrorCode.AUTH_002, ErrorCode.AUTH_002_MSG);
         }
 
-        // Bước 3: Verify password local (BCrypt)
+        if (user.getPasswordHash() == null) {
+            log.warn("[Auth] Passwordless SSO user attempted form login: {}",
+                    MaskUtil.maskUsername(username));
+            throw new AuthException(ErrorCode.AUTH_014, ErrorCode.AUTH_014_MSG);
+        }
+
         boolean passwordOk = passwordService.verify(
                 request.getPassword(),
                 user.getPasswordHash(),
@@ -86,22 +89,17 @@ public class AuthServiceImpl implements
 
         if (!passwordOk) {
             user.incrementFailedAttempts();
-
             int maxAttempts = systemParamService.getIntValue("MAX_LOGIN_ATTEMPTS", 5);
             int lockMinutes = systemParamService.getIntValue("LOCK_DURATION_MINUTES", 15);
 
             if (user.getFailedAttempts() >= maxAttempts) {
                 user.lockUntil(ZonedDateTime.now().plusMinutes(lockMinutes));
-                log.warn("[Auth] Account auto-locked: {}",
-                        MaskUtil.maskUsername(username));
+                log.warn("[Auth] Account auto-locked: {}", MaskUtil.maskUsername(username));
             }
             userRepositoryPort.save(user);
-            throw new AuthException(
-                    ErrorCode.AUTH_001,
-                    ErrorCode.AUTH_001_MSG);
+            throw new AuthException(ErrorCode.AUTH_001, ErrorCode.AUTH_001_MSG);
         }
 
-        // Bước 4: KC OK → reset failed attempts
         user.resetFailedAttempts();
         userRepositoryPort.save(user);
 
@@ -109,15 +107,10 @@ public class AuthServiceImpl implements
                 .findByIdWithRoles(user.getId())
                 .orElse(user);
 
-        // Bước 4.5: Kiểm tra 2FA
         if (userWithRoles.isTwoFactorEnabled()) {
-            log.info("[Auth] 2FA required for: {}",
-                    MaskUtil.maskUsername(username));
-
+            log.info("[Auth] 2FA required for: {}", MaskUtil.maskUsername(username));
             String mfaSessionToken = UUID.randomUUID().toString();
-            tokenCacheService.saveMfaSession(
-                    mfaSessionToken,
-                    userWithRoles.getId().toString());
+            tokenCacheService.saveMfaSession(mfaSessionToken, userWithRoles.getId().toString());
 
             return LoginResponse.builder()
                     .twoFactorRequired(true)
@@ -125,63 +118,55 @@ public class AuthServiceImpl implements
                     .build();
         }
 
-        // Bước 5: Single Session - Kill tất cả session cũ của user
-        // → Nếu user login ở nơi khác → session cũ bị kill ngay lập tức
-        int killed = sessionService.killOldSessions(
-            userWithRoles.getId(),
-            com.booking.domain.model.UserSession.REASON_NEW_LOGIN
+        int killed = tokenRepositoryPort.deactivateAllByUserId(
+                userWithRoles.getId(),
+                DeactivationReason.NEW_LOGIN.name()
         );
-        log.info("[Auth] Killed {} old session(s) for user {}",
-            killed, MaskUtil.maskUsername(username));
+        log.info("[Auth] Deactivated {} old token(s) for user {}",
+                killed, MaskUtil.maskUsername(username));
 
-        // Bước 6: Tạo JWT nội bộ + session tracking
-        // → JWT có jti match với user_sessions.jti
-        // → Nếu session bị kill → JWT cũng không dùng được nữa
         String jti = UUID.randomUUID().toString();
-        String deviceInfo = parseUserAgent(userAgent);
-        int ttlSeconds = 3600; // 1 giờ - sẽ đổi khi có refresh token
+        String accessToken = jwtService.generateToken(userWithRoles, jti);
+        String refreshToken = jwtService.generateRefreshToken(userWithRoles, jti);
 
-        com.booking.domain.model.UserSession newSession =
-            sessionService.createSession(
-                userWithRoles, jti,
-                com.booking.domain.model.UserSession.SOURCE_LOCAL,
-                deviceInfo, ipAddress, userAgent, ttlSeconds
-            );
-
-        // Tạo JWT với jti đã track
-        String rawToken = jwtService.generateToken(userWithRoles, jti);
+        String tokenHash = jwtService.hashToken(refreshToken);
+        Token tokenEntity = new Token();
+        tokenEntity.setUser(userWithRoles);
+        tokenEntity.setTokenHash(tokenHash);
+        tokenEntity.setJti(jti);
+        tokenEntity.setActive(true);
+        tokenEntity.setIpAddress(ipAddress);
+        tokenEntity.setUserAgent(userAgent);
+        tokenEntity.setCreatedAt(ZonedDateTime.now());
+        tokenEntity.setExpiresAt(ZonedDateTime.now().plusDays(REFRESH_TTL_DAYS));
+        tokenRepositoryPort.save(tokenEntity);
 
         log.info("[Auth] Login successful: {} (jti: {})",
-            MaskUtil.maskUsername(username), jti);
+                MaskUtil.maskUsername(username), jti);
 
-        // Bước 7: Trả response
         return LoginResponse.builder()
-                .token(rawToken)
+                .token(accessToken)
+                .refreshToken(refreshToken)
                 .username(userWithRoles.getUsername())
                 .email(userWithRoles.getEmail())
-                .roles(userWithRoles.getRoles().stream()
-                        .map(r -> r.getCode())
-                        .toList())
+                .roles(userWithRoles.getRoles().stream().map(Role::getCode).toList())
                 .timezone(userWithRoles.getTimezone())
                 .twoFactorRequired(false)
+                .phoneRequired(isPhoneRequired(userWithRoles))
+                .passwordRequired(false)
+                .firstName(userWithRoles.getFirstName())
+                .lastName(userWithRoles.getLastName())
                 .build();
     }
 
-    /**
-     * Parse user agent thành device info ngắn gọn
-     * VD: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0"
-     *   → "Chrome 120 / Windows"
-     */
-    private String parseUserAgent(String userAgent) {
-        if (userAgent == null || userAgent.isBlank()) return "Unknown";
-        // Simplified - production nên dùng ua-parser library
-        if (userAgent.contains("Chrome")) return "Chrome / Desktop";
-        if (userAgent.contains("Firefox")) return "Firefox / Desktop";
-        if (userAgent.contains("Safari")) return "Safari / Desktop";
-        if (userAgent.contains("Edge")) return "Edge / Desktop";
-        if (userAgent.contains("Mobile")) return "Mobile Browser";
-        return "Unknown Browser";
+    private boolean isPhoneRequired(User user) {
+        String phone = user.getPhone();
+        return phone == null || phone.isBlank();
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // REGISTER — save local + sync KC
+    // ═══════════════════════════════════════════════════════════
 
     @Override
     @Transactional(rollbackFor = DomainException.class)
@@ -191,24 +176,31 @@ public class AuthServiceImpl implements
 
         log.info("[Auth] Register attempt: {}", MaskUtil.maskUsername(username));
 
-        // Validate input trước khi check DB
         userValidator.validateUsername(username);
         userValidator.validateEmail(email);
         userValidator.validatePassword(request.getPassword());
 
-
         if (userRepositoryPort.existsByUsername(username)) {
-            log.warn("[Auth] Username already exists: {}", MaskUtil.maskUsername(username));
+            log.warn("[Auth] Username exists: {}", MaskUtil.maskUsername(username));
             throw new UserException(ErrorCode.USR_002, ErrorCode.USR_002_MSG);
         }
 
         if (userRepositoryPort.existsByEmail(email)) {
-            log.warn("[Auth] Email already exists: {}", MaskUtil.maskEmail(email));
+            log.warn("[Auth] Email exists: {}", MaskUtil.maskEmail(email));
+            throw new UserException(ErrorCode.USR_003, ErrorCode.USR_003_MSG);
+        }
+
+        if (kcAdminClient.findUserByUsername(username) != null) {
+            log.warn("[Auth] Username exists in KC: {}", MaskUtil.maskUsername(username));
+            throw new UserException(ErrorCode.USR_002, ErrorCode.USR_002_MSG);
+        }
+
+        if (kcAdminClient.findUserByEmail(email) != null) {
+            log.warn("[Auth] Email exists in KC: {}", MaskUtil.maskEmail(email));
             throw new UserException(ErrorCode.USR_003, ErrorCode.USR_003_MSG);
         }
 
         UUID userId = UUID.randomUUID();
-
         PasswordService.HashedPassword hashed =
                 passwordService.hash(request.getPassword(), username, userId.toString());
 
@@ -216,6 +208,9 @@ public class AuthServiceImpl implements
         user.setId(userId);
         user.setPasswordHash(hashed.hash());
         user.setPasswordSalt(hashed.salt());
+        if (user.getTimezone() == null || user.getTimezone().isBlank()) {
+            user.setTimezone("UTC");
+        }
 
         Role userRole = roleRepositoryPort.findByCode("USER")
                 .orElseThrow(() -> new InfrastructureException(
@@ -223,17 +218,31 @@ public class AuthServiceImpl implements
         user.setRoles(Set.of(userRole));
 
         User savedUser = userRepositoryPort.save(user);
-        log.info("[Auth] Register successful: {}", MaskUtil.maskUsername(username));
+        String kcUserId = kcAdminClient.createUser(
+                username, email, request.getPassword(), true);
 
+        // ═══ MỚI — Sync KC Admin API (non-blocking) ═══
+            // Tạo user_kc_links
+            UserKcLink link = new UserKcLink();
+            link.setUserId(savedUser.getId());
+            link.setKcUserId(kcUserId);
+            link.setKcProvider(null);
+            link.setAuthSource("LINKED");
+            link.setKcSyncedAt(ZonedDateTime.now());
+            link.setSyncStatus("SYNCED");
+            link.setSyncVersion(1L);
+            kcLinkRepo.save(link);
+
+        log.info("[Auth] Register successful and KC synced: username={}, kcUserId={}",
+                MaskUtil.maskUsername(username), kcUserId);
+            // Không throw — user đã tạo local thành công
+            // KC sync sẽ retry khi user login qua KC lần đầu (Case B)
         eventPublisher.publish(new UserRegisteredEvent(
                 savedUser.getId().toString(),
                 savedUser.getUsername(),
                 savedUser.getEmail()
         ));
 
-        RegisterResponse response = mapper.toResponse(savedUser);
-        response.setMessage("Register successful");
-        return response;
+        return mapper.toResponse(savedUser);
     }
-
 }

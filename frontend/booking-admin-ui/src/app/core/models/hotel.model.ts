@@ -11,54 +11,58 @@ export interface Hotel {
   address: string;
   city: string;
   country: string;
-  starRating: number;           // 1-5 sao
-  userRating: number;           // 8.5, 9.2 (điểm đánh giá user)
+  starRating: number; // 1-5 sao
+  userRating: number; // 8.5, 9.2 (điểm đánh giá user)
   reviewCount: number;
-  images: string[];             // Danh sách URL ảnh
-  thumbnail: string;            // Ảnh đại diện
-  amenities: string[];           // ['wifi', 'pool', 'breakfast', 'parking', ...]
-  pricePerNight: number;        // Giá thấp nhất (VND)
-  originalPrice?: number;       // Giá gốc (nếu có sale)
-  currency: string;             // 'VND'
-  rooms: Room[];                // Danh sách phòng
+  images: string[]; // Danh sách URL ảnh
+  thumbnail: string; // Ảnh đại diện
+  amenities: string[]; // ['wifi', 'pool', 'breakfast', 'parking', ...]
+  pricePerNight: number; // Giá thấp nhất (VND)
+  originalPrice?: number; // Giá gốc (nếu có sale)
+  currency: string; // 'VND'
+  rooms: Room[]; // Danh sách phòng
   policies: HotelPolicies;
   location: {
     latitude: number;
     longitude: number;
-    district: string;           // Quận/Huyện
+    district: string; // Quận/Huyện
     nearbyAttractions?: string[];
   };
-  isFeatured?: boolean;         // Khách sạn nổi bật
-  discountPercent?: number;     // % giảm giá (nếu có)
+  status?: string; // PENDING, APPROVED, REJECTED (admin approve flow)
+  isFeatured?: boolean; // Khách sạn nổi bật
+  discountPercent?: number; // % giảm giá (nếu có)
+  ownerId?: string; // Host user ID
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Room {
   id: string;
   hotelId: string;
-  name: string;                 // 'Deluxe Room', 'Suite Ocean View', ...
+  name: string; // 'Deluxe Room', 'Suite Ocean View', ...
   description: string;
-  capacity: number;             // Số người tối đa
-  bedType: string;              // '1 King Bed', '2 Queen Beds', ...
-  size: number;                 // m²
+  capacity: number; // Số người tối đa
+  bedType: string; // '1 King Bed', '2 Queen Beds', ...
+  size: number; // m²
   pricePerNight: number;
   originalPrice?: number;
-  available: number;             // Số phòng còn trống
+  available: number; // Số phòng còn trống
   images: string[];
-  amenities: string[];           // ['air-conditioning', 'tv', 'minibar', 'safe', ...]
+  amenities: string[]; // ['air-conditioning', 'tv', 'minibar', 'safe', ...]
   maxAdults: number;
   maxChildren: number;
   breakfastIncluded: boolean;
   freeCancellation: boolean;
-  payLater: boolean;            // Trả tại khách sạn
+  payLater: boolean; // Trả tại khách sạn
 }
 
 export interface HotelPolicies {
-  checkIn: string;              // '14:00'
-  checkOut: string;             // '12:00'
-  cancellation: string;         // Mô tả
-  children: string;             // Chính sách trẻ em
-  pets: string;                 // Chính sách thú cư
-  smoking: string;              // Chính sách hút thuốc
+  checkIn: string; // '14:00'
+  checkOut: string; // '12:00'
+  cancellation: string; // Mô tả
+  children: string; // Chính sách trẻ em
+  pets: string; // Chính sách thú cư
+  smoking: string; // Chính sách hút thuốc
 }
 
 export interface Review {
@@ -67,7 +71,7 @@ export interface Review {
   userId: string;
   username: string;
   userAvatar?: string;
-  rating: number;               // 1-10
+  rating: number; // 1-10
   title: string;
   comment: string;
   createdAt: string;

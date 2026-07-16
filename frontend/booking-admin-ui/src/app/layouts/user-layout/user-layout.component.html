@@ -2,7 +2,7 @@
   <!-- HEADER -->
   <header class="header">
     <div class="header-left">
-      <a routerLink="/user/booking/my" class="logo">
+      <a routerLink="/" class="logo">
         <span class="logo-icon" nz-icon nzType="home" nzTheme="fill"></span>
         SmartBooking
       </a>
@@ -19,6 +19,18 @@
     </div>
 
     <div class="header-right">
+      <!-- Switch to admin (nếu user có role admin) -->
+      <button
+        *ngIf="canAccessAdmin()"
+        class="switch-btn"
+        routerLink="/admin/dashboard"
+        nz-tooltip="Về trang quản trị"
+      >
+        <span nz-icon nzType="appstore"></span>
+        Quản trị
+      </button>
+
+      <!-- User menu -->
       <div class="user-menu" nz-dropdown nzTrigger="click" [nzDropdownMenu]="userMenu">
         <nz-avatar [nzText]="userInitials" class="user-avatar" nzSize="small"></nz-avatar>
         <span class="user-name">{{ user?.username }}</span>
@@ -29,6 +41,10 @@
           <li nz-menu-item routerLink="/user/profile">
             <span nz-icon nzType="user"></span>
             Tài khoản của tôi
+          </li>
+          <li nz-menu-item *ngIf="canAccessAdmin()" routerLink="/admin/dashboard">
+            <span nz-icon nzType="appstore"></span>
+            Trang quản trị
           </li>
           <li nz-menu-divider></li>
           <li nz-menu-item (click)="logout()">

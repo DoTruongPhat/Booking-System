@@ -1,219 +1,324 @@
 package com.booking.application.service.serviceimpl;
 
 import com.booking.application.port.in.ExchangeKeycloakCodeUseCase;
-import com.booking.application.port.out.*;
+import com.booking.application.port.out.KeycloakTokenPort;
+import com.booking.application.port.out.RoleRepositoryPort;
+import com.booking.application.port.out.TokenRepositoryPort;
+import com.booking.application.port.out.UserKcLinkRepositoryPort;
+import com.booking.application.port.out.UserRepositoryPort;
 import com.booking.application.service.JwtService;
 import com.booking.application.service.KeycloakTokenService;
 import com.booking.application.service.KeycloakTokenService.IdTokenClaims;
-import com.booking.application.service.SessionService;
-import com.booking.domain.model.KcToken;
+import com.booking.domain.exception.ErrorCode;
 import com.booking.domain.model.Role;
+import com.booking.domain.model.Token;
 import com.booking.domain.model.User;
-import com.booking.domain.model.UserSession;
+import com.booking.domain.model.UserKcLink;
 import com.booking.infrastructure.config.AppProperties;
 import com.booking.presentation.request.ExchangeCodeRequest;
 import com.booking.presentation.response.LoginResponse;
 import com.booking.shared.util.MaskUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.ZonedDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 /**
- * KeycloakAuthService - xử lý Form B login
+ * KeycloakAuthServiceImpl — Phase C v2: tách bảng user_kc_links
  *
  * Flow:
- * 1. FE gửi code + code_verifier (PKCE)
- * 2. BE gọi KC /token endpoint → access/refresh/id_token
- * 3. BE verify id_token qua JWKS
- * 4. Upsert user trong BE PostgreSQL (sync)
- * 5. Load roles của user
- * 6. Kill old sessions (single session)
- * 7. Tạo session mới + JWT nội bộ
- * 8. Lưu kc_refresh_token để logout sau
+ *   1. Exchange code → KC tokens
+ *   2. Verify id_token
+ *   3. Tìm KC link → 3 cases:
+ *      A. Link tồn tại (kc_user_id match) → login
+ *      B. User email match, chưa link      → link + login
+ *      C. Không tìm thấy                   → tạo user + link + login
+ *   4. Generate JWT (access + refresh)
+ *   5. Save KC tokens
  */
 @Service
 @RequiredArgsConstructor
 @Log4j2
 public class KeycloakAuthServiceImpl implements ExchangeKeycloakCodeUseCase {
 
-    private final KeycloakTokenPort kcTokenPort;
-    private final KeycloakTokenService kcTokenService;
-    private final KcTokenRepositoryPort kcTokenRepo;
-    private final UserRepositoryPort userRepo;
-    private final RoleRepositoryPort roleRepo;
-    private final SessionService sessionService;
-    private final JwtService jwtService;
-    private final AppProperties appProperties;
+    private final KeycloakTokenPort         kcTokenPort;
+    private final KeycloakTokenService      kcTokenService;
+    private final UserRepositoryPort        userRepo;
+    private final UserKcLinkRepositoryPort  kcLinkRepo;      // ← MỚI
+    private final RoleRepositoryPort        roleRepo;
+    private final TokenRepositoryPort       tokenRepositoryPort;
+    private final JwtService                jwtService;
+    private final AppProperties             appProperties;
+
+    private static final int REFRESH_TTL_DAYS = 7;
+
+    private record UpsertResult(User user, boolean isNewUser) {}
+
+    @Override
+    public String buildAuthorizationUrl(String state, String provider) {
+        AppProperties.KeycloakProps kc = appProperties.getKeycloak();
+
+        String authEndpoint = String.format(
+                "%s/realms/%s/protocol/openid-connect/auth",
+                kc.getIssuerUrl(),
+                kc.getRealm()
+        );
+
+        return UriComponentsBuilder.fromHttpUrl(authEndpoint)
+                .queryParam("client_id", kc.getClientId())
+                .queryParam("redirect_uri", kc.getBffCallbackUrl())
+                .queryParam("response_type", "code")
+                .queryParam("scope", "openid email profile")
+                .queryParam("state", state)
+                .queryParam("prompt", "login")
+                .queryParam("kc_action", "authenticate")
+                .build()
+                .encode()
+                .toUriString();
+    }
 
     @Override
     @Transactional
-    public LoginResponse exchange(ExchangeCodeRequest request,
-                                   String ipAddress, String userAgent) {
-        log.info("[KC Auth] Exchange code request from IP: {}", ipAddress);
+    public LoginResponse handleCallback(String code, String ipAddress, String userAgent) {
+        log.info("[BFF] Callback: exchanging code from IP={}", ipAddress);
 
-        // Bước 1: Gọi KC /token để exchange code
-        KeycloakTokenPort.TokenResponse kcTokens = kcTokenPort.exchangeCode(
-            request.getCode(),
-            request.getCodeVerifier(),
-            request.getRedirectUri()
+        AppProperties.KeycloakProps kc = appProperties.getKeycloak();
+
+        KeycloakTokenPort.TokenResponse kcTokens = kcTokenPort.exchangeCodeConfidential(
+                code, kc.getBffCallbackUrl()
         );
 
         if (kcTokens.idToken() == null) {
-            throw new IllegalStateException("Keycloak did not return id_token");
+            throw new IllegalStateException(ErrorCode.AUTH_013 + ": Keycloak did not return id_token");
+        }
+
+        IdTokenClaims claims = kcTokenService.verifyIdToken(kcTokens.idToken());
+        log.info("[BFF] id_token verified: sub={}, email={}",
+                claims.sub(), MaskUtil.maskEmail(claims.email()));
+
+        return processKcLogin(claims, null, ipAddress, userAgent);
+    }
+    @Override
+    @Transactional
+    public LoginResponse exchange(ExchangeCodeRequest request,
+                                  String ipAddress, String userAgent) {
+        log.info("[KC Auth] Exchange code from IP={}", ipAddress);
+
+        // Bước 1: Exchange code → KC tokens
+        KeycloakTokenPort.TokenResponse kcTokens = kcTokenPort.exchangeCode(
+                request.getCode(), request.getCodeVerifier(), request.getRedirectUri());
+        if (kcTokens.idToken() == null) {
+            throw new IllegalStateException(ErrorCode.AUTH_013 + ": Keycloak did not return id_token");
         }
 
         // Bước 2: Verify id_token
         IdTokenClaims claims = kcTokenService.verifyIdToken(kcTokens.idToken());
-        log.info("[KC Auth] id_token verified: sub={}, email={}",
-            claims.sub(), MaskUtil.maskEmail(claims.email()));
+        log.info("[KC Auth] id_token verified: sub={}, email={}, username={}",
+                claims.sub(), MaskUtil.maskEmail(claims.email()), claims.preferredUsername());
 
-        // Bước 3: Upsert user trong BE
-        User user = upsertUserFromKc(claims);
-
-        // Bước 4: Load user với roles
-        User userWithRoles = userRepo.findByIdWithRoles(user.getId()).orElse(user);
-
-        // Bước 5: Single Session - kill old sessions
-        int killed = sessionService.killOldSessions(
-            userWithRoles.getId(),
-            UserSession.REASON_NEW_LOGIN
-        );
-        if (killed > 0) {
-            log.info("[KC Auth] Killed {} old session(s) for user {}",
-                killed, userWithRoles.getUsername());
-        }
-
-        // Bước 6: Tạo session mới
-        String jti = UUID.randomUUID().toString();
-        int ttl = appProperties.getKeycloak().getSessionTtl();
-        sessionService.createSession(
-            userWithRoles, jti,
-            UserSession.SOURCE_KEYCLOAK,
-            parseUserAgent(userAgent), ipAddress, userAgent, ttl
-        );
-
-        // Bước 7: Tạo JWT nội bộ
-        String jwt = jwtService.generateToken(userWithRoles, jti);
-
-        // Bước 8: Lưu KC tokens (để logout SSO sau này)
-        saveKcTokens(userWithRoles.getId(), claims.sub(), kcTokens);
-
-        // Bước 9: Trả response
-        return LoginResponse.builder()
-            .token(jwt)
-            .username(userWithRoles.getUsername())
-            .email(userWithRoles.getEmail())
-            .roles(userWithRoles.getRoles().stream()
-                .map(Role::getCode).toList())
-            .timezone(userWithRoles.getTimezone())
-            .twoFactorRequired(false)
-            .build();
+        return processKcLogin(claims, request.getTimeZone(), ipAddress, userAgent);
     }
 
-    // ── User sync từ KC → BE ─────────────────────────────
+    // ══════════════════════════════════════════════════════════
 
-    private User upsertUserFromKc(IdTokenClaims claims) {
+    private UpsertResult upsertUserFromKc(IdTokenClaims claims, String timeZone) {
+        String rawEmail = claims.email();
+        if (rawEmail == null || rawEmail.isBlank()) {
+            throw new IllegalStateException(ErrorCode.AUTH_013 + ": " + ErrorCode.AUTH_013_MSG);
+        }
+        if (!claims.emailVerified()) {
+            throw new IllegalStateException(ErrorCode.AUTH_010 + ": " + ErrorCode.AUTH_010_MSG);
+        }
+
+        String email = rawEmail.toLowerCase().trim();
         String kcUserId = claims.sub();
-        String email = claims.email();
 
-        // Tìm user theo kc_user_id trước (link trực tiếp)
-        Optional<User> existing = userRepo.findByKcUserId(kcUserId);
-        if (existing.isEmpty()) {
-            // Nếu không tìm thấy theo kcUserId, tìm theo email
-            // (case: user tạo Form A trước, chưa link KC)
-            existing = userRepo.findByEmail(email);
+        // ── Case A: tìm KC link theo sub ────────────────────
+        Optional<UserKcLink> existingLink = kcLinkRepo.findByKcUserId(kcUserId);
+        if (existingLink.isPresent()) {
+            log.info("[KC Auth] Case A — existing KC link: email={}", MaskUtil.maskEmail(email));
+            UserKcLink link = existingLink.get();
+            link.updateSync();
+            if (link.getKcProvider() == null && claims.provider() != null) {
+                link.setKcProvider(claims.provider());
+            }
+            kcLinkRepo.save(link);
+            User found = userRepo.findById(link.getUserId())
+                    .orElseThrow(() -> new IllegalStateException("User not found for KC link"));
+            return new UpsertResult(found, false);
         }
 
-        if (existing.isPresent()) {
-            User user = existing.get();
-            user.setKcUserId(kcUserId);
-            user.setKcSyncedAt(ZonedDateTime.now());
-            user.setSyncStatus("SYNCED");
-            user.setSyncVersion(user.getSyncVersion() + 1);
-
-            // Update auth_source
-            if ("LOCAL".equals(user.getAuthSource())) {
-                user.setAuthSource("LINKED");
-            } else if (user.getAuthSource() == null) {
-                user.setAuthSource("KEYCLOAK");
-            }
-
-            // Update name nếu chưa có
-            if (user.getEmail() != null && claims.username() != null) {
-                // keep existing username
-            }
-
-            log.info("[KC Auth] User already exists, updated kc link: {}",
-                MaskUtil.maskEmail(email));
-            return userRepo.save(user);
+        // ── Case B/C: tìm user theo email ───────────────────
+        Optional<User> byEmail = userRepo.findByEmailIgnoreCase(email);
+        if (byEmail.isPresent()) {
+            return new UpsertResult(linkOrRejectLocalUser(byEmail.get(), kcUserId, claims, email), false);
         }
 
-        // Tạo mới
+        // ── Case C: tạo mới ─────────────────────────────────
+        log.info("[KC Auth] Case C — auto-create: email={}", MaskUtil.maskEmail(email));
+        return new UpsertResult(createFromKc(email, kcUserId, claims, timeZone), true);
+    }
+
+    /**
+     * Case B: Link local user với KC
+     */
+    private User linkOrRejectLocalUser(User existing, String kcUserId,
+                                       IdTokenClaims claims, String email) {
+        // Hijack check: user đã link KC khác?
+        Optional<UserKcLink> existingLink = kcLinkRepo.findByUserId(existing.getId());
+        if (existingLink.isPresent() && !existingLink.get().getKcUserId().equals(kcUserId)) {
+            log.info("[KC Auth] Case B — updating KC link: email={}, old_kc={}, new_kc={}",
+                    MaskUtil.maskEmail(email), existingLink.get().getKcUserId(), kcUserId);
+            UserKcLink link = existingLink.get();
+            link.setKcUserId(kcUserId);
+            link.setKcProvider(claims.provider());
+            link.updateSync();
+            kcLinkRepo.save(link);
+            return existing;
+        }
+
+        // Email chưa verify
+        if (!existing.isEmailVerified()) {
+            log.warn("[KC Auth] Case B rejected — email not verified: email={}", MaskUtil.maskEmail(email));
+            throw new IllegalStateException(ErrorCode.AUTH_011 + ": " + ErrorCode.AUTH_011_MSG);
+        }
+
+        // Link: tạo record user_kc_links
+        log.info("[KC Auth] Case B — linking: email={}", MaskUtil.maskEmail(email));
+        UserKcLink link = new UserKcLink();
+        link.setUserId(existing.getId());
+        link.setKcUserId(kcUserId);
+        link.setKcProvider(claims.provider());
+        link.setAuthSource(existing.getPasswordHash() != null ? "LINKED" : "KEYCLOAK");
+        link.setKcSyncedAt(ZonedDateTime.now());
+        link.setSyncStatus("SYNCED");
+        link.setSyncVersion(1L);
+        kcLinkRepo.save(link);
+
+        return existing;
+    }
+
+    /**
+     * Case C: Tạo user mới + KC link
+     */
+    private User createFromKc(String email, String kcUserId,
+                              IdTokenClaims claims, String timeZone) {
+        // Username: dùng KC preferred_username, fallback email prefix
+        String username = email;
+
         User user = new User();
         user.setId(UUID.randomUUID());
         user.setEmail(email);
-        user.setUsername(claims.username() != null
-            ? claims.username() : email.split("@")[0]);
-        user.setKcUserId(kcUserId);
-        user.setKcSyncedAt(ZonedDateTime.now());
-        user.setSyncStatus("SYNCED");
-        user.setSyncVersion(1L);
-        user.setAuthSource("KEYCLOAK");
+        user.setUsername(username);
+        user.setPasswordHash(null);
+        user.setPasswordSalt(null);
+        user.setEmailVerified(true);
         user.setActive(true);
-        user.setTimezone("UTC");
+        user.setTimezone(timeZone != null ? timeZone : "UTC");
 
-        // Gán roles mặc định dựa trên KC roles
+        Set<Role> roles = resolveRoles(claims);
+        user.setRoles(roles);
+
+        try {
+            User saved = userRepo.save(user);
+
+            // Tạo KC link record
+            UserKcLink link = new UserKcLink();
+            link.setUserId(saved.getId());
+            link.setKcUserId(kcUserId);
+            link.setKcProvider(claims.provider());
+            link.setAuthSource("KEYCLOAK");
+            link.setKcSyncedAt(ZonedDateTime.now());
+            link.setSyncStatus("SYNCED");
+            link.setSyncVersion(1L);
+            kcLinkRepo.save(link);
+
+            log.info("[KC Auth] Case C — created: email={}, username={}", MaskUtil.maskEmail(email), username);
+            return saved;
+
+        } catch (DataIntegrityViolationException ex) {
+            log.warn("[KC Auth] Race condition, retrying: sub={}", kcUserId);
+            return kcLinkRepo.findByKcUserId(kcUserId)
+                    .flatMap(link -> userRepo.findById(link.getUserId()))
+                    .orElseThrow(() -> new IllegalStateException("Race condition: " + ex.getMessage()));
+        }
+    }
+
+    // ── Helpers ──────────────────────────────────────────────
+
+    private String resolveUsername(String base) {
+        base = base.replaceAll("[^a-zA-Z0-9_]", "").toLowerCase();
+        if (base.isBlank()) base = "user";
+        if (!userRepo.existsByUsername(base)) return base;
+        for (int i = 1; i <= 999; i++) {
+            String candidate = base + i;
+            if (!userRepo.existsByUsername(candidate)) return candidate;
+        }
+        return base + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+    }
+
+    private Set<Role> resolveRoles(IdTokenClaims claims) {
         Set<Role> roles = new HashSet<>();
         for (String roleCode : claims.roles()) {
             roleRepo.findByCode(roleCode).ifPresent(roles::add);
         }
-        // Fallback: gán USER nếu không match role nào
         if (roles.isEmpty()) {
             roleRepo.findByCode("USER").ifPresent(roles::add);
         }
-        user.setRoles(roles);
-
-        log.info("[KC Auth] Created new user from KC: {} with roles {}",
-            MaskUtil.maskEmail(email), claims.roles());
-        return userRepo.save(user);
+        return roles;
     }
 
-    private void saveKcTokens(UUID userId, String kcUserId,
-                              KeycloakTokenPort.TokenResponse tokens) {
-        KcToken existing = kcTokenRepo.findByUserId(userId).orElse(null);
-        if (existing == null) {
-            existing = new KcToken();
-            existing.setUserId(userId);
-        }
-
-        existing.setKcUserId(kcUserId);
-        existing.setKcAccessToken(tokens.accessToken());
-        existing.setKcRefreshToken(tokens.refreshToken());
-        existing.setAccessTokenExpiresAt(
-            ZonedDateTime.now().plusSeconds(tokens.expiresIn())
-        );
-        existing.setRefreshTokenExpiresAt(
-            ZonedDateTime.now().plusSeconds(tokens.refreshExpiresIn())
-        );
-        existing.setLastRefreshedAt(ZonedDateTime.now());
-
-        kcTokenRepo.save(existing);
-        log.info("[KC Auth] Saved KC tokens for user {}", userId);
+    private boolean isPhoneRequired(User user) {
+        return user.getPhone() == null || user.getPhone().isBlank();
     }
 
-    private String parseUserAgent(String ua) {
-        if (ua == null) return "Unknown";
-        if (ua.contains("Chrome")) return "Chrome / Desktop";
-        if (ua.contains("Firefox")) return "Firefox / Desktop";
-        if (ua.contains("Safari")) return "Safari / Desktop";
-        return "Unknown";
+    private LoginResponse processKcLogin(IdTokenClaims claims, String timeZone,
+                                         String ipAddress, String userAgent) {
+        UpsertResult result = upsertUserFromKc(claims, timeZone);
+        User user = result.user();
+        boolean isNewUser = result.isNewUser();
+        User userWithRoles = userRepo.findByIdWithRoles(user.getId()).orElse(user);
+
+        int killed = tokenRepositoryPort.deactivateAllByUserId(userWithRoles.getId(), "NEW_LOGIN");
+        if (killed > 0) log.info("[KC Auth] Killed {} old session(s)", killed);
+
+        String jti = UUID.randomUUID().toString();
+        String accessToken = jwtService.generateToken(userWithRoles, jti);
+        String refreshToken = jwtService.generateRefreshToken(userWithRoles, jti);
+
+        Token tokenEntity = new Token();
+        tokenEntity.setUser(userWithRoles);
+        tokenEntity.setTokenHash(jwtService.hashToken(refreshToken));
+        tokenEntity.setJti(jti);
+        tokenEntity.setActive(true);
+        tokenEntity.setIpAddress(ipAddress);
+        tokenEntity.setUserAgent(userAgent);
+        tokenEntity.setCreatedAt(ZonedDateTime.now());
+        tokenEntity.setExpiresAt(ZonedDateTime.now().plusDays(REFRESH_TTL_DAYS));
+        tokenRepositoryPort.save(tokenEntity);
+
+        boolean passwordRequired = userWithRoles.getPasswordHash() == null;
+
+        return LoginResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken)
+                .username(userWithRoles.getUsername())
+                .email(userWithRoles.getEmail())
+                .roles(userWithRoles.getRoles().stream().map(Role::getCode).toList())
+                .timezone(userWithRoles.getTimezone())
+                .twoFactorRequired(false)
+                .phoneRequired(isPhoneRequired(userWithRoles))
+                .passwordRequired(userWithRoles.getPasswordHash() == null)
+                .firstName(userWithRoles.getFirstName())
+                .lastName(userWithRoles.getLastName())
+                .build();
     }
 }

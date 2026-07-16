@@ -1,0 +1,89 @@
+<div class="tickets-page">
+  <app-navbar></app-navbar>
+
+  <div class="tickets-container">
+    <div class="page-header">
+      <div>
+        <h1>Hỗ trợ &amp; Phiếu ticket</h1>
+        <p>Gửi yêu cầu hỗ trợ và theo dõi tiến độ xử lý</p>
+      </div>
+      <button class="btn-primary" (click)="toggleForm()">
+        <span nz-icon [nzType]="showForm ? 'close' : 'plus'"></span>
+        {{ showForm ? 'Đóng' : 'Tạo ticket mới' }}
+      </button>
+    </div>
+
+    <!-- === CREATE FORM === -->
+    <div class="form-card" *ngIf="showForm">
+      <h2>Tạo phiếu hỗ trợ mới</h2>
+      <p class="form-desc">Mô tả chi tiết vấn đề của bạn để chúng tôi hỗ trợ nhanh nhất</p>
+
+      <form [formGroup]="ticketForm" (ngSubmit)="submitTicket()" nz-form nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzRequired>Tiêu đề</nz-form-label>
+          <nz-form-control nzErrorTip="Tiêu đề phải có ít nhất 5 ký tự">
+            <input nz-input formControlName="title" placeholder="Tóm tắt vấn đề" size="large" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Mô tả chi tiết</nz-form-label>
+          <nz-form-control nzErrorTip="Mô tả phải có ít nhất 10 ký tự">
+            <textarea
+              nz-input
+              formControlName="description"
+              placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
+              rows="5"
+            ></textarea>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Mức độ ưu tiên</nz-form-label>
+          <nz-form-control>
+            <select nz-input formControlName="priority">
+              <option value="LOW">Thấp - Câu hỏi chung</option>
+              <option value="MEDIUM">Trung bình - Cần hỗ trợ</option>
+              <option value="HIGH">Cao - Ảnh hưởng lớn</option>
+              <option value="URGENT">Khẩn cấp - Xử lý ngay</option>
+            </select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <div class="form-actions">
+          <button type="button" class="btn-text" (click)="toggleForm()">Hủy</button>
+          <button
+            type="submit"
+            class="btn-primary"
+            [disabled]="ticketForm.invalid || isSubmitting"
+          >
+            <span nz-icon nzType="send"></span>
+            {{ isSubmitting ? 'Đang gửi...' : 'Gửi ticket' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- === TICKETS LIST === -->
+    <div class="tickets-list">
+      <div *ngFor="let ticket of tickets" class="ticket-card">
+        <div class="ticket-header">
+          <div class="ticket-id-row">
+            <span class="ticket-id">{{ ticket.id }}</span>
+            <nz-tag [nzColor]="getStatusColor(ticket.status)">{{ getStatusLabel(ticket.status) }}</nz-tag>
+            <nz-tag [nzColor]="getPriorityColor(ticket.priority)">{{ getPriorityLabel(ticket.priority) }}</nz-tag>
+          </div>
+          <span class="ticket-date">{{ formatDate(ticket.createdAt) }}</span>
+        </div>
+        <h3 class="ticket-title">{{ ticket.title }}</h3>
+        <p class="ticket-description">{{ ticket.description }}</p>
+      </div>
+
+      <div *ngIf="tickets.length === 0" class="empty-state">
+        <span nz-icon nzType="file-text" class="empty-icon"></span>
+        <h3>Chưa có ticket nào</h3>
+        <p>Tạo ticket mới nếu bạn cần hỗ trợ</p>
+      </div>
+    </div>
+  </div>
+</div>

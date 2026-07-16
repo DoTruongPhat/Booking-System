@@ -1,0 +1,277 @@
+<div class="tickets-page">
+  <!-- ═══ HEADER ═══ -->
+  <div class="page-header">
+    <div>
+      <h1>Quản lý phiếu hỗ trợ</h1>
+      <p class="subtitle">Xem, assign và xử lý tất cả ticket từ khách hàng</p>
+    </div>
+  </div>
+
+  <!-- ═══ STATS CARDS ═══ -->
+  <div class="stats-row">
+    <div class="stat-card stat-open" (click)="setStatusFilter('OPEN')">
+      <div class="stat-icon"><span nz-icon nzType="inbox"></span></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ countByStatus('OPEN') }}</div>
+        <div class="stat-label">Mở</div>
+      </div>
+    </div>
+    <div class="stat-card stat-progress" (click)="setStatusFilter('IN_PROGRESS')">
+      <div class="stat-icon"><span nz-icon nzType="sync"></span></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ countByStatus('IN_PROGRESS') }}</div>
+        <div class="stat-label">Đang xử lý</div>
+      </div>
+    </div>
+    <div class="stat-card stat-resolved" (click)="setStatusFilter('RESOLVED')">
+      <div class="stat-icon"><span nz-icon nzType="check-circle"></span></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ countByStatus('RESOLVED') }}</div>
+        <div class="stat-label">Đã giải quyết</div>
+      </div>
+    </div>
+    <div class="stat-card stat-closed" (click)="setStatusFilter('CLOSED')">
+      <div class="stat-icon"><span nz-icon nzType="close-circle"></span></div>
+      <div class="stat-info">
+        <div class="stat-value">{{ countByStatus('CLOSED') }}</div>
+        <div class="stat-label">Đã đóng</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FILTER BAR ═══ -->
+  <nz-card class="filter-card">
+    <div class="filter-bar">
+      <nz-input-group [nzPrefix]="searchPrefix" class="search-input">
+        <input
+          nz-input
+          placeholder="Tìm theo title hoặc description..."
+          [(ngModel)]="keyword"
+          (keyup.enter)="onSearch()"
+        />
+        <ng-template #searchPrefix><span nz-icon nzType="search"></span></ng-template>
+      </nz-input-group>
+
+      <nz-select
+        [(ngModel)]="filterStatus"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Status"
+        class="filter-select"
+      >
+        <nz-option nzValue="all" nzLabel="Tất cả status"></nz-option>
+        <nz-option
+          *ngFor="let s of allStatuses"
+          [nzValue]="s"
+          [nzLabel]="statusConfig[s].label"
+        ></nz-option>
+      </nz-select>
+
+      <nz-select
+        [(ngModel)]="filterPriority"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Priority"
+        class="filter-select"
+      >
+        <nz-option nzValue="all" nzLabel="Tất cả priority"></nz-option>
+        <nz-option
+          *ngFor="let p of allPriorities"
+          [nzValue]="p"
+          [nzLabel]="priorityConfig[p].label"
+        ></nz-option>
+      </nz-select>
+
+      <nz-select
+        [(ngModel)]="filterAssignedTo"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Assigned"
+        class="filter-select"
+      >
+        <nz-option nzValue="all" nzLabel="Tất cả"></nz-option>
+        <nz-option nzValue="unassigned" nzLabel="Chưa assign"></nz-option>
+        <nz-option
+          *ngFor="let s of staffList"
+          [nzValue]="s.id"
+          [nzLabel]="(s.firstName || s.username) + ' (' + s.username + ')'"
+        ></nz-option>
+      </nz-select>
+
+      <nz-range-picker
+        [(ngModel)]="dateRange"
+        (ngModelChange)="onFilterChange()"
+        nzPlaceHolder="Khoảng ngày"
+      ></nz-range-picker>
+
+      <button nz-button nzType="primary" (click)="onSearch()">
+        <span nz-icon nzType="search"></span> Tìm
+      </button>
+
+      <button nz-button (click)="resetFilter()">
+        <span nz-icon nzType="reload"></span> Reset
+      </button>
+
+      <button nz-button (click)="loadTickets()" nz-tooltip="Reload">
+        <span nz-icon nzType="sync"></span>
+      </button>
+    </div>
+  </nz-card>
+
+  <!-- ═══ TABLE ═══ -->
+  <nz-card class="table-card">
+    <nz-table
+      [nzData]="tickets"
+      [nzLoading]="isLoading"
+      [nzShowPagination]="false"
+      nzSize="middle"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="80px">ID</th>
+          <th>Title</th>
+          <th nzWidth="140px">Priority</th>
+          <th nzWidth="140px">Status</th>
+          <th nzWidth="160px">Assigned to</th>
+          <th nzWidth="140px">Created</th>
+          <th nzWidth="280px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let t of tickets" (click)="viewDetail(t)" class="ticket-row">
+          <td>
+            <code class="ticket-id">{{ t.id.substring(0, 8) }}</code>
+          </td>
+          <td>
+            <div class="ticket-title">{{ t.title }}</div>
+            <div class="ticket-desc text-muted">{{ truncate(t.description, 60) }}</div>
+          </td>
+          <td>
+            <nz-tag [nzColor]="getPriorityColor(t.priority)">
+              <span nz-icon [nzType]="t.priority === 'URGENT' ? 'fire' : 'flag'"></span>
+              {{ getPriorityLabel(t.priority) }}
+            </nz-tag>
+          </td>
+          <td>
+            <nz-tag [nzColor]="getStatusColor(t.status)">
+              <span nz-icon [nzType]="statusConfig[t.status].icon"></span>
+              {{ getStatusLabel(t.status) }}
+            </nz-tag>
+          </td>
+          <td>
+            <ng-container *ngIf="t.assignedTo; else unassignedTpl">
+              <nz-avatar
+                [nzText]="getStaffName(t.assignedTo).charAt(0).toUpperCase()"
+                nzSize="small"
+                style="background-color: #1890ff; margin-right: 6px;"
+              ></nz-avatar>
+              <span class="staff-name">{{ getStaffName(t.assignedTo) }}</span>
+            </ng-container>
+            <ng-template #unassignedTpl>
+              <nz-tag nzColor="default">
+                <span nz-icon nzType="user-delete"></span> Chưa assign
+              </nz-tag>
+            </ng-template>
+          </td>
+          <td>
+            <span class="text-muted">{{ formatDate(t.createdAt) }}</span>
+          </td>
+          <td (click)="$event.stopPropagation()">
+            <nz-space nzSize="small">
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Xem chi tiết"
+                (click)="viewDetail(t)"
+              >
+                <span nz-icon nzType="eye"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Assign staff"
+                (click)="openAssignModal(t)"
+              >
+                <span nz-icon nzType="user-add"></span>
+              </button>
+              <nz-select
+                *nzSpaceItem
+                nzSize="small"
+                [ngModel]="t.status"
+                (ngModelChange)="changeStatus(t, $event)"
+                class="status-quick-change"
+                nz-tooltip="Đổi trạng thái nhanh"
+              >
+                <nz-option
+                  *ngFor="let s of allStatuses"
+                  [nzValue]="s"
+                  [nzLabel]="statusConfig[s].label"
+                ></nz-option>
+              </nz-select>
+            </nz-space>
+          </td>
+        </tr>
+
+        <tr *ngIf="!isLoading && !tickets.length">
+          <td colspan="7" class="empty-row">
+            <nz-empty nzNotFoundContent="Không có ticket nào"></nz-empty>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+
+    <!-- PAGINATION -->
+    <div class="pagination-wrapper">
+      <nz-pagination
+        [nzPageIndex]="pageIndex"
+        [nzTotal]="total"
+        [nzPageSize]="pageSize"
+        [nzShowSizeChanger]="true"
+        [nzPageSizeOptions]="[10, 20, 50, 100]"
+        (nzPageIndexChange)="onPageChange($event)"
+        (nzPageSizeChange)="onPageSizeChange($event)"
+        [nzShowTotal]="totalTemplate"
+      ></nz-pagination>
+      <ng-template #totalTemplate let-total let-range="range">
+        {{ range[0] }}-{{ range[1] }} of {{ total }} tickets
+      </ng-template>
+    </div>
+  </nz-card>
+</div>
+
+<!-- ═══ ASSIGN MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isAssignModalOpen"
+  [nzTitle]="'Assign ticket: ' + (selectedTicket?.title || '')"
+  [nzOkLoading]="isSubmitting"
+  nzOkText="Assign"
+  (nzOnCancel)="isAssignModalOpen = false"
+  (nzOnOk)="submitAssign()"
+>
+  <ng-container *nzModalContent>
+    <nz-alert
+      *ngIf="selectedTicket"
+      nzType="info"
+      nzShowIcon
+      [nzMessage]="selectedTicket.title"
+      [nzDescription]="selectedTicket.description"
+      style="margin-bottom: 16px;"
+    ></nz-alert>
+
+    <nz-spin [nzSpinning]="isLoadingStaff">
+      <form nz-form nzLayout="vertical" [formGroup]="assignForm">
+        <nz-form-item>
+          <nz-form-label nzRequired>Chọn staff</nz-form-label>
+          <nz-form-control>
+            <nz-select formControlName="staffId" nzShowSearch nzPlaceHolder="Tìm staff theo tên...">
+              <nz-option
+                *ngFor="let s of staffList"
+                [nzValue]="s.id"
+                [nzLabel]="(s.firstName ? (s.firstName + ' ' + (s.lastName || '')) : s.username) + ' (' + s.username + ')'"
+              ></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </nz-spin>
+  </ng-container>
+</nz-modal>

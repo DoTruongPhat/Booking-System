@@ -1,159 +1,138 @@
-import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
-import { Booking, BookingStatus, GuestInfo, PaymentMethod } from '../models/booking.model';
-import { Auth } from './auth';
+// ═══════════════════════════════════════════════════════════
+// BOOKING SERVICE — Phase E (API Integration)
+// BỎ localStorage mock → gọi /api/user/bookings thật
+//
+// POST /api/user/bookings         — tạo booking
+// GET  /api/user/bookings         — list bookings của user (pagination)
+// GET  /api/user/bookings/{id}    — chi tiết booking
+// POST /api/user/bookings/{id}/cancel — hủy booking
+// ═══════════════════════════════════════════════════════════
 
-/**
- * BookingService - Mock service quản lý bookings
- * Lưu trong localStorage để giữ data khi refresh
- */
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import {
+  Booking,
+  BookingStatus,
+  CreateBookingRequest,
+  CancelBookingRequest,
+} from '../models/booking.model';
+import { ApiResponse, PaginatedData } from '../models/api-response.model';
+
 @Injectable({ providedIn: 'root' })
 export class BookingService {
+  private readonly baseUrl = '/api/user/bookings';
 
-  private readonly STORAGE_KEY = 'smartbooking_bookings';
+  constructor(private http: HttpClient) {}
 
-  constructor(private auth: Auth) {}
-
-  // ======================================
-  // CRUD BOOKINGS
-  // ======================================
+  // ══════════════════════════════════════════════════════════
+  // CREATE
+  // ══════════════════════════════════════════════════════════
 
   /**
-   * Tạo booking mới
+   * POST /api/user/bookings
+   * Tạo booking mới. Backend tự tính price, tax, finalPrice.
+   * Trả về Booking object đầy đủ (có id, status=PENDING, v.v.)
    */
-  createBooking(booking: Omit<Booking, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'status' | 'paymentStatus'>): Observable<Booking> {
-    const user = this.auth.getUser();
-    if (!user) {
-      throw new Error('User not logged in');
-    }
-
-    const nights = this.calculateNights(booking.checkIn, booking.checkOut);
-    const totalPrice = booking.pricePerNight * booking.rooms * nights;
-    const taxAmount = Math.round(totalPrice * 0.1);
-    const finalPrice = totalPrice + taxAmount;
-
-    const newBooking: Booking = {
-      ...booking,
-      id: this.generateId(),
-      userId: user.id || user.username,
-      status: 'PENDING',
-      paymentStatus: 'UNPAID',
-      nights,
-      totalPrice,
-      taxAmount,
-      finalPrice,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const bookings = this.getAllBookings();
-    bookings.push(newBooking);
-    this.saveAllBookings(bookings);
-
-    return of(newBooking).pipe(delay(500));
+  createBooking(request: CreateBookingRequest): Observable<Booking> {
+    return this.http
+      .post<ApiResponse<Booking>>(this.baseUrl, request, { withCredentials: true })
+      .pipe(map((res) => res.data));
   }
 
+  // ══════════════════════════════════════════════════════════
+  // READ
+  // ══════════════════════════════════════════════════════════
+
   /**
-   * Lấy danh sách bookings của user hiện tại
+   * GET /api/user/bookings — list bookings của user hiện tại
+   * Hỗ trợ pagination + filter status (optional)
    */
-  getMyBookings(): Observable<Booking[]> {
-    const user = this.auth.getUser();
-    if (!user) {
-      return of([]);
-    }
+  getMyBookings(
+    params: {
+      page?: number;
+      size?: number;
+      status?: BookingStatus;
+    } = {},
+  ): Observable<PaginatedData<Booking>> {
+    let httpParams = new HttpParams();
+    if (params.page !== undefined) httpParams = httpParams.set('page', params.page);
+    if (params.size !== undefined) httpParams = httpParams.set('size', params.size);
+    if (params.status) httpParams = httpParams.set('status', params.status);
 
-    const userId = user.id || user.username;
-    const all = this.getAllBookings();
-    const myBookings = all
-      .filter(b => b.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    return of(myBookings).pipe(delay(300));
+    return this.http
+      .get<ApiResponse<PaginatedData<Booking>>>(this.baseUrl, {
+        params: httpParams,
+        withCredentials: true,
+      })
+      .pipe(map((res) => res.data));
   }
 
   /**
-   * Lấy chi tiết 1 booking
+   * GET /api/user/bookings/{id} — chi tiết 1 booking
    */
-  getBookingById(id: string): Observable<Booking | null> {
-    const all = this.getAllBookings();
-    const booking = all.find(b => b.id === id) || null;
-    return of(booking).pipe(delay(200));
+  getBookingById(id: string): Observable<Booking> {
+    return this.http
+      .get<ApiResponse<Booking>>(`${this.baseUrl}/${id}`, { withCredentials: true })
+      .pipe(map((res) => res.data));
   }
+
+  // ══════════════════════════════════════════════════════════
+  // CANCEL
+  // ══════════════════════════════════════════════════════════
 
   /**
-   * Cập nhật trạng thái booking (cancel, pay, etc)
+   * POST /api/user/bookings/{id}/cancel
+   * Hủy booking. Backend tự tính refund theo policy:
+   *   ≥48h trước checkIn → 100% refund
+   *   24-48h → 50%
+   *   <24h → 0%
+   *
+   * Body: { reason: string }
    */
-  updateBookingStatus(id: string, status: BookingStatus, paymentStatus?: string): Observable<Booking | null> {
-    const all = this.getAllBookings();
-    const idx = all.findIndex(b => b.id === id);
-    if (idx === -1) {
-      return of(null);
-    }
-
-    all[idx] = {
-      ...all[idx],
-      status,
-      paymentStatus: (paymentStatus as any) || all[idx].paymentStatus,
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (status === 'CANCELLED') {
-      all[idx].cancelledAt = new Date().toISOString();
-    } else if (status === 'CONFIRMED' && !all[idx].confirmedAt) {
-      all[idx].confirmedAt = new Date().toISOString();
-    }
-
-    this.saveAllBookings(all);
-    return of(all[idx]).pipe(delay(300));
+  cancelBooking(id: string, reason: string): Observable<Booking> {
+    const body: CancelBookingRequest = { reason };
+    return this.http
+      .post<ApiResponse<Booking>>(`${this.baseUrl}/${id}/cancel`, body, {
+        withCredentials: true,
+      })
+      .pipe(map((res) => res.data));
   }
 
-  /**
-   * Thanh toán booking
-   */
-  payBooking(id: string, method: PaymentMethod): Observable<Booking | null> {
-    const all = this.getAllBookings();
-    const idx = all.findIndex(b => b.id === id);
-    if (idx === -1) return of(null);
+  // ══════════════════════════════════════════════════════════
+  // HELPERS (pure frontend, không gọi API)
+  // ══════════════════════════════════════════════════════════
 
-    all[idx] = {
-      ...all[idx],
-      status: 'CONFIRMED',
-      paymentStatus: 'PAID',
-      paymentMethod: method,
-      confirmedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.saveAllBookings(all);
-    return of(all[idx]).pipe(delay(500));
-  }
-
-  // ======================================
-  // HELPERS
-  // ======================================
-
-  private getAllBookings(): Booking[] {
-    const raw = localStorage.getItem(this.STORAGE_KEY);
-    if (!raw) return [];
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return [];
-    }
-  }
-
-  private saveAllBookings(bookings: Booking[]): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(bookings));
-  }
-
-  private generateId(): string {
-    return 'BK-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-  }
-
-  private calculateNights(checkIn: string, checkOut: string): number {
-    const date1 = new Date(checkIn);
-    const date2 = new Date(checkOut);
-    const diff = date2.getTime() - date1.getTime();
+  /** Tính số đêm giữa 2 ngày */
+  calculateNights(checkIn: string, checkOut: string): number {
+    const d1 = new Date(checkIn);
+    const d2 = new Date(checkOut);
+    const diff = d2.getTime() - d1.getTime();
     return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }
+
+  /**
+   * Tính thời gian còn lại trước khi PENDING booking hết hạn (15 phút).
+   * Trả về milliseconds còn lại, hoặc 0 nếu đã hết.
+   */
+  getPendingTimeRemaining(createdAt: string): number {
+    const created = new Date(createdAt).getTime();
+    const expiresAt = created + 15 * 60 * 1000; // 15 minutes
+    const remaining = expiresAt - Date.now();
+    return Math.max(0, remaining);
+  }
+
+  /**
+   * Tính phần trăm refund dự kiến khi user muốn cancel.
+   * Chỉ để hiển thị warning — backend sẽ tính chính xác.
+   */
+  estimateRefundPercent(checkIn: string): number {
+    const now = Date.now();
+    const checkInTime = new Date(checkIn).getTime();
+    const hoursUntilCheckIn = (checkInTime - now) / (1000 * 60 * 60);
+
+    if (hoursUntilCheckIn >= 48) return 100;
+    if (hoursUntilCheckIn >= 24) return 50;
+    return 0;
   }
 }

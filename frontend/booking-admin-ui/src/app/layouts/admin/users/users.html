@@ -2,7 +2,7 @@
   <!-- ═══ HEADER ═══ -->
   <div class="page-header">
     <div>
-      <h1>User Management</h1>
+      <h1>Quản lý tài khoản</h1>
       <p class="subtitle">Quản lý tài khoản, phân quyền và phiên đăng nhập</p>
     </div>
   </div>
@@ -13,7 +13,7 @@
       <nz-input-group [nzPrefix]="searchPrefix" class="search-input">
         <input
           nz-input
-          placeholder="Search by username or email..."
+          placeholder="Tìm theo tên đăng nhập, tên hoặc email..."
           [(ngModel)]="keyword"
           (keyup.enter)="onSearch()"
         />
@@ -23,24 +23,24 @@
       <nz-select
         [(ngModel)]="statusFilter"
         (ngModelChange)="onStatusFilterChange()"
-        nzPlaceHolder="Filter status"
+        nzPlaceHolder="Lọc trạng thái"
         class="status-select"
       >
-        <nz-option nzValue="all" nzLabel="All status"></nz-option>
-        <nz-option nzValue="active" nzLabel="Active"></nz-option>
-        <nz-option nzValue="inactive" nzLabel="Inactive"></nz-option>
-        <nz-option nzValue="locked" nzLabel="Locked"></nz-option>
+        <nz-option nzValue="all" nzLabel="Tất cả"></nz-option>
+        <nz-option nzValue="active" nzLabel="Hoạt động"></nz-option>
+        <nz-option nzValue="inactive" nzLabel="Vô hiệu"></nz-option>
+        <nz-option nzValue="locked" nzLabel="Đã khóa"></nz-option>
       </nz-select>
 
       <button nz-button nzType="primary" (click)="onSearch()">
-        <span nz-icon nzType="search"></span> Search
+        <span nz-icon nzType="search"></span> Tìm kiếm
       </button>
 
       <button nz-button (click)="resetFilter()">
-        <span nz-icon nzType="reload"></span> Reset
+        <span nz-icon nzType="reload"></span> Đặt lại
       </button>
 
-      <button nz-button (click)="loadUsers()" nz-tooltip="Reload data">
+      <button nz-button (click)="loadUsers()" nz-tooltip="Tải lại dữ liệu">
         <span nz-icon nzType="sync"></span>
       </button>
     </div>
@@ -58,14 +58,16 @@
       <thead>
         <tr>
           <th nzWidth="60px"></th>
-          <th>Username</th>
+          <th>Tên đăng nhập</th>
+          <th>Tên</th>
           <th>Email</th>
-          <th>Status</th>
-          <th>Roles</th>
-          <th>2FA</th>
-          <th>Timezone</th>
-          <th>Created</th>
-          <th nzWidth="320px">Actions</th>
+          <th nzWidth="110px">Trạng thái</th>
+          <th nzWidth="180px">Vai trò</th>
+          <th>Quyền hạn</th>
+          <th nzWidth="70px">2FA</th>
+          <th>Múi giờ</th>
+          <th>Ngày tạo</th>
+          <th nzWidth="380px">Thao tác</th>
         </tr>
       </thead>
       <tbody>
@@ -73,15 +75,19 @@
           <td>
             <nz-avatar
               [nzText]="user.username.charAt(0).toUpperCase()"
-              [style.background-color]="
-                getStatus(user) === 'active' ? '#1890ff' : '#bfbfbf'
-              "
+              [style.background-color]="getStatus(user) === 'active' ? '#1890ff' : '#bfbfbf'"
             ></nz-avatar>
           </td>
           <td>
             <a (click)="viewDetail(user)" class="username-link">
               {{ user.username }}
             </a>
+          </td>
+          <td>
+            <div class="display-name">{{ getDisplayName(user) }}</div>
+            <div class="text-muted small" *ngIf="user.firstName || user.lastName">
+              {{ user.firstName }} {{ user.lastName }}
+            </div>
           </td>
           <td>{{ user.email }}</td>
           <td>
@@ -92,11 +98,32 @@
           <td>
             <nz-tag
               *ngFor="let role of user.roles"
-              [nzColor]="role.code === 'ADMIN_ALL' ? 'red' : 'blue'"
+              [nzColor]="role.code === 'ADMIN_ALL' || role.code === 'ADMIN' ? 'red' : 'blue'"
             >
               {{ role.code }}
             </nz-tag>
             <span *ngIf="!user.roles.length" class="text-muted">—</span>
+          </td>
+          <td>
+            <div class="permission-tags">
+              <nz-tag
+                *ngFor="let perm of getVisiblePermissions(user)"
+                nzColor="purple"
+                class="perm-tag"
+              >
+                {{ perm.code }}
+              </nz-tag>
+              <nz-tag
+                *ngIf="getHiddenPermissionCount(user) > 0"
+                nzColor="default"
+                class="perm-more"
+                nz-tooltip="Xem tất cả quyền hạn"
+                (click)="openPermissionsModal(user)"
+              >
+                +{{ getHiddenPermissionCount(user) }}
+              </nz-tag>
+              <span *ngIf="!getAggregatedPermissions(user).length" class="text-muted">—</span>
+            </div>
           </td>
           <td>
             <span
@@ -104,7 +131,7 @@
               [nzType]="user.twoFactorEnabled ? 'check-circle' : 'close-circle'"
               [nzTheme]="user.twoFactorEnabled ? 'twotone' : 'outline'"
               [style.color]="user.twoFactorEnabled ? '#52c41a' : '#bfbfbf'"
-              [nz-tooltip]="user.twoFactorEnabled ? 'Enabled' : 'Disabled'"
+              [nz-tooltip]="user.twoFactorEnabled ? 'Đã bật' : 'Chưa bật'"
             ></span>
           </td>
           <td>{{ user.timezone || '—' }}</td>
@@ -117,7 +144,7 @@
                 *nzSpaceItem
                 nz-button
                 nzSize="small"
-                nz-tooltip="View detail"
+                nz-tooltip="Xem chi tiết"
                 (click)="viewDetail(user)"
               >
                 <span nz-icon nzType="eye"></span>
@@ -126,7 +153,7 @@
                 *nzSpaceItem
                 nz-button
                 nzSize="small"
-                nz-tooltip="Edit info"
+                nz-tooltip="Chỉnh sửa"
                 (click)="openEditModal(user)"
               >
                 <span nz-icon nzType="edit"></span>
@@ -135,7 +162,16 @@
                 *nzSpaceItem
                 nz-button
                 nzSize="small"
-                nz-tooltip="Assign role"
+                [nz-tooltip]="user.locked ? 'Mở khóa tài khoản' : 'Khóa tài khoản'"
+                [nzType]="user.locked ? 'primary' : 'default'"
+              >
+                <span nz-icon [nzType]="user.locked ? 'unlock' : 'lock'"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nz-tooltip="Gán vai trò"
                 (click)="openRoleModal(user)"
               >
                 <span nz-icon nzType="team"></span>
@@ -144,7 +180,7 @@
                 *nzSpaceItem
                 nz-button
                 nzSize="small"
-                nz-tooltip="Reset password"
+                nz-tooltip="Đặt lại mật khẩu"
                 (click)="openPasswordModal(user)"
               >
                 <span nz-icon nzType="key"></span>
@@ -153,10 +189,11 @@
                 *nzSpaceItem
                 nz-button
                 nzSize="small"
-                nzDanger
-                nz-tooltip="Revoke all sessions"
+                nz-tooltip="Thu hồi phiên đăng nhập"
                 nz-popconfirm
-                nzPopconfirmTitle="Revoke all sessions of this user?"
+                nzPopconfirmTitle="Thu hồi tất cả phiên đăng nhập của người dùng này?"
+                nzOkText="Xác nhận"
+                nzCancelText="Hủy"
                 (nzOnConfirm)="revokeSessions(user)"
               >
                 <span nz-icon nzType="disconnect"></span>
@@ -167,22 +204,38 @@
                 nzSize="small"
                 nzDanger
                 nzType="primary"
-                nz-tooltip="Deactivate"
+                nz-tooltip="Vô hiệu hóa"
                 nz-popconfirm
-                nzPopconfirmTitle="Deactivate this user?"
-                nzOkText="Deactivate"
+                nzPopconfirmTitle="Vô hiệu hóa tài khoản này?"
+                nzOkText="Xác nhận"
+                nzCancelText="Hủy"
                 nzOkType="danger"
                 (nzOnConfirm)="deactivate(user)"
               >
                 <span nz-icon nzType="stop"></span>
+              </button>
+              <button
+                *nzSpaceItem
+                nz-button
+                nzSize="small"
+                nzDanger
+                nz-tooltip="Xóa tài khoản"
+                nz-popconfirm
+                nzPopconfirmTitle="Xóa vĩnh viễn tài khoản này?"
+                nzOkText="Xóa"
+                nzCancelText="Hủy"
+                nzOkType="danger"
+                (nzOnConfirm)="deleteUser(user)"
+              >
+                <span nz-icon nzType="delete"></span>
               </button>
             </nz-space>
           </td>
         </tr>
 
         <tr *ngIf="!isLoading && !users.length">
-          <td colspan="9" class="empty-row">
-            <nz-empty nzNotFoundContent="No users found"></nz-empty>
+          <td colspan="11" class="empty-row">
+            <nz-empty nzNotFoundContent="Không tìm thấy người dùng"></nz-empty>
           </td>
         </tr>
       </tbody>
@@ -201,7 +254,7 @@
         [nzShowTotal]="totalTemplate"
       ></nz-pagination>
       <ng-template #totalTemplate let-total let-range="range">
-        {{ range[0] }}-{{ range[1] }} of {{ total }} users
+        {{ range[0] }}-{{ range[1] }} trên {{ total }} tài khoản
       </ng-template>
     </div>
   </nz-card>
@@ -210,8 +263,10 @@
 <!-- ═══ EDIT MODAL ═══ -->
 <nz-modal
   [(nzVisible)]="isEditModalOpen"
-  nzTitle="Edit User"
+  nzTitle="Chỉnh sửa tài khoản"
   [nzOkLoading]="isSubmitting"
+  nzOkText="Lưu"
+  nzCancelText="Hủy"
   (nzOnCancel)="isEditModalOpen = false"
   (nzOnOk)="submitEdit()"
 >
@@ -219,24 +274,39 @@
     <form nz-form [formGroup]="editForm" nzLayout="vertical">
       <nz-form-item>
         <nz-form-label nzRequired>Email</nz-form-label>
-        <nz-form-control nzErrorTip="Invalid email">
+        <nz-form-control nzErrorTip="Email không hợp lệ">
           <input nz-input formControlName="email" placeholder="user@example.com" />
         </nz-form-control>
       </nz-form-item>
 
+      <div class="form-row">
+        <nz-form-item class="form-col">
+          <nz-form-label>Họ</nz-form-label>
+          <nz-form-control>
+            <input nz-input formControlName="firstName" placeholder="Nguyễn Văn" />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item class="form-col">
+          <nz-form-label>Tên</nz-form-label>
+          <nz-form-control>
+            <input nz-input formControlName="lastName" placeholder="A" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
       <nz-form-item>
-        <nz-form-label>Timezone</nz-form-label>
+        <nz-form-label>Múi giờ</nz-form-label>
         <nz-form-control>
           <input nz-input formControlName="timezone" placeholder="UTC, Asia/Ho_Chi_Minh, ..." />
         </nz-form-control>
       </nz-form-item>
 
       <nz-form-item>
-        <nz-form-label>Active</nz-form-label>
+        <nz-form-label>Trạng thái</nz-form-label>
         <nz-form-control>
           <nz-switch formControlName="active"></nz-switch>
           <span class="switch-hint">
-            {{ editForm.value.active ? 'User can login' : 'User is blocked from login' }}
+            {{ editForm.value.active ? 'Tài khoản hoạt động' : 'Tài khoản bị vô hiệu hóa' }}
           </span>
         </nz-form-control>
       </nz-form-item>
@@ -247,25 +317,27 @@
 <!-- ═══ ASSIGN ROLE MODAL ═══ -->
 <nz-modal
   [(nzVisible)]="isRoleModalOpen"
-  [nzTitle]="'Assign Role to ' + (selectedUser?.username || '')"
+  [nzTitle]="'Gán vai trò cho ' + (selectedUser?.username || '')"
   [nzOkLoading]="isSubmitting"
+  nzOkText="Xác nhận"
+  nzCancelText="Hủy"
   (nzOnCancel)="isRoleModalOpen = false"
   (nzOnOk)="submitRole()"
 >
   <ng-container *nzModalContent>
     <nz-alert
       nzType="warning"
-      nzMessage="Note: Backend sẽ REPLACE toàn bộ roles của user bằng role được chọn. Role cũ sẽ bị xóa."
+      nzMessage="Lưu ý: Hệ thống sẽ thay thế toàn bộ vai trò hiện tại bằng vai trò được chọn."
       nzShowIcon
-      style="margin-bottom: 16px;"
+      style="margin-bottom: 16px"
     ></nz-alert>
 
     <nz-spin [nzSpinning]="isLoadingRoles">
       <form nz-form [formGroup]="roleForm" nzLayout="vertical">
         <nz-form-item>
-          <nz-form-label nzRequired>Role</nz-form-label>
+          <nz-form-label nzRequired>Vai trò</nz-form-label>
           <nz-form-control>
-            <nz-select formControlName="roleCode" nzPlaceHolder="Select a role">
+            <nz-select formControlName="roleCode" nzPlaceHolder="Chọn vai trò">
               <nz-option
                 *ngFor="let r of availableRoles"
                 [nzValue]="r.code"
@@ -282,9 +354,10 @@
 <!-- ═══ RESET PASSWORD MODAL ═══ -->
 <nz-modal
   [(nzVisible)]="isPasswordModalOpen"
-  [nzTitle]="'Reset Password for ' + (selectedUser?.username || '')"
+  [nzTitle]="'Đặt lại mật khẩu cho ' + (selectedUser?.username || '')"
   [nzOkLoading]="isSubmitting"
-  nzOkText="Reset"
+  nzOkText="Đặt lại"
+  nzCancelText="Hủy"
   nzOkType="primary"
   (nzOnCancel)="isPasswordModalOpen = false"
   (nzOnOk)="submitPassword()"
@@ -292,21 +365,47 @@
   <ng-container *nzModalContent>
     <form nz-form [formGroup]="passwordForm" nzLayout="vertical">
       <nz-form-item>
-        <nz-form-label nzRequired>New password</nz-form-label>
-        <nz-form-control nzErrorTip="Min 8 characters">
+        <nz-form-label nzRequired>Mật khẩu mới</nz-form-label>
+        <nz-form-control nzErrorTip="Tối thiểu 8 ký tự">
           <input nz-input type="password" formControlName="newPassword" />
         </nz-form-control>
       </nz-form-item>
-
       <nz-form-item>
-        <nz-form-label nzRequired>Confirm password</nz-form-label>
-        <nz-form-control [nzErrorTip]="confirmTpl">
+        <nz-form-label nzRequired>Xác nhận mật khẩu</nz-form-label>
+        <nz-form-control nzErrorTip="Mật khẩu không khớp">
           <input nz-input type="password" formControlName="confirmPassword" />
-          <ng-template #confirmTpl let-control>
-            <span *ngIf="control.errors?.['required']">Please confirm password</span>
-          </ng-template>
         </nz-form-control>
       </nz-form-item>
     </form>
   </ng-container>
+</nz-modal>
+
+<!-- ═══ VIEW ALL PERMISSIONS MODAL ═══ -->
+<nz-modal
+  [(nzVisible)]="isPermissionsModalOpen"
+  [nzTitle]="'Tất cả quyền của ' + (selectedUser?.username || '')"
+  [nzFooter]="permFooter"
+  (nzOnCancel)="isPermissionsModalOpen = false"
+>
+  <ng-container *nzModalContent>
+    <div class="perm-summary">
+      <nz-tag nzColor="purple"> Tổng: {{ selectedPermissions.length }} quyền </nz-tag>
+      <nz-tag *ngFor="let role of selectedUser?.roles" nzColor="blue">
+        {{ role.code }}
+      </nz-tag>
+    </div>
+    <div class="perm-list">
+      <div class="perm-item" *ngFor="let perm of selectedPermissions">
+        <div class="perm-code">{{ perm.code }}</div>
+        <div class="perm-name text-muted">{{ perm.name }}</div>
+        <div class="perm-meta text-muted small" *ngIf="perm.resource || perm.action">
+          <nz-tag *ngIf="perm.resource" nzColor="cyan">{{ perm.resource }}</nz-tag>
+          <nz-tag *ngIf="perm.action" nzColor="orange">{{ perm.action }}</nz-tag>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+  <ng-template #permFooter>
+    <button nz-button (click)="isPermissionsModalOpen = false">Đóng</button>
+  </ng-template>
 </nz-modal>

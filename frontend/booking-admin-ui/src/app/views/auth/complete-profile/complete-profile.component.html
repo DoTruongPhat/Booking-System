@@ -1,0 +1,128 @@
+<div class="reset-page">
+  <div class="reset-card">
+    <div class="reset-header">
+      <div class="reset-icon-wrap">
+        <span class="reset-icon" nz-icon nzType="user" nzTheme="fill"></span>
+      </div>
+      <h1 class="reset-title">Hoàn tất hồ sơ</h1>
+      <p class="reset-subtitle">Đặt tên đăng nhập và mật khẩu để đăng nhập trực tiếp khi cần.</p>
+    </div>
+
+    <nz-alert
+      *ngIf="user?.email"
+      nzType="success"
+      [nzMessage]="'Email: ' + user!.email"
+      nzDescription="Bạn có thể dùng email hoặc tên đăng nhập bên dưới để đăng nhập."
+      nzShowIcon
+      style="margin-bottom: 16px"
+    ></nz-alert>
+
+    <nz-alert
+      *ngIf="errorMessage() && !successMessage()"
+      nzType="error"
+      [nzMessage]="errorMessage()"
+      nzShowIcon
+      class="reset-alert"
+    ></nz-alert>
+
+    <form
+      *ngIf="!successMessage()"
+      nz-form
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()"
+      nzLayout="vertical"
+    >
+      <nz-form-item>
+        <nz-form-label nzRequired>Tên đăng nhập</nz-form-label>
+        <nz-form-control nzErrorTip="Tối thiểu 3 ký tự">
+          <input
+            nz-input
+            formControlName="username"
+            placeholder="Chọn tên đăng nhập"
+            size="large"
+            autocomplete="username"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzRequired>Mật khẩu</nz-form-label>
+        <nz-form-control nzErrorTip="Tối thiểu 8 ký tự">
+          <input
+            nz-input
+            type="password"
+            formControlName="newPassword"
+            placeholder="Chữ hoa, số, ký tự đặc biệt"
+            size="large"
+            autocomplete="new-password"
+            (input)="onPasswordChange()"
+          />
+        </nz-form-control>
+        <div class="password-strength" *ngIf="form.get('newPassword')?.value">
+          <nz-progress
+            [nzPercent]="passwordStrength()"
+            [nzShowInfo]="false"
+            [nzStrokeColor]="strengthColor"
+          ></nz-progress>
+          <span class="strength-label" [style.color]="strengthColor">{{ strengthLabel }}</span>
+        </div>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label nzRequired>Xác nhận mật khẩu</nz-form-label>
+        <nz-form-control
+          [nzErrorTip]="form.errors?.['passwordMismatch'] ? 'Không khớp!' : 'Bắt buộc'"
+        >
+          <input
+            nz-input
+            type="password"
+            formControlName="confirmPassword"
+            placeholder="Nhập lại mật khẩu"
+            size="large"
+            autocomplete="new-password"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <button
+        nz-button
+        nzType="primary"
+        nzSize="large"
+        nzBlock
+        [nzLoading]="isSubmitting()"
+        type="submit"
+        [disabled]="form.invalid"
+        class="submit-btn"
+      >
+        {{ isSubmitting() ? 'Đang xử lý...' : 'Hoàn tất' }}
+      </button>
+
+      <button
+        nz-button
+        nzSize="large"
+        nzBlock
+        type="button"
+        (click)="skip()"
+        style="margin-top: 8px"
+      >
+        Bỏ qua lần này
+      </button>
+    </form>
+
+    <div *ngIf="successMessage()" class="success-state">
+      <div class="success-icon-wrap">
+        <span class="success-icon" nz-icon nzType="check-circle" nzTheme="fill"></span>
+      </div>
+      <h3 class="success-title">{{ successMessage() }}</h3>
+    </div>
+
+    <div class="reset-footer" style="margin-top: 16px">
+      <nz-alert
+        nzType="info"
+        nzMessage="Tại sao cần hoàn tất?"
+        nzDescription="Nếu hệ thống SSO gặp sự cố, bạn vẫn đăng nhập được bằng tên đăng nhập và mật khẩu này."
+        nzShowIcon
+      ></nz-alert>
+    </div>
+  </div>
+</div>

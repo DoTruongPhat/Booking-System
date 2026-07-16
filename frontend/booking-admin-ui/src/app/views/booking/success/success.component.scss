@@ -1,0 +1,321 @@
+@use '../../../../styles/tokens' as t;
+
+.success-page {
+  min-height: 100vh;
+  background: t.$gradient-hero;
+  font-family: t.$font-family-base;
+  padding: t.$spacing-8 0;
+}
+
+.success-container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 t.$spacing-4;
+}
+
+.success-card {
+  background: t.$color-white;
+  border-radius: t.$radius-2xl;
+  padding: t.$spacing-12 t.$spacing-8;
+  box-shadow: t.$shadow-xl;
+  text-align: center;
+  animation: card-fade-in 0.6s t.$anim-ease-out;
+}
+
+@keyframes card-fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// === ICON ===
+.success-icon-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: t.$spacing-6;
+}
+
+.success-icon {
+  position: relative;
+  z-index: t.$z-base + 1;
+  width: 96px;
+  height: 96px;
+  background: linear-gradient(135deg, t.$color-primary 0%, t.$color-primary-hover 100%);
+  color: t.$color-white;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  box-shadow: t.$shadow-primary-lg;
+  animation: icon-scale-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes icon-scale-in {
+  0% { opacity: 0; transform: scale(0); }
+  60% { transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.success-rings {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid t.$color-primary;
+  border-radius: 50%;
+  animation: ring-pulse 2s ease-out infinite;
+  opacity: 0;
+}
+
+.ring-2 {
+  animation-delay: 1s;
+}
+
+@keyframes ring-pulse {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+// === TITLES ===
+.success-title {
+  font-family: t.$font-family-heading;
+  font-size: t.$font-size-4xl;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-text-primary;
+  margin: 0 0 t.$spacing-3 0;
+  letter-spacing: t.$letter-spacing-tight;
+}
+
+.success-subtitle {
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-md;
+  color: t.$color-text-secondary;
+  line-height: t.$line-height-relaxed;
+  margin: 0 0 t.$spacing-8 0;
+}
+
+// === BOOKING ID CARD ===
+.booking-id-card {
+  background: t.$color-primary-50;
+  border: 2px dashed t.$color-primary-200;
+  border-radius: t.$radius-xl;
+  padding: t.$spacing-5;
+  margin-bottom: t.$spacing-5;
+}
+
+.booking-id-label {
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-xs;
+  font-weight: t.$font-weight-semibold;
+  color: t.$color-text-muted;
+  text-transform: uppercase;
+  letter-spacing: t.$letter-spacing-wider;
+  margin-bottom: t.$spacing-2;
+}
+
+.booking-id-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: t.$spacing-3;
+}
+
+.booking-id-value {
+  font-family: t.$font-family-heading;
+  font-size: t.$font-size-2xl;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-primary;
+  letter-spacing: t.$letter-spacing-wide;
+}
+
+.copy-btn {
+  background: t.$color-white;
+  border: 1px solid t.$color-primary-200;
+  border-radius: t.$radius-md;
+  padding: t.$spacing-2 t.$spacing-3;
+  color: t.$color-primary;
+  cursor: pointer;
+  transition: t.$transition-base;
+
+  &:hover {
+    background: t.$color-primary;
+    color: t.$color-white;
+  }
+}
+
+// === DETAILS CARD ===
+.details-card {
+  background: t.$color-bg-soft;
+  border-radius: t.$radius-xl;
+  padding: t.$spacing-5;
+  margin-bottom: t.$spacing-5;
+  text-align: left;
+
+  h3 {
+    font-family: t.$font-family-heading;
+    font-size: t.$font-size-md;
+    font-weight: t.$font-weight-semibold;
+    color: t.$color-text-primary;
+    margin: 0 0 t.$spacing-4 0;
+  }
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: t.$spacing-2 0;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-sm;
+
+  .detail-label {
+    color: t.$color-text-secondary;
+  }
+
+  .detail-value {
+    color: t.$color-text-primary;
+    font-weight: t.$font-weight-medium;
+    text-align: right;
+  }
+}
+
+.detail-divider {
+  height: 1px;
+  background: t.$color-border;
+  margin: t.$spacing-3 0;
+}
+
+.total-row {
+  font-size: t.$font-size-md;
+
+  .total-value {
+    font-family: t.$font-family-heading;
+    font-size: t.$font-size-xl;
+    font-weight: t.$font-weight-bold;
+    color: t.$color-primary;
+  }
+}
+
+// === NEXT STEPS ===
+.next-steps {
+  background: t.$color-bg-soft;
+  border-radius: t.$radius-xl;
+  padding: t.$spacing-5;
+  margin-bottom: t.$spacing-6;
+  text-align: left;
+
+  h3 {
+    font-family: t.$font-family-heading;
+    font-size: t.$font-size-md;
+    font-weight: t.$font-weight-semibold;
+    color: t.$color-text-primary;
+    margin: 0 0 t.$spacing-4 0;
+  }
+}
+
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: t.$spacing-3;
+}
+
+.step-item {
+  display: flex;
+  gap: t.$spacing-3;
+  padding: t.$spacing-3;
+  background: t.$color-white;
+  border-radius: t.$radius-md;
+
+  strong {
+    display: block;
+    font-family: t.$font-family-base;
+    font-size: t.$font-size-sm;
+    font-weight: t.$font-weight-semibold;
+    color: t.$color-text-primary;
+    margin-bottom: 2px;
+  }
+
+  span {
+    display: block;
+    font-size: t.$font-size-xs;
+    color: t.$color-text-secondary;
+    line-height: t.$line-height-normal;
+  }
+}
+
+.step-icon {
+  width: 36px;
+  height: 36px;
+  background: t.$color-primary-100;
+  color: t.$color-primary;
+  border-radius: t.$radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: t.$font-size-base;
+  flex-shrink: 0;
+}
+
+// === ACTION BUTTONS ===
+.action-buttons {
+  display: flex;
+  gap: t.$spacing-3;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$spacing-2;
+  padding: t.$spacing-3 t.$spacing-6;
+  border-radius: t.$radius-md;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-base;
+  font-weight: t.$font-weight-medium;
+  cursor: pointer;
+  transition: t.$transition-base;
+  border: none;
+}
+
+.btn-primary {
+  background: t.$color-primary;
+  color: t.$color-white;
+  box-shadow: t.$shadow-primary;
+
+  &:hover {
+    background: t.$color-primary-hover;
+    transform: translateY(-1px);
+    box-shadow: t.$shadow-primary-lg;
+  }
+}
+
+.btn-secondary {
+  background: t.$color-white;
+  color: t.$color-text-primary;
+  border: 1px solid t.$color-border;
+
+  &:hover {
+    border-color: t.$color-primary;
+    color: t.$color-primary;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success-card,
+  .success-icon,
+  .ring {
+    animation: none;
+  }
+}

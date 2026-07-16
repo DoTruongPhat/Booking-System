@@ -1,0 +1,242 @@
+.rooms-page {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1f2328;
+    margin: 0 0 4px 0;
+  }
+  .subtitle {
+    color: #6b7280;
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+// ═══ STATS ═══
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+
+  .stat-card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 14px 16px;
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1f2328;
+    }
+    &.stat-active .stat-value { color: #52c41a; }
+    &.stat-hotel .stat-value { color: #1890ff; }
+  }
+}
+
+// ═══ FILTER ═══
+.filter-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  ::ng-deep .ant-card-body { padding: 16px; }
+}
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  .search-input { width: 240px; }
+  .filter-select { width: 160px; }
+}
+
+// ═══ TABLE ═══
+.table-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.no-image {
+  width: 56px;
+  height: 56px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bfbfbf;
+  font-size: 20px;
+}
+
+.room-name {
+  font-weight: 500;
+  color: #1f2328;
+}
+
+.text-muted {
+  color: #8c8c8c;
+  font-size: 13px;
+}
+.small {
+  font-size: 11px;
+}
+
+.price {
+  font-weight: 600;
+  color: #722ed1;
+}
+
+.discount-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  .original-price {
+    text-decoration: line-through;
+    color: #8c8c8c;
+    font-size: 11px;
+  }
+}
+
+.stock {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.amenities-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 200px;
+  .amenity-tag {
+    font-size: 10px;
+    padding: 0 4px;
+    line-height: 16px;
+    margin: 0;
+  }
+  .amenity-more {
+    font-size: 10px;
+    padding: 0 4px;
+    line-height: 16px;
+    margin: 0;
+  }
+}
+
+.empty-row {
+  padding: 40px 0;
+  text-align: center;
+}
+
+// ═══ FORM MODAL ═══
+.form-row {
+  display: flex;
+  gap: 12px;
+  .form-col { flex: 1; }
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.amenities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  padding: 8px 0;
+}
+
+// ═══ IMAGE UPLOADER ═══
+.image-uploader {
+  .image-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .image-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e8e8e8;
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .remove-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      padding: 0 4px;
+      height: 20px;
+      width: 20px;
+      min-width: 20px;
+    }
+  }
+  .upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #fafafa;
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #6b7280;
+    transition: all 0.2s;
+    &:hover {
+      border-color: #1890ff;
+      color: #1890ff;
+    }
+  }
+}
+
+// ═══ VIEW MODAL ═══
+.gallery {
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .gallery-img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    &:hover {
+      transform: scale(1.02);
+    }
+  }
+}
+
+.text-purple {
+  color: #722ed1;
+  font-size: 16px;
+}

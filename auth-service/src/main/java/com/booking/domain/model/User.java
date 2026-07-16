@@ -30,25 +30,34 @@ public class User {
     private String totpSecret;
     private boolean twoFactorEnabled = false;
     private Set<Role> roles = new HashSet<>();
-
-    // ── Keycloak sync fields (V8) ───────────────────────────
     private String phone;
-    private String kcUserId;
-    private ZonedDateTime kcSyncedAt;
-    /**
-     * PENDING: chưa sync sang KC
-     * SYNCED: đã sync
-     * FAILED: sync lỗi
-     * DELETED: user đã xóa ở KC
-     */
-    private String syncStatus = "PENDING";
-    private long syncVersion = 0L;
-    /**
-     * LOCAL: chỉ Form A
-     * KEYCLOAK: chỉ Form B
-     * LINKED: có cả 2
-     */
-    private String authSource = "LOCAL";
+    private boolean emailVerified = false;
+    private String firstName;
+    private String lastName;
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
 
     public User() {}
 
@@ -159,18 +168,5 @@ public class User {
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
 
-    public String getKcUserId() { return kcUserId; }
-    public void setKcUserId(String kcUserId) { this.kcUserId = kcUserId; }
 
-    public ZonedDateTime getKcSyncedAt() { return kcSyncedAt; }
-    public void setKcSyncedAt(ZonedDateTime kcSyncedAt) { this.kcSyncedAt = kcSyncedAt; }
-
-    public String getSyncStatus() { return syncStatus; }
-    public void setSyncStatus(String syncStatus) { this.syncStatus = syncStatus; }
-
-    public long getSyncVersion() { return syncVersion; }
-    public void setSyncVersion(long syncVersion) { this.syncVersion = syncVersion; }
-
-    public String getAuthSource() { return authSource; }
-    public void setAuthSource(String authSource) { this.authSource = authSource; }
 }

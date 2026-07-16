@@ -1,0 +1,137 @@
+<div class="my-bookings-page">
+  <app-navbar></app-navbar>
+
+  <div class="bookings-container">
+    <h1 class="page-title">Đặt phòng của tôi</h1>
+
+    <!-- Filter tabs -->
+    <div class="filter-tabs">
+      <button class="tab-btn" [class.active]="filterStatus === 'ALL'" (click)="setFilter('ALL')">
+        Tất cả
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="filterStatus === 'PENDING'"
+        (click)="setFilter('PENDING')"
+      >
+        Chờ xác nhận
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="filterStatus === 'CONFIRMED'"
+        (click)="setFilter('CONFIRMED')"
+      >
+        Đã xác nhận
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="filterStatus === 'COMPLETED'"
+        (click)="setFilter('COMPLETED')"
+      >
+        Hoàn thành
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="filterStatus === 'CANCELLED'"
+        (click)="setFilter('CANCELLED')"
+      >
+        Đã hủy
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-wrap" *ngIf="isLoading">
+      <nz-spin nzSimple></nz-spin>
+    </div>
+
+    <!-- Empty state -->
+    <nz-empty
+      *ngIf="!isLoading && filteredBookings.length === 0"
+      nzNotFoundContent="Không có đặt phòng nào"
+    ></nz-empty>
+
+    <!-- Booking cards -->
+    <div class="booking-list" *ngIf="!isLoading">
+      <div class="booking-card" *ngFor="let booking of filteredBookings">
+        <div class="booking-header-row">
+          <div class="booking-hotel">
+            <h3 class="hotel-name">{{ booking.hotelName }}</h3>
+            <p class="hotel-address">{{ booking.hotelAddress }}</p>
+          </div>
+          <nz-tag [nzColor]="getStatusColor(booking.status)">
+            {{ getStatusLabel(booking.status) }}
+          </nz-tag>
+        </div>
+
+        <div class="booking-body">
+          <div class="booking-info">
+            <div class="info-item">
+              <span class="info-label">Phòng</span>
+              <span class="info-value">{{ booking.roomName }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Nhận phòng</span>
+              <span class="info-value">{{ formatDate(booking.checkIn) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Trả phòng</span>
+              <span class="info-value">{{ formatDate(booking.checkOut) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Số đêm</span>
+              <span class="info-value">{{ booking.nights }} đêm</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Khách</span>
+              <span class="info-value">
+                {{ booking.guests.adults || 0 }} người lớn
+                <ng-container *ngIf="booking.guests.children">
+                  · {{ booking.guests.children }} trẻ em
+                </ng-container>
+              </span>
+            </div>
+          </div>
+
+          <div class="booking-price">
+            <span class="price-label">Tổng cộng</span>
+            <span class="price-value">{{ formatPrice(booking.finalPrice) }}</span>
+          </div>
+        </div>
+
+        <div class="booking-actions">
+          <button nz-button nzType="default" nzSize="small" (click)="viewDetail(booking.id)">
+            <span nz-icon nzType="eye"></span> Chi tiết
+          </button>
+          <button
+            *ngIf="booking.status === 'PENDING' || booking.status === 'CONFIRMED'"
+            nz-button
+            nzDanger
+            nzSize="small"
+            (click)="cancelBooking(booking.id)"
+          >
+            <span nz-icon nzType="close-circle"></span> Hủy
+          </button>
+        </div>
+
+        <!-- Cancel info -->
+        <div
+          class="booking-cancel-info"
+          *ngIf="booking.status === 'CANCELLED' && booking.cancellationReason"
+        >
+          <span nz-icon nzType="info-circle"></span>
+          Lý do: {{ booking.cancellationReason }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-wrap" *ngIf="total > pageSize">
+      <nz-pagination
+        [nzPageIndex]="pageIndex"
+        [nzTotal]="total"
+        [nzPageSize]="pageSize"
+        (nzPageIndexChange)="onPageChange($event)"
+      ></nz-pagination>
+    </div>
+  </div>
+</div>

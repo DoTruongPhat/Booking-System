@@ -50,3 +50,6 @@ Thumbs.db
 # Local-only config overrides
 **/application-local.properties
 **/application-local.yml
+
+# JasperReports compiled templates
+*.jasper

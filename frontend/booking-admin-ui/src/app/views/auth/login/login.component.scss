@@ -1,82 +1,356 @@
+// ═══════════════════════════════════════════════════════════
+// LOGIN FORM - Chỉ phần form (banner đã ở auth-layout)
+// Sử dụng design tokens
+// ═══════════════════════════════════════════════════════════
+
+@use '../../../../styles/tokens' as t;
+
 .login-page {
-  min-height: 100vh;
+  font-family: t.$font-family-base;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 16px;
 }
 
-.login-card {
+.login-form {
   width: 100%;
-  max-width: 420px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 40px 32px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  max-width: 440px;
+  background: t.$color-white;
+  border-radius: t.$radius-2xl;
+  padding: t.$spacing-8 t.$spacing-6;
+  animation: form-fade-in 0.5s t.$anim-ease-out both;
 }
 
-.login-header {
+@keyframes form-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// === STAGGER ANIMATION cho từng field ===
+.form-field {
+  animation: field-slide-in 0.45s t.$anim-ease-out both;
+  opacity: 0;
+}
+
+.form-field-1 {
+  animation-delay: 0.1s;
+}
+.form-field-2 {
+  animation-delay: 0.2s;
+}
+.form-field-3 {
+  animation-delay: 0.3s;
+}
+.form-field-4 {
+  animation-delay: 0.4s;
+}
+.form-field-5 {
+  animation-delay: 0.5s;
+}
+.form-field-6 {
+  animation-delay: 0.6s;
+}
+
+@keyframes field-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.form-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: t.$spacing-6;
+}
 
-  .brand {
-    font-size: 28px;
-    font-weight: 700;
-    color: #1890ff;
-    margin: 0 0 8px 0;
+.form-title {
+  font-family: t.$font-family-heading;
+  font-size: t.$font-size-3xl;
+  font-weight: t.$font-weight-bold;
+  color: t.$color-text-primary;
+  margin: 0 0 t.$spacing-2 0;
+  letter-spacing: t.$letter-spacing-tight;
+}
+
+.form-subtitle {
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-base;
+  color: t.$color-text-secondary;
+  margin: 0;
+}
+
+.form-alert {
+  margin-bottom: t.$spacing-4;
+  border-radius: t.$radius-md !important;
+  animation: alert-shake 0.4s ease-out;
+}
+
+@keyframes alert-shake {
+  0%,
+  100% {
+    transform: translateX(0);
   }
-
-  .subtitle {
-    color: #6b7280;
-    font-size: 14px;
-    margin: 0;
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
   }
 }
 
-.login-alert {
-  margin-bottom: 16px;
+// === Override ng-zorro ===
+::ng-deep {
+  .login-form {
+    .ant-form-item-label > label {
+      font-family: t.$font-family-base !important;
+      font-size: t.$font-size-sm !important;
+      font-weight: t.$font-weight-medium !important;
+      color: t.$color-text-primary !important;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ant-input {
+      font-family: t.$font-family-base !important;
+      font-size: t.$font-size-base !important;
+      padding: t.$spacing-2 t.$spacing-3 !important;
+      border-radius: t.$radius-md !important;
+      border-color: t.$color-border !important;
+      transition: t.$transition-base !important;
+
+      &::placeholder {
+        color: t.$color-text-muted !important;
+      }
+
+      &:hover:not(:focus) {
+        border-color: t.$color-primary-300 !important;
+      }
+
+      &:focus {
+        border-color: t.$color-primary !important;
+        box-shadow: 0 0 0 3px t.$color-primary-100 !important;
+      }
+    }
+
+    .ant-input-lg {
+      padding: t.$spacing-3 !important;
+      font-size: t.$font-size-md !important;
+    }
+
+    .ant-form-item {
+      margin-bottom: t.$spacing-4 !important;
+    }
+  }
 }
 
-.login-options {
+.form-label-icon {
+  color: t.$color-primary;
+  font-size: t.$font-size-base;
+}
+
+// === Form options ===
+.form-options {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: t.$spacing-5;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-sm;
+}
 
-  .forgot-link {
-    color: #1890ff;
-    font-size: 14px;
+.remember-me {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$spacing-2;
+  cursor: pointer;
+  color: t.$color-text-secondary;
+  transition: color t.$transition-base;
+
+  input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    accent-color: t.$color-primary;
     cursor: pointer;
-    text-decoration: none;
+  }
 
-    &:hover {
-      text-decoration: underline;
-    }
+  &:hover {
+    color: t.$color-text-primary;
   }
 }
 
-button[type='submit'] {
-  height: 44px;
-  font-size: 16px;
-  font-weight: 500;
+.forgot-link {
+  color: t.$color-primary;
+  font-weight: t.$font-weight-medium;
+  text-decoration: none;
+  transition: t.$transition-base;
+
+  &:hover {
+    color: t.$color-primary-hover;
+    text-decoration: underline;
+  }
 }
 
-.login-footer {
-  margin-top: 24px;
-  text-align: center;
-  font-size: 14px;
-  color: #6b7280;
+// === Submit button ===
+.submit-btn {
+  width: 100%;
+  height: t.$button-height-lg !important;
+  font-size: t.$font-size-md !important;
+  font-weight: t.$font-weight-semibold !important;
+  font-family: t.$font-family-base !important;
+  background: linear-gradient(135deg, t.$color-primary 0%, t.$color-primary-hover 100%) !important;
+  border: none !important;
+  border-radius: t.$radius-md !important;
+  box-shadow: t.$shadow-primary !important;
+  transition: t.$transition-smooth !important;
+  letter-spacing: t.$letter-spacing-base !important;
 
-  a {
-    color: #1890ff;
-    margin-left: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    text-decoration: none;
+  &:hover:not(:disabled) {
+    transform: translateY(-1px) !important;
+    box-shadow: t.$shadow-primary-lg !important;
+    background: linear-gradient(
+      135deg,
+      t.$color-primary-hover 0%,
+      t.$color-primary-active 100%
+    ) !important;
+  }
 
-    &:hover {
-      text-decoration: underline;
+  &:active:not(:disabled) {
+    transform: translateY(0) !important;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// === Divider ===
+.form-divider {
+  display: flex;
+  align-items: center;
+  margin: t.$spacing-5 0;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-xs;
+  color: t.$color-text-muted;
+  text-transform: uppercase;
+  letter-spacing: t.$letter-spacing-uppercase;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: t.$color-border-light;
+  }
+
+  span {
+    padding: 0 t.$spacing-3;
+  }
+}
+
+// === SSO button (Keycloak) ===
+.sso-btn {
+  width: 100%;
+  height: t.$button-height-lg !important;
+  font-family: t.$font-family-base !important;
+  border-radius: t.$radius-md !important;
+  border: 1.5px solid #4D4D4D !important;
+  background: t.$color-white !important;
+  color: #4D4D4D !important;
+  transition: t.$transition-smooth !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: t.$spacing-3;
+  padding: 0 t.$spacing-4 !important;
+
+  .sso-icon {
+    flex-shrink: 0;
+    transition: t.$transition-smooth;
+  }
+
+  .sso-text-wrap {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+  }
+
+  .sso-text {
+    font-size: t.$font-size-base;
+    font-weight: t.$font-weight-semibold;
+  }
+
+  .sso-sub {
+    font-size: t.$font-size-2xs;
+    color: t.$color-text-muted;
+    font-weight: t.$font-weight-regular;
+    letter-spacing: t.$letter-spacing-wider;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  &:hover:not(:disabled) {
+    background: #4D4D4D !important;
+    border-color: #4D4D4D !important;
+    color: t.$color-white !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(77, 77, 77, 0.25);
+
+    .sso-icon {
+      color: t.$color-white !important;
     }
+
+    .sso-sub {
+      color: rgba(255, 255, 255, 0.7);
+    }
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+}
+
+// === Footer ===
+.form-footer {
+  margin-top: t.$spacing-6;
+  text-align: center;
+  font-family: t.$font-family-base;
+  font-size: t.$font-size-sm;
+  color: t.$color-text-secondary;
+}
+
+.signup-link {
+  color: t.$color-primary;
+  margin-left: t.$spacing-1;
+  cursor: pointer;
+  font-weight: t.$font-weight-semibold;
+  text-decoration: none;
+  transition: t.$transition-base;
+
+  &:hover {
+    color: t.$color-primary-hover;
+    text-decoration: underline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-form,
+  .form-alert,
+  .form-field {
+    animation: none !important;
+    opacity: 1;
   }
 }

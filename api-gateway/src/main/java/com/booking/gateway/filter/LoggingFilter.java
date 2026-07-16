@@ -60,15 +60,35 @@ public class LoggingFilter implements GlobalFilter, Ordered {
                 }));
     }
 
+    /**
+     * Map request path to target service name for logging.
+     * Order matters: more specific paths MUST come before general ones.
+     */
     private String resolveService(String path) {
-        if (path.startsWith("/api/auth"))      return "AUTH-SERVICE";
-        if (path.startsWith("/api/admin"))     return "AUTH-SERVICE";
-        if (path.startsWith("/api/internal"))  return "AUTH-SERVICE";
-        if (path.startsWith("/api/bookings"))  return "BOOKING-SERVICE";
-        if (path.startsWith("/api/rooms"))     return "BOOKING-SERVICE";
-        if (path.startsWith("/api/payments"))  return "PAYMENT-SERVICE";
-        if (path.startsWith("/api/composite")) return "GATEWAY-COMPOSITE";
-        if (path.startsWith("/actuator"))      return "GATEWAY";
+        // Auth Service (8081)
+        if (path.startsWith("/api/auth"))            return "AUTH-SERVICE";
+        if (path.startsWith("/api/admin/dashboard")) return "AUTH-SERVICE";
+        if (path.startsWith("/api/admin/users"))     return "AUTH-SERVICE";
+        if (path.startsWith("/api/users"))           return "AUTH-SERVICE";
+        if (path.startsWith("/api/internal"))        return "AUTH-SERVICE";
+
+        // Core / Booking Service (8082)
+        if (path.startsWith("/api/admin/hotels"))    return "CORE-SERVICE";
+        if (path.startsWith("/api/admin/bookings"))  return "CORE-SERVICE";
+        if (path.startsWith("/api/user/bookings"))   return "CORE-SERVICE";
+        if (path.startsWith("/api/host/dashboard"))  return "CORE-SERVICE";
+        if (path.startsWith("/api/host"))            return "CORE-SERVICE";
+        if (path.startsWith("/api/rooms"))           return "CORE-SERVICE";
+        if (path.startsWith("/api/hotels"))          return "CORE-SERVICE";
+        if (path.startsWith("/api/bookings"))        return "CORE-SERVICE";
+
+        // Payment Service (8083)
+        if (path.startsWith("/api/payments"))        return "PAYMENT-SERVICE";
+
+        // Gateway internal
+        if (path.startsWith("/api/composite"))       return "GATEWAY-COMPOSITE";
+        if (path.startsWith("/actuator"))            return "GATEWAY";
+
         return "UNKNOWN";
     }
 

@@ -1,20 +1,40 @@
 <div class="dashboard">
-  <!-- TITLE -->
   <div class="dashboard-header">
-    <h1>Dashboard</h1>
-    <p>Welcome back, {{ currentUser?.username }}!</p>
+    <h1>{{ isHost ? 'Host Dashboard' : 'Dashboard' }}</h1>
+    <p>{{ dashboardSubtitle }}</p>
   </div>
 
-  <!-- STATS CARDS -->
+  <nz-alert
+    *ngIf="loadError && !loading"
+    nzType="error"
+    [nzMessage]="errorMessage || 'Khong tai duoc du lieu dashboard'"
+    nzShowIcon
+    [nzAction]="errorAction"
+    class="error-alert"
+  ></nz-alert>
+
+  <ng-template #errorAction>
+    <button nz-button nzType="primary" nzSize="small" (click)="reload()">
+      <span nz-icon nzType="reload"></span>
+      Thu lai
+    </button>
+  </ng-template>
+
   <div nz-row [nzGutter]="16" class="stats-row">
     <div nz-col [nzSpan]="6">
       <nz-card class="stat-card">
-        <nz-statistic
-          [nzValue]="stats.totalUsers"
-          [nzTitle]="'Total Users'"
-          [nzPrefix]="userPrefix"
-        >
-        </nz-statistic>
+        <nz-skeleton
+          *ngIf="loading; else userStat"
+          [nzActive]="true"
+          [nzParagraph]="{ rows: 1 }"
+        ></nz-skeleton>
+        <ng-template #userStat>
+          <nz-statistic
+            [nzValue]="stats?.totalUsers ?? 0"
+            [nzTitle]="firstCardTitle"
+            [nzPrefix]="userPrefix"
+          ></nz-statistic>
+        </ng-template>
         <ng-template #userPrefix>
           <span nz-icon nzType="user"></span>
         </ng-template>
@@ -23,12 +43,18 @@
 
     <div nz-col [nzSpan]="6">
       <nz-card class="stat-card">
-        <nz-statistic
-          [nzValue]="stats.totalBookings"
-          [nzTitle]="'Total Bookings'"
-          [nzPrefix]="bookingPrefix"
-        >
-        </nz-statistic>
+        <nz-skeleton
+          *ngIf="loading; else bookingStat"
+          [nzActive]="true"
+          [nzParagraph]="{ rows: 1 }"
+        ></nz-skeleton>
+        <ng-template #bookingStat>
+          <nz-statistic
+            [nzValue]="stats?.totalBookings ?? 0"
+            [nzTitle]="bookingCardTitle"
+            [nzPrefix]="bookingPrefix"
+          ></nz-statistic>
+        </ng-template>
         <ng-template #bookingPrefix>
           <span nz-icon nzType="calendar"></span>
         </ng-template>
@@ -37,12 +63,18 @@
 
     <div nz-col [nzSpan]="6">
       <nz-card class="stat-card">
-        <nz-statistic
-          [nzValue]="stats.totalRooms"
-          [nzTitle]="'Total Rooms'"
-          [nzPrefix]="roomPrefix"
-        >
-        </nz-statistic>
+        <nz-skeleton
+          *ngIf="loading; else roomStat"
+          [nzActive]="true"
+          [nzParagraph]="{ rows: 1 }"
+        ></nz-skeleton>
+        <ng-template #roomStat>
+          <nz-statistic
+            [nzValue]="stats?.totalRooms ?? 0"
+            [nzTitle]="roomCardTitle"
+            [nzPrefix]="roomPrefix"
+          ></nz-statistic>
+        </ng-template>
         <ng-template #roomPrefix>
           <span nz-icon nzType="home"></span>
         </ng-template>
@@ -51,12 +83,18 @@
 
     <div nz-col [nzSpan]="6">
       <nz-card class="stat-card">
-        <nz-statistic
-          [nzValue]="stats.totalRevenue"
-          [nzTitle]="'Revenue (VND)'"
-          [nzPrefix]="revenuePrefix"
-        >
-        </nz-statistic>
+        <nz-skeleton
+          *ngIf="loading; else revenueStat"
+          [nzActive]="true"
+          [nzParagraph]="{ rows: 1 }"
+        ></nz-skeleton>
+        <ng-template #revenueStat>
+          <nz-statistic
+            [nzValue]="stats?.totalRevenue ?? 0"
+            [nzTitle]="revenueCardTitle"
+            [nzPrefix]="revenuePrefix"
+          ></nz-statistic>
+        </ng-template>
         <ng-template #revenuePrefix>
           <span nz-icon nzType="dollar"></span>
         </ng-template>
@@ -64,17 +102,26 @@
     </div>
   </div>
 
-  <!-- CONTENT -->
   <div nz-row [nzGutter]="16" class="content-row">
     <div nz-col [nzSpan]="16">
-      <nz-card nzTitle="Recent Bookings" class="content-card">
-        <p>Chart or table sẽ hiển thị ở đây</p>
+      <nz-card [nzTitle]="isHost ? 'Thong tin van hanh' : 'Recent Bookings'" class="content-card">
+        <p *ngIf="isHost">
+          Active bookings: {{ stats?.activeBookings ?? 0 }} |
+          Pending bookings: {{ stats?.pendingBookings ?? 0 }} |
+          Check-in 7 ngay toi: {{ stats?.upcomingCheckIns ?? 0 }}
+        </p>
+        <p *ngIf="!isHost">Chart or table se hien thi o day</p>
       </nz-card>
     </div>
 
     <div nz-col [nzSpan]="8">
-      <nz-card nzTitle="Quick Actions" class="content-card">
-        <p>Quick actions sẽ hiển thị ở đây</p>
+      <nz-card [nzTitle]="isHost ? 'Trang thai tai san' : 'Quick Actions'" class="content-card">
+        <p *ngIf="isHost">
+          Active hotels: {{ stats?.activeHotels ?? 0 }} |
+          Pending hotels: {{ stats?.pendingHotels ?? 0 }} |
+          Room types: {{ stats?.totalRoomTypes ?? 0 }}
+        </p>
+        <p *ngIf="!isHost">Quick actions se hien thi o day</p>
       </nz-card>
     </div>
   </div>

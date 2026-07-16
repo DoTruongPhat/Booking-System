@@ -92,4 +92,38 @@ public final class ErrorCode {
 
     public static final String CMN_008 = "CMN_008";
     public static final String CMN_008_MSG = "Ticket already closed ";
+
+    // ── Keycloak Account Linking (Phase C) ────────────────────
+
+    /** KC id_token: email_verified = false */
+    public static final String AUTH_010     = "AUTH_010";
+    public static final String AUTH_010_MSG = "Email chưa được xác minh bởi nhà cung cấp SSO";
+
+    /**
+     * BE user tìm thấy theo email nhưng emailVerified=false
+     * → yêu cầu verify email trước khi link với SSO
+     */
+    public static final String AUTH_011     = "AUTH_011";
+    public static final String AUTH_011_MSG =
+            "Tài khoản cần xác minh email trước khi liên kết với SSO";
+
+    /**
+     * BE user đã có kc_user_id KHÁC với sub trong token
+     * → potential account hijack → reject hard
+     */
+    public static final String AUTH_012     = "AUTH_012";
+    public static final String AUTH_012_MSG =
+            "Email này đã được liên kết với một tài khoản SSO khác";
+
+    /** KC id_token không có email claim */
+    public static final String AUTH_013     = "AUTH_013";
+    public static final String AUTH_013_MSG = "Nhà cung cấp SSO không cung cấp địa chỉ email";
+
+    /**
+     * User SSO (passwordHash=null) cố đăng nhập bằng form password
+     * → hướng dẫn dùng SSO button
+     */
+    public static final String AUTH_014     = "AUTH_014";
+    public static final String AUTH_014_MSG =
+            "Tài khoản này đăng nhập bằng SSO. Vui lòng sử dụng nút đăng nhập tương ứng.";
 }

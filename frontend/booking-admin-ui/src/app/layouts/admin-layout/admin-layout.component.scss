@@ -1,85 +1,310 @@
-@use '../../../styles/variables' as *;
+@use '../../../styles/tokens' as t;
 
 .app-layout {
   min-height: 100vh;
+  background: t.$color-bg-soft;
 }
 
-// SIDEBAR
+// ═══ SIDEBAR ═══════════════════════════════════════════════════════
 .sidebar {
-  background: $gray-800;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
   height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
   z-index: 100;
-
-  &-logo {
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: $white;
-    font-size: 18px;
-    font-weight: 600;
-    border-bottom: 1px solid rgba($white, 0.1);
-  }
-
-  &-menu {
-    border-right: none;
-    padding-top: $spacing-base;
-  }
+  box-shadow: t.$shadow-lg;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-// MAIN WRAPPER
-.main-wrapper {
-  margin-left: 200px;
-  transition: margin-left 0.2s;
-
-  .ant-layout-sider-collapsed + & {
-    margin-left: 0;
-  }
-}
-
-// HEADER
-.header {
-  background: $white;
-  padding: 0 $spacing-xl;
+.sidebar-logo {
+  height: 64px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  box-shadow: $shadow-sm;
-  position: sticky;
-  top: 0;
-  z-index: 50;
+  justify-content: center;
+  gap: t.$spacing-2;
+  color: t.$color-white;
+  font-family: t.$font-family-heading;
+  font-size: t.$font-size-md;
+  font-weight: t.$font-weight-bold;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
-  .trigger {
-    font-size: 18px;
-    cursor: pointer;
-    padding: $spacing-sm;
-    border-radius: $radius-sm;
+  .logo-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
 
-    &:hover {
-      background: $gray-100;
+    img {
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
     }
   }
 
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: $spacing-base;
+  .logo-text {
+    letter-spacing: t.$letter-spacing-tight;
+    font-weight: 800;
+
+    background: linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #f0fdf4 15%,
+      #dcfce7 35%,
+      #bbf7d0 60%,
+      #86efac 80%,
+      #4ade80 100%
+    );
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+
+    text-shadow: 0 2px 10px rgba(74, 222, 128, 0.25);
   }
 
-  .user-name {
-    color: $text-primary;
-    font-weight: 500;
+  .logo-short {
+    font-size: t.$font-size-lg;
+    color: t.$color-primary;
   }
 }
 
-// CONTENT
+.sidebar-menu {
+  border-right: none;
+  padding-top: t.$spacing-3 !important;
+  background: transparent !important;
+
+  ::ng-deep {
+    .ant-menu-item-group-title {
+      color: rgba(255, 255, 255, 0.45) !important;
+      font-size: t.$font-size-2xs !important;
+      text-transform: uppercase;
+      letter-spacing: t.$letter-spacing-wider;
+      padding-left: t.$spacing-4 !important;
+      margin-bottom: t.$spacing-1 !important;
+    }
+
+    .ant-menu-item {
+      margin: 2px t.$spacing-2 !important;
+      border-radius: t.$radius-md !important;
+      width: calc(100% - #{t.$spacing-4}) !important;
+      height: 40px !important;
+      line-height: 40px !important;
+      transition: t.$transition-base;
+
+      &:hover {
+        background: rgba(111, 191, 115, 0.1) !important;
+        color: t.$color-white !important;
+      }
+
+      &.ant-menu-item-selected {
+        background: t.$color-primary !important;
+        color: t.$color-white !important;
+
+        .anticon {
+          color: t.$color-white !important;
+        }
+      }
+    }
+
+    .ant-menu-divider {
+      background: rgba(255, 255, 255, 0.08) !important;
+      margin: t.$spacing-2 t.$spacing-4 !important;
+    }
+  }
+}
+
+// ═══ MAIN WRAPPER ═══════════════════════════════════════════════════════
+.main-wrapper {
+  margin-left: 200px;
+  transition: margin-left 0.2s;
+}
+
+.sidebar-collapsed .main-wrapper {
+  margin-left: 0;
+}
+
+// ═══ HEADER ═══════════════════════════════════════════════════════════════
+.header {
+  background: t.$color-white;
+  padding: 0 t.$spacing-6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: t.$shadow-sm;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 64px;
+}
+
+.trigger {
+  font-size: 18px;
+  cursor: pointer;
+  padding: t.$spacing-2 t.$spacing-3;
+  border-radius: t.$radius-md;
+  color: t.$color-text-primary;
+  transition: t.$transition-base;
+
+  &:hover {
+    background: t.$color-primary-50;
+    color: t.$color-primary;
+  }
+}
+
+// ═══ Welcome banner ═══════════════════════════════════════════════════════
+.welcome-banner {
+  display: flex;
+  align-items: center;
+  gap: t.$spacing-2;
+  margin-left: t.$spacing-4;
+  font-family: t.$font-family-base;
+
+  .welcome-greeting {
+    font-size: t.$font-size-sm;
+    color: t.$color-text-muted;
+  }
+
+  .welcome-name {
+    font-size: t.$font-size-md;
+    font-weight: t.$font-weight-semibold;
+    color: t.$color-text-primary;
+  }
+
+  .welcome-emoji {
+    font-size: t.$font-size-lg;
+    animation: wave 1.5s ease-in-out infinite;
+    transform-origin: 70% 70%;
+  }
+
+  @keyframes wave {
+    0%,
+    60%,
+    100% {
+      transform: rotate(0deg);
+    }
+    10%,
+    30% {
+      transform: rotate(14deg);
+    }
+    20% {
+      transform: rotate(-8deg);
+    }
+    40% {
+      transform: rotate(-4deg);
+    }
+    50% {
+      transform: rotate(10deg);
+    }
+  }
+}
+
+// ═══ Header right ═══════════════════════════════════════════════════════════
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: t.$spacing-3;
+  margin-left: auto;
+}
+
+.header-icon-btn {
+  position: relative;
+  background: transparent;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: t.$radius-md;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: t.$color-text-secondary;
+  font-size: t.$font-size-lg;
+  transition: t.$transition-base;
+
+  &:hover {
+    background: t.$color-primary-50;
+    color: t.$color-primary;
+  }
+
+  .badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: t.$color-danger;
+    color: t.$color-white;
+    font-size: 10px;
+    font-weight: t.$font-weight-bold;
+    min-width: 16px;
+    height: 16px;
+    border-radius: t.$radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+  }
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: t.$spacing-2;
+  padding: t.$spacing-1 t.$spacing-2 t.$spacing-1 t.$spacing-1;
+  border-radius: t.$radius-full;
+  cursor: pointer;
+  transition: t.$transition-base;
+
+  &:hover {
+    background: t.$color-primary-50;
+  }
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: t.$radius-full;
+  background: linear-gradient(135deg, t.$color-primary 0%, t.$color-primary-hover 100%);
+  color: t.$color-white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: t.$font-family-heading;
+  font-weight: t.$font-weight-bold;
+  font-size: t.$font-size-md;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(111, 191, 115, 0.3);
+}
+
+.user-name {
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-medium;
+  color: t.$color-text-primary;
+}
+
+.user-caret {
+  font-size: t.$font-size-xs;
+  color: t.$color-text-muted;
+}
+
+.user-dropdown {
+  min-width: 180px !important;
+  padding: t.$spacing-1 !important;
+
+  ::ng-deep .ant-menu-item {
+    margin: 2px 0 !important;
+    border-radius: t.$radius-sm !important;
+    padding: t.$spacing-2 t.$spacing-3 !important;
+  }
+}
+
+// ═══ CONTENT ═══════════════════════════════════════════════════════════════
 .content {
-  margin: $spacing-xl;
-  padding: $spacing-xl;
-  background: $white;
-  border-radius: $radius-lg;
+  margin: t.$spacing-4;
+  padding: t.$spacing-6;
+  background: t.$color-white;
+  border-radius: t.$radius-xl;
   min-height: calc(100vh - 64px - 32px);
+  box-shadow: t.$shadow-xs;
 }

@@ -1,81 +1,40 @@
 package com.booking.infrastructure.external.cache;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * TokenCacheService = Redis cache cho auth flows
+ *
+ * - KHÔNG còn cache raw access token (Cách 1 Stateless)
+ * - Reset password OTP: vẫn cache
+ * - MFA session: vẫn cache (2FA flow)
+ * - Blacklist: cache song song với DB (DB là source of truth, Redis là fast path)
+ */
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class TokenCacheService {
 
     private final StringRedisTemplate redisTemplate;
 
     // ============ PREFIXES ============
-    // Mỗi loại data dùng prefix khác nhau
-    // → tránh trùng key trong Redis
-    // → dễ debug khi nhìn vào Redis
-    private static final String TOKEN_PREFIX     = "token:";
     private static final String RESET_PREFIX     = "reset:";
     private static final String MFA_PREFIX       = "mfa:";
     private static final String BLACKLIST_PREFIX = "blacklist:";
 
     // ============ TTL mặc định ============
-    // Dùng khi chưa load được từ SystemParam
-    private static final long DEFAULT_TOKEN_TTL_HOURS  = 720; // 30 ngày
-    private static final long RESET_TTL_MINUTES        = 15;
-    private static final long MFA_TTL_MINUTES          = 5;
-
-    // ============ TOKEN ============
-
-    /**
-     * Lưu raw token vào Redis
-     * Dùng để cache → tránh query DB mỗi request
-     *
-     * @param userId   làm key → "token:abc123"
-     * @param rawToken JWT string → làm value
-     * @param ttlHours TTL lấy từ SystemParam (TOKEN_TTL_HOURS)
-     */
-    public void saveToken(String userId, String rawToken, long ttlHours) {
-        redisTemplate.opsForValue().set(
-                TOKEN_PREFIX + userId,
-                rawToken,
-                ttlHours,
-                TimeUnit.HOURS
-        );
-    }
-
-    /**
-     * Đọc token từ Redis
-     * Trả về null nếu key không tồn tại hoặc đã hết TTL
-     */
-    public String getToken(String userId) {
-        return redisTemplate.opsForValue().get(TOKEN_PREFIX + userId);
-    }
-
-    /**
-     * Xóa token khỏi Redis
-     * Gọi khi: logout, login thiết bị mới
-     */
-    public void deleteToken(String userId) {
-        redisTemplate.delete(TOKEN_PREFIX + userId);
-    }
-
-    /**
-     * Kiểm tra token có trong Redis không
-     */
-    public boolean hasToken(String userId) {
-        return Boolean.TRUE.equals(
-                redisTemplate.hasKey(TOKEN_PREFIX + userId));
-    }
+    private static final long RESET_TTL_MINUTES = 15;
+    private static final long MFA_TTL_MINUTES   = 5;
 
     // ============ RESET PASSWORD ============
 
-    /**
-     * Lưu reset token (TTL 15 phút)
-     * Key: "reset:{token}" → value: userId
-     */
     public void saveResetToken(String token, String userId) {
         redisTemplate.opsForValue().set(
                 RESET_PREFIX + token,
@@ -120,38 +79,59 @@ public class TokenCacheService {
     // ============ BLACKLIST ============
 
     /**
-     * Blacklist một token theo JTI
-     * Gọi khi: admin kick user, user đổi password
+     * Blacklist jti với TTL = thời gian còn lại của token gốc
+     * → Sau khi hết TTL, Redis tự xoá → đỡ phải cleanup
      *
-     * Key: "blacklist:{jti}" → value: "revoked"
-     * TTL = thời gian còn lại của token
-     *   → token hết hạn thì blacklist tự xóa
-     *   → Redis không bị đầy theo thời gian
+     * Gọi khi: logout, admin revoke, new login.
      *
-     * @param jti      JWT ID lấy từ bên trong token
-     * @param ttlHours thời gian còn lại của token
+     * @param jti        JWT ID
+     * @param expiresAt  thời điểm token gốc hết hạn
+     */
+    public void blacklist(String jti, ZonedDateTime expiresAt) {
+        long secondsToLive = Duration.between(ZonedDateTime.now(), expiresAt).getSeconds();
+        if (secondsToLive <= 0) {
+            // Token đã hết hạn → không cần blacklist
+            log.debug("[Cache] Skip blacklist for already-expired jti={}", jti);
+            return;
+        }
+        redisTemplate.opsForValue().set(
+                BLACKLIST_PREFIX + jti,
+                "1",
+                secondsToLive,
+                TimeUnit.SECONDS
+        );
+    }
+
+    /**
+     * Overload: blacklist với TTL tính bằng giờ (backward-compat)
+     * → Khuyến nghị dùng overload nhận ZonedDateTime cho rõ ràng
      */
     public void blacklistToken(String jti, long ttlHours) {
         redisTemplate.opsForValue().set(
                 BLACKLIST_PREFIX + jti,
-                "revoked",
+                "1",
                 ttlHours,
                 TimeUnit.HOURS
         );
     }
 
     /**
-     * Kiểm tra JTI có bị blacklist không
-     * Gọi trong TokenAuthFilter trước mỗi request
+     * Check Redis cache cho jti blacklist (KHÔNG fallback DB)
+     * → TokenAuthFilter gọi đầu tiên cho fast path
+     * → Nếu miss, fallback gọi TokenBlacklistRepositoryPort.isBlacklisted(jti)
      *
-     * @return true  → token bị revoke → trả 401
-     *         false → token bình thường → cho đi tiếp
+     * @return true nếu Redis có entry blacklist:{jti}
      */
     public boolean isBlacklisted(String jti) {
-        // Boolean.TRUE.equals() → tránh NullPointerException
-        // vì hasKey() có thể trả về null
         return Boolean.TRUE.equals(
                 redisTemplate.hasKey(BLACKLIST_PREFIX + jti)
         );
+    }
+
+    /**
+     * Xoá entry blacklist khỏi cache (hiếm khi cần)
+     */
+    public void removeFromBlacklist(String jti) {
+        redisTemplate.delete(BLACKLIST_PREFIX + jti);
     }
 }
