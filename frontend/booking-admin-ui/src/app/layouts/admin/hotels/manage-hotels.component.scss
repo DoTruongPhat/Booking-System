@@ -33,6 +33,12 @@
   border-radius: 12px;
 }
 
+tr.focused-hotel > td {
+  background: #f1f8ec !important;
+  border-top: 1px solid #b7d7a6;
+  border-bottom: 1px solid #b7d7a6;
+}
+
 .hotel-cell {
   display: flex;
   align-items: center;
@@ -82,10 +88,87 @@
 }
 
 .hotel-form {
+  ::ng-deep .ant-form-item {
+    margin-bottom: 12px;
+  }
+
   .form-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 12px;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .hotel-image-options {
+    display: grid;
+    gap: 12px;
+  }
+
+  .image-option {
+    display: grid;
+    gap: 8px;
+  }
+
+  .option-label {
+    color: #5f6b57;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .image-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .image-item {
+    position: relative;
+    width: 76px;
+    height: 76px;
+    overflow: hidden;
+    border: 1px solid #e0ead9;
+    border-radius: 6px;
+    background: #f7faf3;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .remove-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0;
+    }
+  }
+
+  .upload-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: fit-content;
+    padding: 8px 14px;
+    border: 1px dashed #9cb885;
+    border-radius: 6px;
+    color: #55752a;
+    background: #f8fbf4;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: #6a8f2a;
+      color: #4f741f;
+      background: #f0f7e8;
+    }
   }
 }
 

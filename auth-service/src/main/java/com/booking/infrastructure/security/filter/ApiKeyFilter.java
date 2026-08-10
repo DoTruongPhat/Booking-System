@@ -116,7 +116,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
         return path.startsWith("/internal/")
-                || path.equals("/actuator/health")
+                || path.startsWith("/actuator/")
                 || path.equals("/auth/sso/login")
                 || path.equals("/auth/sso/callback")
                 || path.equals("/auth/login")

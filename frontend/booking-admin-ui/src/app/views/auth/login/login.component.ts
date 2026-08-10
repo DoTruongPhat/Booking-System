@@ -14,6 +14,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { Auth } from '../../../core/services/auth';
 
 // ── LOCAL FORM IMPORTS (comment lại — bật khi fallback) ──
 // import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -45,6 +46,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 })
 export class LoginComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private auth = inject(Auth);
 
   errorMessage = '';
 
@@ -71,7 +73,7 @@ export class LoginComponent implements OnInit {
    * Đăng nhập → KC login page (có Google + username/password)
    */
   loginWithKeycloak(): void {
-    window.location.href = 'http://localhost:8081/api/auth/sso/login';
+    this.auth.loginWithKeycloak();
   }
 
   // ═══════════════════════════════════════════════════════

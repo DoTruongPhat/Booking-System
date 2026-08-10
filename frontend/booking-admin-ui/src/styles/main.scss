@@ -4,6 +4,7 @@
 
 @use 'variables' as *;
 @use 'mixins' as *;
+@use 'theme';
 
 // CSS Reset
 *,
@@ -39,6 +40,52 @@ a {
 button {
   font-family: inherit;
   cursor: pointer;
+}
+
+// Ng Zorro primary controls use blue by default; keep them aligned with SmartBooking olive.
+.ant-btn-primary:not(.ant-btn-dangerous) {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 8px 18px rgba(111, 191, 115, 0.22);
+
+  &:hover,
+  &:focus {
+    background: var(--color-primary-hover) !important;
+    border-color: var(--color-primary-hover) !important;
+  }
+}
+
+.ant-btn-link,
+.ant-btn-text:hover,
+.ant-pagination-item-active a,
+.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--color-primary) !important;
+}
+
+.ant-pagination-item-active,
+.ant-input:focus,
+.ant-input-focused,
+.ant-picker-focused,
+.ant-select-focused .ant-select-selector {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px rgba(111, 191, 115, 0.14) !important;
+}
+
+.ant-tabs-ink-bar,
+.ant-switch-checked,
+.ant-checkbox-checked .ant-checkbox-inner {
+  background: var(--color-primary) !important;
+}
+
+.ant-radio-checked .ant-radio-inner,
+.ant-checkbox-checked .ant-checkbox-inner {
+  border-color: var(--color-primary) !important;
+}
+
+.ant-tag-blue {
+  color: #3d7a41 !important;
+  background: var(--color-primary-soft) !important;
+  border-color: var(--color-primary-light) !important;
 }
 
 // Headings

@@ -244,7 +244,170 @@
     align-items: center;
     justify-content: center;
     padding: 0 4px;
+
+    &.badge--warning {
+      background: #f59e0b;
+    }
   }
+}
+
+.notification-panel {
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  padding: t.$spacing-2;
+  background: t.$color-white;
+  border: 1px solid t.$color-border-light;
+  border-radius: t.$radius-md;
+  box-shadow: t.$shadow-lg;
+}
+
+.notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: t.$spacing-2 t.$spacing-2 t.$spacing-3;
+  border-bottom: 1px solid t.$color-border-light;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  strong {
+    color: t.$color-text-primary;
+    font-size: t.$font-size-sm;
+  }
+
+  span {
+    color: t.$color-text-muted;
+    font-size: t.$font-size-xs;
+  }
+}
+
+.link-button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: t.$radius-md;
+  background: transparent;
+  color: t.$color-primary;
+  cursor: pointer;
+
+  &:hover {
+    background: t.$color-primary-50;
+  }
+}
+
+.notification-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: t.$spacing-1 0;
+}
+
+.notification-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 8px 1fr;
+  gap: t.$spacing-3;
+  padding: t.$spacing-3 t.$spacing-2;
+  border: 0;
+  border-radius: t.$radius-md;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: t.$color-primary-50;
+  }
+
+  &.notification-item--reminder {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.18);
+
+    &:hover {
+      background: rgba(245, 158, 11, 0.14);
+    }
+  }
+}
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: t.$radius-full;
+  background: t.$color-primary;
+
+  &.notification-dot--reminder {
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
+  }
+}
+
+.notification-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  strong,
+  span,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: t.$color-text-primary;
+    font-size: t.$font-size-sm;
+  }
+
+  span,
+  small {
+    color: t.$color-text-muted;
+    font-size: t.$font-size-xs;
+  }
+}
+
+.notification-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: t.$spacing-2;
+  padding: t.$spacing-6 t.$spacing-3;
+  color: t.$color-text-muted;
+  font-size: t.$font-size-sm;
+
+  .anticon {
+    color: t.$color-primary;
+    font-size: 22px;
+  }
+}
+
+.notification-footer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: t.$spacing-2;
+  padding: t.$spacing-2;
+  border: 0;
+  border-top: 1px solid t.$color-border-light;
+  background: transparent;
+  color: t.$color-primary;
+  font-weight: t.$font-weight-semibold;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$color-primary-hover;
+  }
+}
+
+.user-menu-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
 .user-menu {
@@ -252,8 +415,13 @@
   align-items: center;
   gap: t.$spacing-2;
   padding: t.$spacing-1 t.$spacing-2 t.$spacing-1 t.$spacing-1;
+  border: 0;
   border-radius: t.$radius-full;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
   transition: t.$transition-base;
 
   &:hover {
@@ -288,9 +456,19 @@
   color: t.$color-text-muted;
 }
 
+.user-dropdown-panel {
+  min-width: 180px;
+  padding: t.$spacing-1;
+  background: t.$color-white;
+  border: 1px solid t.$color-border-light;
+  border-radius: t.$radius-md;
+  box-shadow: t.$shadow-lg;
+}
+
 .user-dropdown {
   min-width: 180px !important;
-  padding: t.$spacing-1 !important;
+  border-right: 0 !important;
+  box-shadow: none !important;
 
   ::ng-deep .ant-menu-item {
     margin: 2px 0 !important;

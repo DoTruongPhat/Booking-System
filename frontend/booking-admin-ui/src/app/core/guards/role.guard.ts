@@ -1,47 +1,24 @@
-// ═══════════════════════════════════════════════════════════
-// ROLE GUARD — BFF Pattern
-// Sau BFF redirect, localStorage trống nhưng cookies có.
-// → Gọi /api/users/me lấy roles → check quyền → cho qua hoặc chặn.
-// ═══════════════════════════════════════════════════════════
-
-import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
-import { map, catchError } from 'rxjs/operators';
-import { of, Observable } from 'rxjs';
+import { CanActivateFn, Router } from '@angular/router';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { Auth } from '../services/auth';
 
-/**
- * Helper: đảm bảo user đã load (từ localStorage hoặc API)
- * Trả Observable<boolean> — true nếu user đã sẵn sàng
- */
 function ensureUser(auth: Auth, router: Router, returnUrl: string): Observable<boolean> {
-  if (auth.isLoggedIn()) return of(true);
-
-  return auth.getProfile().pipe(
-    map((user: any) => {
-      auth.saveUser({
-        username: user.username,
-        email: user.email,
-        roles: user.roles?.map((r: any) => (typeof r === 'string' ? r : r.code)) || [],
-        timezone: user.timezone,
-        phone: user.phone,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      });
+  return auth.hydrateUserFromProfile().pipe(
+    map(() => {
       return true;
     }),
     catchError(() => {
       router.navigate(['/auth/login'], {
         queryParams: { returnUrl },
       });
+
       return of(false);
     }),
   );
 }
 
-/**
- * Role guard — check user có ít nhất 1 role trong danh sách
- */
 export const roleGuard = (allowedRoles: string[]): CanActivateFn => {
   return (_route, state) => {
     const auth = inject(Auth);
@@ -59,9 +36,6 @@ export const roleGuard = (allowedRoles: string[]): CanActivateFn => {
   };
 };
 
-/**
- * Admin guard — cho phép ADMIN_ALL, ADMIN, HOST vào admin layout
- */
 export const adminGuard: CanActivateFn = (_route, state) => {
   const auth = inject(Auth);
   const router = inject(Router);
@@ -71,7 +45,6 @@ export const adminGuard: CanActivateFn = (_route, state) => {
       if (!loaded) return false;
 
       const hasAdminRole = auth.getRoles().some((r) => ['ADMIN_ALL', 'ADMIN', 'HOST'].includes(r));
-
       if (hasAdminRole) return true;
 
       router.navigateByUrl(auth.getLandingPath());

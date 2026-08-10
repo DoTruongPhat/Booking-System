@@ -12,6 +12,8 @@ import { NavbarComponent } from '../../../shared/components/navbar/navbar.compon
 import { Auth } from '../../../core/services/auth';
 import { BookingService } from '../../../core/services/booking.service';
 import { Booking, BookingStatus } from '../../../core/models/booking.model';
+import { generateIdempotencyKey } from '../../../core/http/idempotency';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-my-bookings',
@@ -35,6 +37,7 @@ export class MyBookingsComponent implements OnInit {
   private router = inject(Router);
   private bookingService = inject(BookingService);
   private message = inject(NzMessageService);
+  private http = inject(HttpClient);
 
   // Filter: aligned with backend 5 statuses
   filterStatus: 'ALL' | BookingStatus = 'ALL';
@@ -51,7 +54,8 @@ export class MyBookingsComponent implements OnInit {
   // Status config — aligned with backend (5 statuses, NO CHECKED_IN/CHECKED_OUT)
   readonly statusColors: Record<BookingStatus, string> = {
     PENDING: 'orange',
-    CONFIRMED: 'blue',
+    CONFIRMED: 'green',
+    CHECKED_IN: 'blue',
     COMPLETED: 'green',
     CANCELLED: 'red',
     NO_SHOW: 'default',
@@ -60,6 +64,7 @@ export class MyBookingsComponent implements OnInit {
   readonly statusLabels: Record<BookingStatus, string> = {
     PENDING: 'Chờ xác nhận',
     CONFIRMED: 'Đã xác nhận',
+    CHECKED_IN: 'Đã nhận phòng',
     COMPLETED: 'Hoàn thành',
     CANCELLED: 'Đã hủy',
     NO_SHOW: 'Không đến',
@@ -131,15 +136,63 @@ export class MyBookingsComponent implements OnInit {
 
   cancelBooking(id: string): void {
     if (confirm('Bạn có chắc chắn muốn hủy đặt phòng này?')) {
-      this.bookingService.cancelBooking(id, 'Hủy bởi khách hàng').subscribe({
-        next: () => {
-          this.message.success('Đã hủy đặt phòng');
-          this.loadBookings();
-        },
-        error: (err) => {
-          this.message.error(err?.error?.message || 'Không thể hủy đặt phòng');
-        },
-      });
+      this.bookingService
+        .cancelBooking(id, 'Hủy bởi khách hàng', generateIdempotencyKey())
+        .subscribe({
+          next: () => {
+            this.message.success('Đã hủy đặt phòng');
+            this.loadBookings();
+          },
+          error: (err) => {
+            this.message.error(err?.error?.message || 'Không thể hủy đặt phòng');
+          },
+        });
     }
+  }
+
+  // ── Download & Payment ─────────────────────
+
+  onDownloadPdf(b: any): void {
+    this.http
+      .get(`/api/user/bookings/${b.id}/confirmation.pdf`, {
+        responseType: 'blob',
+        withCredentials: true,
+      })
+      .subscribe({
+        next: (blob: Blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `booking-${b.bookingCode}.pdf`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+          this.message.success('Đang tải PDF...');
+        },
+        error: () => this.message.error('Không thể tải PDF'),
+      });
+  }
+
+  onDownloadReceipt(b: any): void {
+    this.http
+      .get(`/api/user/bookings/${b.id}/receipt.pdf`, {
+        responseType: 'blob',
+        withCredentials: true,
+      })
+      .subscribe({
+        next: (blob: Blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `receipt-${b.bookingCode}.pdf`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+          this.message.success('Đang tải biên lai...');
+        },
+        error: () => this.message.error('Không thể tải biên lai'),
+      });
+  }
+
+  onPayment(b: any): void {
+    this.router.navigate(['/booking/checkout', b.id]);
   }
 }

@@ -51,7 +51,10 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             "/api/composite",
             "/api/rooms",
             "/api/hotels",
-            "/actuator"
+            "/api/vouchers",
+            "/actuator",
+            "/api/payments/callback",
+            "/mock-gateway"
     );
 
     @Override

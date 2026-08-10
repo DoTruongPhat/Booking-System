@@ -160,7 +160,7 @@
               <nz-avatar
                 [nzText]="getStaffName(t.assignedTo).charAt(0).toUpperCase()"
                 nzSize="small"
-                style="background-color: #1890ff; margin-right: 6px;"
+                style="background-color: #6fbf73; margin-right: 6px;"
               ></nz-avatar>
               <span class="staff-name">{{ getStaffName(t.assignedTo) }}</span>
             </ng-container>
@@ -188,7 +188,9 @@
                 *nzSpaceItem
                 nz-button
                 nzSize="small"
-                nz-tooltip="Assign staff"
+                [disabled]="!canAssign(t)"
+                nz-tooltip
+                [nzTooltipTitle]="canAssign(t) ? 'Assign staff' : 'Ticket da duoc xu ly'"
                 (click)="openAssignModal(t)"
               >
                 <span nz-icon nzType="user-add"></span>

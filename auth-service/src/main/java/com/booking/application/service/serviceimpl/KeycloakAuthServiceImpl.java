@@ -72,14 +72,20 @@ public class KeycloakAuthServiceImpl implements ExchangeKeycloakCodeUseCase {
                 kc.getRealm()
         );
 
-        return UriComponentsBuilder.fromHttpUrl(authEndpoint)
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(authEndpoint)
                 .queryParam("client_id", kc.getClientId())
                 .queryParam("redirect_uri", kc.getBffCallbackUrl())
                 .queryParam("response_type", "code")
                 .queryParam("scope", "openid email profile")
                 .queryParam("state", state)
                 .queryParam("prompt", "login")
-                .queryParam("kc_action", "authenticate")
+                .queryParam("kc_action", "authenticate");
+
+        if (provider != null && !provider.isBlank()) {
+            builder.queryParam("kc_idp_hint", provider.trim().toLowerCase());
+        }
+
+        return builder
                 .build()
                 .encode()
                 .toUriString();
@@ -132,10 +138,54 @@ public class KeycloakAuthServiceImpl implements ExchangeKeycloakCodeUseCase {
     private UpsertResult upsertUserFromKc(IdTokenClaims claims, String timeZone) {
         String rawEmail = claims.email();
         if (rawEmail == null || rawEmail.isBlank()) {
+            // Federation provider không trả email → extract local user ID từ sub
+            // Format: f:<provider_id>:<local_user_id>
+            String sub = claims.sub();
+            log.info("[KC Auth] Email null, trying Federation fallback: sub={}", sub);
+
+            String localIdStr = sub;
+            if (sub.startsWith("f:")) {
+                // Extract UUID cuối: f:xxxx:a029c540-6b84-4497-b092-a2456ceadd96
+                String[] parts = sub.split(":");
+                localIdStr = parts[parts.length - 1];
+            }
+
+            try {
+                UUID localUserId = UUID.fromString(localIdStr);
+                Optional<User> byId = userRepo.findById(localUserId);
+                if (byId.isPresent()) {
+                    User found = byId.get();
+                    log.info("[KC Auth] Federation fallback OK: userId={}, email={}",
+                            found.getId(), MaskUtil.maskEmail(found.getEmail()));
+
+                    // Tạo KC link
+                    Optional<UserKcLink> existingLink = kcLinkRepo.findByUserId(found.getId());
+                    if (existingLink.isEmpty()) {
+                        UserKcLink newLink = new UserKcLink(found.getId(), sub, claims.provider(), "SSO");
+                        kcLinkRepo.save(newLink);
+                    }
+
+                    return new UpsertResult(found, false);
+                }
+            } catch (IllegalArgumentException ignored) {
+            }
+
             throw new IllegalStateException(ErrorCode.AUTH_013 + ": " + ErrorCode.AUTH_013_MSG);
         }
         if (!claims.emailVerified()) {
-            throw new IllegalStateException(ErrorCode.AUTH_010 + ": " + ErrorCode.AUTH_010_MSG);
+            // Federation user có thể không set emailVerified trong token
+            try {
+                UUID localUserId = UUID.fromString(claims.sub());
+                Optional<User> byId = userRepo.findById(localUserId);
+                if (byId.isPresent() && byId.get().isEmailVerified()) {
+                    log.info("[KC Auth] Federation user email verified in local DB: sub={}", claims.sub());
+                    UserKcLink newLink = new UserKcLink(byId.get().getId(), claims.sub(), claims.provider(), "SSO");
+                    kcLinkRepo.save(newLink);
+                    return new UpsertResult(byId.get(), false);
+                }
+            } catch (IllegalArgumentException ignored) {}
+            log.warn("[KC Auth] id_token email is not marked verified: email={}",
+                    MaskUtil.maskEmail(rawEmail));
         }
 
         String email = rawEmail.toLowerCase().trim();
@@ -155,11 +205,35 @@ public class KeycloakAuthServiceImpl implements ExchangeKeycloakCodeUseCase {
                     .orElseThrow(() -> new IllegalStateException("User not found for KC link"));
             return new UpsertResult(found, false);
         }
+        // ── Case A2: Federation dùng local user ID làm sub ──
+        try {
+            String localIdStr = kcUserId;
+            if (kcUserId.startsWith("f:")) {
+                String[] parts = kcUserId.split(":");
+                localIdStr = parts[parts.length - 1];
+            }
+            UUID localUserId = UUID.fromString(localIdStr);
+            Optional<User> byId = userRepo.findById(localUserId);
+            if (byId.isPresent()) {
+                log.info("[KC Auth] Case A2 - Federation user found by local ID: email={}", MaskUtil.maskEmail(email));
+                User found = byId.get();
+                UserKcLink newLink = new UserKcLink(found.getId(), kcUserId, claims.provider(), "SSO");
+                kcLinkRepo.save(newLink);
+                return new UpsertResult(found, false);
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+
 
         // ── Case B/C: tìm user theo email ───────────────────
+
         Optional<User> byEmail = userRepo.findByEmailIgnoreCase(email);
         if (byEmail.isPresent()) {
             return new UpsertResult(linkOrRejectLocalUser(byEmail.get(), kcUserId, claims, email), false);
+        }
+
+        if (!claims.emailVerified()) {
+            throw new IllegalStateException(ErrorCode.AUTH_010 + ": " + ErrorCode.AUTH_010_MSG);
         }
 
         // ── Case C: tạo mới ─────────────────────────────────
@@ -172,9 +246,10 @@ public class KeycloakAuthServiceImpl implements ExchangeKeycloakCodeUseCase {
      */
     private User linkOrRejectLocalUser(User existing, String kcUserId,
                                        IdTokenClaims claims, String email) {
+        User verifiedUser = ensureLocalEmailVerifiedForSso(existing, claims, email);
         // Hijack check: user đã link KC khác?
-        Optional<UserKcLink> existingLink = kcLinkRepo.findByUserId(existing.getId());
-        if (existingLink.isPresent() && !existingLink.get().getKcUserId().equals(kcUserId)) {
+        Optional<UserKcLink> existingLink = kcLinkRepo.findByUserId(verifiedUser.getId());
+        if (existingLink.isPresent() && !kcUserId.equals(existingLink.get().getKcUserId())) {
             log.info("[KC Auth] Case B — updating KC link: email={}, old_kc={}, new_kc={}",
                     MaskUtil.maskEmail(email), existingLink.get().getKcUserId(), kcUserId);
             UserKcLink link = existingLink.get();
@@ -182,11 +257,11 @@ public class KeycloakAuthServiceImpl implements ExchangeKeycloakCodeUseCase {
             link.setKcProvider(claims.provider());
             link.updateSync();
             kcLinkRepo.save(link);
-            return existing;
+            return verifiedUser;
         }
 
         // Email chưa verify
-        if (!existing.isEmailVerified()) {
+        if (!verifiedUser.isEmailVerified()) {
             log.warn("[KC Auth] Case B rejected — email not verified: email={}", MaskUtil.maskEmail(email));
             throw new IllegalStateException(ErrorCode.AUTH_011 + ": " + ErrorCode.AUTH_011_MSG);
         }
@@ -194,16 +269,36 @@ public class KeycloakAuthServiceImpl implements ExchangeKeycloakCodeUseCase {
         // Link: tạo record user_kc_links
         log.info("[KC Auth] Case B — linking: email={}", MaskUtil.maskEmail(email));
         UserKcLink link = new UserKcLink();
-        link.setUserId(existing.getId());
+        link.setUserId(verifiedUser.getId());
         link.setKcUserId(kcUserId);
         link.setKcProvider(claims.provider());
-        link.setAuthSource(existing.getPasswordHash() != null ? "LINKED" : "KEYCLOAK");
+        link.setAuthSource(verifiedUser.getPasswordHash() != null ? "LINKED" : "KEYCLOAK");
         link.setKcSyncedAt(ZonedDateTime.now());
         link.setSyncStatus("SYNCED");
         link.setSyncVersion(1L);
         kcLinkRepo.save(link);
 
-        return existing;
+        return verifiedUser;
+    }
+
+    private User ensureLocalEmailVerifiedForSso(User user, IdTokenClaims claims, String email) {
+        if (user.isEmailVerified()) {
+            return user;
+        }
+
+        if (!claims.emailVerified()) {
+            log.warn("[KC Auth] Case B rejected - email not verified: email={}", MaskUtil.maskEmail(email));
+            throw new IllegalStateException(ErrorCode.AUTH_011 + ": " + ErrorCode.AUTH_011_MSG);
+        }
+
+        User userWithRoles = userRepo.findByIdWithRoles(user.getId()).orElse(user);
+        userWithRoles.setEmailVerified(true);
+        User saved = userRepo.save(userWithRoles);
+
+        log.info("[KC Auth] Local email verified from SSO provider: userId={}, email={}",
+                saved.getId(), MaskUtil.maskEmail(email));
+
+        return saved;
     }
 
     /**

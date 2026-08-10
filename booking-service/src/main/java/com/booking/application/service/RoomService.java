@@ -14,6 +14,8 @@ import com.booking.domain.model.Hotel;
 import com.booking.domain.model.Room;
 import com.booking.domain.model.RoomAvailability;
 import com.booking.domain.validation.RoomValidator;
+import com.booking.infrastructure.cache.RoomCacheAdapter;
+import com.booking.infrastructure.persistence.repository.RoomTypeJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,6 +41,8 @@ public class RoomService implements CreateRoomUseCase, UpdateRoomUseCase,
     private final RoomAvailabilityRepositoryPort availabilityRepository;
     private final HotelRepositoryPort hotelRepository;
     private final RoomValidator roomValidator;
+    private final RoomCacheAdapter roomCacheAdapter;
+    private final RoomTypeJpaRepository roomTypeRepository;
 
     // ─── CreateRoomUseCase ───────────────────
 
@@ -48,6 +52,8 @@ public class RoomService implements CreateRoomUseCase, UpdateRoomUseCase,
         verifyOwnership(hotel, ownerUserId);
 
         room.setHotelId(hotelId);
+        room.setRoomType(normalizeRoomType(room.getRoomType()));
+        validateRoomType(hotelId, room.getRoomType());
         Room saved = roomRepository.save(room);
 
         // Auto-generate availability for next 30 days
@@ -58,6 +64,8 @@ public class RoomService implements CreateRoomUseCase, UpdateRoomUseCase,
 
         log.info("Room created: id={}, hotel={}, type={}, totalRooms={}, availability={}days",
                 saved.getId(), hotelId, saved.getRoomType(), saved.getTotalRooms(), AVAILABILITY_DAYS);
+
+        roomCacheAdapter.invalidateSearchResults();
 
         return saved;
     }
@@ -76,6 +84,8 @@ public class RoomService implements CreateRoomUseCase, UpdateRoomUseCase,
         Hotel hotel = findHotelOrThrow(room.getHotelId());
         verifyOwnership(hotel, ownerUserId);
 
+        updates.setRoomType(normalizeRoomType(updates.getRoomType()));
+        validateRoomType(room.getHotelId(), updates.getRoomType());
         room.setRoomType(updates.getRoomType());
         room.setName(updates.getName());
         room.setDescription(updates.getDescription());
@@ -89,6 +99,9 @@ public class RoomService implements CreateRoomUseCase, UpdateRoomUseCase,
         Room saved = roomRepository.save(room);
 
         log.info("Room updated: id={}, name={}", saved.getId(), saved.getName());
+
+        roomCacheAdapter.invalidateRoomDetail(saved.getId());
+        roomCacheAdapter.invalidateSearchResults();
 
         return saved;
     }
@@ -106,6 +119,7 @@ public class RoomService implements CreateRoomUseCase, UpdateRoomUseCase,
         }
 
         availabilityRepository.blockDates(roomId, startDate, endDate);
+        roomCacheAdapter.invalidateOnBookingChange(roomId);
         log.info("Dates blocked: room={}, from={} to={}", roomId, startDate, endDate);
     }
 
@@ -139,6 +153,22 @@ public class RoomService implements CreateRoomUseCase, UpdateRoomUseCase,
         if (!hotel.isOwnedBy(ownerUserId)) {
             throw new CoreException(CoreErrorCode.HOTEL_NOT_OWNED);
         }
+    }
+
+    private void validateRoomType(UUID hotelId, String roomType) {
+        if (roomType == null || roomType.isBlank()) {
+            throw new CoreException(CoreErrorCode.ROOM_TYPE_NOT_FOUND);
+        }
+        if (!roomTypeRepository.existsActiveForHotelOrGlobal(hotelId, roomType)) {
+            throw new CoreException(
+                    CoreErrorCode.ROOM_TYPE_NOT_FOUND,
+                    "Room type does not exist for this hotel or global catalog: " + roomType
+            );
+        }
+    }
+
+    private String normalizeRoomType(String value) {
+        return value == null ? null : value.trim().toUpperCase().replaceAll("\\s+", "_");
     }
 
     private List<RoomAvailability> generateAvailability(UUID roomId, int totalRooms, int days) {

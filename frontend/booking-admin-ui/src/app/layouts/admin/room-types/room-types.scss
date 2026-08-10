@@ -1,0 +1,102 @@
+.room-types-page {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  h1 {
+    margin: 0 0 4px;
+    color: #1f2328;
+    font-size: 24px;
+    font-weight: 600;
+  }
+}
+
+.subtitle,
+.stat-label,
+.type-code {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+
+  nz-card {
+    border-radius: 8px;
+  }
+
+  ::ng-deep .ant-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px;
+  }
+
+  strong {
+    color: #1f2328;
+    font-size: 24px;
+  }
+}
+
+.table-card {
+  border-radius: 8px;
+}
+
+.room-type-form-page {
+  max-width: 760px;
+}
+
+.form-page-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+
+  ::ng-deep .ant-card-body {
+    padding: 20px;
+  }
+}
+
+.room-type-form {
+  ::ng-deep .ant-form-item {
+    margin-bottom: 14px;
+  }
+}
+
+.type-code {
+  font-family: monospace;
+}
+
+.checkbox-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #374151;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #edf0f2;
+}
+
+.empty-row {
+  padding: 40px 0;
+  text-align: center;
+}

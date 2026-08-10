@@ -57,7 +57,7 @@
   font-family: 'Courier New', monospace;
 
   &:focus {
-    border-color: #1890ff;
+    border-color: #6fbf73;
   }
 
   &::placeholder {
@@ -95,11 +95,11 @@
 }
 
 .btn-primary {
-  background: #1890ff;
+  background: #6fbf73;
   color: #fff;
 
   &:hover:not(:disabled) {
-    background: #40a9ff;
+    background: #5baa60;
   }
 }
 

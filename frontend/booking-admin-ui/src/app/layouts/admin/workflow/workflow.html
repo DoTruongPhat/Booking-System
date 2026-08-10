@@ -1,0 +1,187 @@
+<div class="workflow-page">
+  <div class="page-header">
+    <div>
+      <h1>Quy trình duyệt</h1>
+      <p class="subtitle">Danh sách task đang chờ xử lý</p>
+    </div>
+    <button nz-button nzType="default" (click)="loadTasks()">
+      <span nz-icon nzType="sync"></span> Tải lại
+    </button>
+  </div>
+
+  <nz-alert
+    nzType="info"
+    nzShowIcon
+    nzMessage="Workflow: Hotel Approval"
+    nzDescription="HOST tạo hotel → workflow tự khởi tạo → ADMIN quyết định → hệ thống tự cập nhật status và gửi email."
+    style="margin-bottom: 16px"
+  ></nz-alert>
+
+  <nz-card>
+    <nz-table [nzData]="tasks" [nzLoading]="loading" [nzShowPagination]="false" nzSize="middle">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Hotel</th>
+          <th>Thành phố</th>
+          <th>Host ID</th>
+          <th>Assignee</th>
+          <th>Ngày tạo</th>
+          <th nzWidth="220px">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let task of tasks"
+          [class.focused-task]="isFocusedTask(task)"
+          [class.reminder-task]="hasReminder(task)"
+        >
+          <td>
+            <nz-tag nzColor="green">{{ task.taskName }}</nz-tag>
+            <nz-tag [nzColor]="getWorkflowType(task) === 'UPDATE_HOTEL' ? 'gold' : 'cyan'">
+              {{ getWorkflowTypeLabel(task) }}
+            </nz-tag>
+            <div class="text-muted">{{ task.taskDefinitionKey }}</div>
+          </td>
+          <td>
+            <strong>{{ getHotelName(task) }}</strong>
+            <div class="text-muted">{{ task.businessKey }}</div>
+            <div class="text-muted">
+              {{ getReviewStatus(task) }} - Reminder {{ getReminderCount(task) }}
+            </div>
+            <nz-tag *ngIf="hasReminder(task)" nzColor="orange">
+              {{ getReminderLabel(task) }}
+            </nz-tag>
+            <div class="text-muted" *ngIf="hasReminder(task)">
+              Last reminder: {{ formatReminderTime(task) }}
+            </div>
+          </td>
+          <td>{{ getCity(task) }}</td>
+          <td>
+            <code>{{ getHostId(task) | slice: 0 : 8 }}...</code>
+          </td>
+          <td>
+            <nz-tag *ngIf="task.assignee" nzColor="green">
+              {{ task.assignee | slice: 0 : 8 }}...
+            </nz-tag>
+            <nz-tag *ngIf="!task.assignee" nzColor="orange">Chưa nhận</nz-tag>
+          </td>
+          <td>{{ formatDateTime(task.created) }}</td>
+          <td>
+            <button
+              *ngIf="!task.assignee"
+              nz-button
+              nzSize="small"
+              nz-tooltip="Nhận task"
+              (click)="claimTask(task)"
+              style="margin-right: 8px"
+            >
+              <span nz-icon nzType="user-add"></span>
+            </button>
+
+            <button
+              *ngIf="isMyTask(task)"
+              nz-button
+              nzSize="small"
+              nz-tooltip="Trả task"
+              (click)="unclaimTask(task)"
+              style="margin-right: 8px"
+            >
+              <span nz-icon nzType="user-delete"></span>
+            </button>
+
+            <button
+              *ngIf="canReview(task)"
+              nz-button
+              nzSize="small"
+              nzType="primary"
+              nz-tooltip="Review và quyết định"
+              (click)="openReviewModal(task)"
+            >
+              <span nz-icon nzType="audit"></span> Review
+            </button>
+
+            <a
+              nz-button
+              nzSize="small"
+              routerLink="/admin/hotels"
+              [queryParams]="{ hotelId: getHotelId(task) }"
+              nz-tooltip="Mở danh sách khách sạn"
+              style="margin-left: 8px"
+            >
+              <span nz-icon nzType="home"></span>
+            </a>
+          </td>
+        </tr>
+        <tr *ngIf="!loading && tasks.length === 0">
+          <td colspan="7">
+            <nz-empty nzNotFoundContent="Không có workflow task active. Nếu vừa tạo khách sạn mới, hãy kiểm tra camunda-service và Kafka consumer."></nz-empty>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+</div>
+
+<nz-modal
+  [(nzVisible)]="isReviewModalOpen"
+  [nzTitle]="'Review Hotel: ' + getHotelName(selectedTask)"
+  [nzOkLoading]="isSubmitting"
+  [nzFooter]="reviewFooter"
+  (nzOnCancel)="isReviewModalOpen = false"
+  nzWidth="500px"
+>
+  <ng-container *nzModalContent>
+    <div class="review-info" *ngIf="selectedTask">
+      <div class="info-row">
+        <span class="label">Hotel:</span>
+        <strong>{{ getHotelName(selectedTask) }}</strong>
+      </div>
+      <div class="info-row">
+        <span class="label">Thành phố:</span>
+        <span>{{ getCity(selectedTask) }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Host ID:</span>
+        <code>{{ getHostId(selectedTask) }}</code>
+      </div>
+      <div class="info-row">
+        <span class="label">Business Key:</span>
+        <code>{{ selectedTask.businessKey }}</code>
+      </div>
+      <div class="info-row">
+        <span class="label">Loại workflow:</span>
+        <nz-tag [nzColor]="getWorkflowType(selectedTask) === 'UPDATE_HOTEL' ? 'gold' : 'cyan'">
+          {{ getWorkflowTypeLabel(selectedTask) }}
+        </nz-tag>
+      </div>
+      <div class="change-list" *ngIf="getProposedChanges(selectedTask).length">
+        <div class="change-title">Thông tin host muốn cập nhật</div>
+        <div class="change-row" *ngFor="let change of getProposedChanges(selectedTask)">
+          <span class="change-key">{{ change.key }}</span>
+          <span class="change-value">{{ formatChangeValue(change.value) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px">
+      <label>Ghi chú / Lý do:</label>
+      <textarea
+        nz-input
+        [(ngModel)]="reviewComment"
+        rows="3"
+        placeholder="Nhập ghi chú, bắt buộc khi từ chối..."
+      ></textarea>
+    </div>
+  </ng-container>
+
+  <ng-template #reviewFooter>
+    <button nz-button (click)="isReviewModalOpen = false">Hủy</button>
+    <button nz-button nzDanger [nzLoading]="isSubmitting" (click)="rejectTask()">
+      <span nz-icon nzType="close-circle"></span> Từ chối
+    </button>
+    <button nz-button nzType="primary" [nzLoading]="isSubmitting" (click)="approveTask()">
+      <span nz-icon nzType="check-circle"></span> Duyệt
+    </button>
+  </ng-template>
+</nz-modal>

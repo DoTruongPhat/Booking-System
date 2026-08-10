@@ -8,7 +8,7 @@
 //
 // Features:
 //   - Filter tabs: All / Pending / Confirmed / Completed / Cancelled
-//   - PENDING countdown timer (15 phút)
+//   - PENDING countdown timer theo cấu hình
 //   - Cancel modal với reason + refund warning
 //   - Pagination
 // ═══════════════════════════════════════════════════════════
@@ -17,7 +17,7 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, interval, takeUntil } from 'rxjs';
+import { Subject, catchError, finalize, interval, of, takeUntil, timeout } from 'rxjs';
 
 // NgZorro
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -39,10 +39,17 @@ import {
   BOOKING_STATUS_COLORS,
   PAYMENT_STATUS_LABELS,
 } from '../../../../core/models/booking.model';
+import { generateIdempotencyKey } from '../../../../core/http/idempotency';
 
 interface StatusTab {
   label: string;
   value: BookingStatus | 'ALL';
+}
+
+interface BookingProgressStep {
+  label: string;
+  icon: string;
+  state: 'done' | 'current' | 'todo' | 'danger';
 }
 
 @Component({
@@ -75,6 +82,8 @@ export class MyBookingsComponent implements OnInit, OnDestroy {
   // ── State ─────────────────────────────────────────────
   bookings: Booking[] = [];
   loading = false;
+  loadTimedOut = false;
+  progressStepsByBookingId: Record<string, BookingProgressStep[]> = {};
   totalElements = 0;
   currentPage = 1;
   pageSize = 10;
@@ -117,6 +126,15 @@ export class MyBookingsComponent implements OnInit, OnDestroy {
 
   loadBookings(): void {
     this.loading = true;
+    this.loadTimedOut = false;
+    window.setTimeout(() => {
+      if (!this.loading) return;
+      this.loadTimedOut = true;
+      this.loading = false;
+      this.bookings = [];
+      this.progressStepsByBookingId = {};
+      this.totalElements = 0;
+    }, 9000);
 
     const params: { page: number; size: number; status?: BookingStatus } = {
       page: this.currentPage - 1,
@@ -126,11 +144,34 @@ export class MyBookingsComponent implements OnInit, OnDestroy {
       params.status = this.activeTab;
     }
 
-    this.bookingService.getMyBookings(params).subscribe({
+    this.bookingService
+      .getMyBookings(params)
+      .pipe(
+        timeout(8000),
+        catchError((err) => {
+          console.error('Load bookings error:', err);
+          this.message.error('Khong the tai danh sach dat phong.');
+          return of({ content: [], totalElements: 0, number: this.currentPage - 1 } as any);
+        }),
+        finalize(() => {
+          this.loading = false;
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
       next: (data) => {
-        this.bookings = data.content;
-        this.totalElements = data.totalElements;
-        this.currentPage = data.number + 1;
+        const page = data ?? ({ content: [], totalElements: 0, number: this.currentPage - 1 } as any);
+        this.bookings = page.content ?? [];
+        this.progressStepsByBookingId = this.bookings.reduce(
+          (steps, booking) => {
+            steps[booking.id] = this.buildProgressSteps(booking);
+            return steps;
+          },
+          {} as Record<string, BookingProgressStep[]>,
+        );
+        this.totalElements = Number(page.totalElements ?? this.bookings.length);
+        this.currentPage = Number.isFinite(page.number) ? page.number + 1 : this.currentPage;
+        this.loadTimedOut = false;
         this.loading = false;
         this.updateCountdowns();
       },
@@ -138,8 +179,8 @@ export class MyBookingsComponent implements OnInit, OnDestroy {
         console.error('Load bookings error:', err);
         this.message.error('Không thể tải danh sách đặt phòng.');
         this.bookings = [];
+        this.progressStepsByBookingId = {};
         this.totalElements = 0;
-        this.loading = false;
       },
     });
   }
@@ -154,6 +195,14 @@ export class MyBookingsComponent implements OnInit, OnDestroy {
     this.currentPage = page;
     this.loadBookings();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  trackBooking(_index: number, booking: Booking): string {
+    return booking.id;
+  }
+
+  trackStep(_index: number, step: BookingProgressStep): string {
+    return `${step.label}-${step.state}`;
   }
 
   // ══════════════════════════════════════════════════════
@@ -208,8 +257,9 @@ export class MyBookingsComponent implements OnInit, OnDestroy {
 
   private submitCancel(bookingId: string, reason: string): Promise<void> {
     this.cancelling = true;
+    const idempotencyKey = generateIdempotencyKey();
     return new Promise((resolve, reject) => {
-      this.bookingService.cancelBooking(bookingId, reason).subscribe({
+      this.bookingService.cancelBooking(bookingId, reason, idempotencyKey).subscribe({
         next: () => {
           this.cancelling = false;
           this.message.success('Đã hủy đặt phòng thành công.');
@@ -230,8 +280,25 @@ export class MyBookingsComponent implements OnInit, OnDestroy {
     return booking.status === 'PENDING' || booking.status === 'CONFIRMED';
   }
 
+  canPay(booking: Booking): boolean {
+    return (
+      booking.paymentStatus === 'UNPAID' &&
+      (booking.status === 'PENDING' || booking.status === 'CONFIRMED')
+    );
+  }
+
+  getRefundStatusText(booking: Booking): string {
+    if (booking.paymentStatus === 'PAID' && booking.refundAmount == null) {
+      return 'Đang xử lý hoàn tiền';
+    }
+    if (booking.paymentStatus === 'UNPAID') {
+      return 'Không phát sinh hoàn tiền';
+    }
+    return 'Không hoàn tiền';
+  }
+
   // ══════════════════════════════════════════════════════
-  // COUNTDOWN (PENDING 15 phút)
+  // COUNTDOWN (PENDING theo cấu hình)
   // ══════════════════════════════════════════════════════
 
   private startCountdownTicker(): void {
@@ -243,11 +310,9 @@ export class MyBookingsComponent implements OnInit, OnDestroy {
   private updateCountdowns(): void {
     for (const b of this.bookings) {
       if (b.status === 'PENDING') {
-        const remaining = this.bookingService.getPendingTimeRemaining(b.createdAt);
+        const remaining = this.bookingService.getPendingTimeRemaining(b.createdAt, b.paymentExpiresAt);
         if (remaining > 0) {
-          const mins = Math.floor(remaining / 60000);
-          const secs = Math.floor((remaining % 60000) / 1000);
-          this.countdowns[b.id] = `${mins}:${String(secs).padStart(2, '0')}`;
+          this.countdowns[b.id] = this.formatCountdown(Math.floor(remaining / 1000));
         } else {
           this.countdowns[b.id] = 'Hết hạn';
         }
@@ -259,6 +324,48 @@ export class MyBookingsComponent implements OnInit, OnDestroy {
     return this.countdowns[bookingId] || null;
   }
 
+  private buildProgressSteps(booking: Booking): BookingProgressStep[] {
+    const paid = ['PAID', 'REFUNDED', 'PARTIALLY_REFUNDED'].includes(booking.paymentStatus);
+    const confirmed =
+      paid &&
+      (booking.status === 'CONFIRMED' || booking.status === 'CHECKED_IN' || booking.status === 'COMPLETED');
+    const checkedIn = booking.status === 'CHECKED_IN' || booking.status === 'COMPLETED';
+    const completed = booking.status === 'COMPLETED';
+    const waitingForPayment =
+      !paid && (booking.status === 'PENDING' || booking.status === 'CONFIRMED');
+    const hasRefund = Number(booking.refundAmount ?? 0) > 0;
+
+    if (booking.status === 'CANCELLED') {
+      return [
+        { label: 'Đã đặt', icon: 'file-done', state: 'done' },
+        { label: paid ? 'Đã thanh toán' : 'Chưa thanh toán', icon: 'credit-card', state: paid ? 'done' : 'todo' },
+        { label: 'Đã hủy', icon: 'close-circle', state: 'danger' },
+        { label: hasRefund ? 'Đã hoàn tiền' : 'Kết thúc', icon: hasRefund ? 'rollback' : 'stop', state: hasRefund ? 'done' : 'todo' },
+      ];
+    }
+
+    if (booking.status === 'NO_SHOW') {
+      return [
+        { label: 'Đã đặt', icon: 'file-done', state: 'done' },
+        { label: paid ? 'Đã thanh toán' : 'Chưa thanh toán', icon: 'credit-card', state: paid ? 'done' : 'todo' },
+        { label: 'Đã xác nhận', icon: 'check-circle', state: confirmed ? 'done' : 'todo' },
+        { label: 'Không đến', icon: 'warning', state: 'danger' },
+      ];
+    }
+
+    const steps: BookingProgressStep[] = [
+      { label: 'Đã đặt', icon: 'file-done', state: 'done' },
+      { label: paid ? 'Đã thanh toán' : 'Chờ thanh toán', icon: 'credit-card', state: paid ? 'done' : 'current' },
+      { label: confirmed ? 'Đã xác nhận' : 'Chờ xác nhận', icon: 'check-circle', state: confirmed ? 'done' : paid ? 'current' : 'todo' },
+      { label: completed ? 'Đã trả phòng' : 'Chờ lưu trú', icon: 'home', state: completed ? 'done' : checkedIn ? 'current' : confirmed ? 'current' : 'todo' },
+      { label: 'Hoàn tất', icon: 'flag', state: completed ? 'done' : 'todo' },
+    ];
+
+    return waitingForPayment
+      ? steps.map((step, index) => (index > 1 ? { ...step, state: 'todo' as const } : step))
+      : steps;
+  }
+
   isExpired(bookingId: string): boolean {
     return this.countdowns[bookingId] === 'Hết hạn';
   }
@@ -268,14 +375,31 @@ export class MyBookingsComponent implements OnInit, OnDestroy {
   // ══════════════════════════════════════════════════════
 
   viewDetail(bookingId: string): void {
-    // Có thể mở modal hoặc navigate tùy UX
-    // Hiện tại chưa có route /user/bookings/:id riêng
-    // → dùng API getBookingById nếu cần
+    this.router.navigate(['/user/bookings', bookingId]);
+  }
+
+  payBooking(bookingId: string): void {
+    this.router.navigate(['/booking/checkout', bookingId]);
   }
 
   // ══════════════════════════════════════════════════════
   // HELPERS
   // ══════════════════════════════════════════════════════
+
+  private formatCountdown(totalSeconds: number): string {
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    if (days > 0) {
+      return `${days} ngày ${hours} giờ ${mins} phút`;
+    }
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
 
   formatPrice(price: number): string {
     return new Intl.NumberFormat('vi-VN').format(price) + 'đ';

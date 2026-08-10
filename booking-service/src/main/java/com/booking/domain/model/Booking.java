@@ -29,6 +29,7 @@ public class Booking {
     // Price
     private BigDecimal unitPrice;
     private BigDecimal discountAmount;
+    private String voucherCode;
     private BigDecimal totalPrice;
 
     // Status
@@ -91,6 +92,16 @@ public class Booking {
         this.updatedAt = Instant.now();
     }
 
+    public void checkIn() {
+        this.status = BookingStatus.CHECKED_IN;
+        this.updatedAt = Instant.now();
+    }
+
+    public void checkOut() {
+        this.status = BookingStatus.COMPLETED;
+        this.updatedAt = Instant.now();
+    }
+
     public void complete() {
         this.status = BookingStatus.COMPLETED;
         this.updatedAt = Instant.now();
@@ -133,6 +144,9 @@ public class Booking {
 
     public BigDecimal getDiscountAmount() { return discountAmount; }
     public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
+
+    public String getVoucherCode() { return voucherCode; }
+    public void setVoucherCode(String voucherCode) { this.voucherCode = voucherCode; }
 
     public BigDecimal getTotalPrice() { return totalPrice; }
     public void setTotalPrice(BigDecimal totalPrice) { this.totalPrice = totalPrice; }

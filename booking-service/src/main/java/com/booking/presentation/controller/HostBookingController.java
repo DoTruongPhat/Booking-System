@@ -4,6 +4,7 @@ import com.booking.application.port.in.QueryBookingUseCase;
 import com.booking.application.port.in.QueryHotelUseCase;
 import com.booking.domain.exception.CoreErrorCode;
 import com.booking.domain.exception.CoreException;
+import com.booking.domain.model.Booking;
 import com.booking.domain.model.Hotel;
 import com.booking.presentation.mapper.BookingDtoMapper;
 import com.booking.presentation.response.ApiResponse;
@@ -29,21 +30,41 @@ public class HostBookingController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<BookingResponse>>> getBookingsByHotel(
-            @RequestParam UUID hotelId,
+            @RequestParam(required = false) UUID hotelId,
             @RequestParam(required = false) String status,
             @PageableDefault(size = 10) Pageable pageable) {
 
-        // Verify host owns this hotel
         UUID ownerUserId = SecurityUtils.getCurrentUserId();
-        Hotel hotel = queryHotelUseCase.getById(hotelId);
+        Page<BookingResponse> bookings;
+
+        if (hotelId != null) {
+            Hotel hotel = queryHotelUseCase.getById(hotelId);
+            if (!hotel.isOwnedBy(ownerUserId)) {
+                throw new CoreException(CoreErrorCode.HOTEL_NOT_OWNED);
+            }
+
+            bookings = queryBookingUseCase
+                    .getByHotelId(hotelId, status, pageable)
+                    .map(mapper::toResponse);
+        } else {
+            bookings = queryBookingUseCase
+                    .getByOwnerUserId(ownerUserId, status, pageable)
+                    .map(mapper::toResponse);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(bookings));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<BookingResponse>> getBookingDetail(@PathVariable UUID id) {
+        Booking booking = queryBookingUseCase.getById(id);
+
+        UUID ownerUserId = SecurityUtils.getCurrentUserId();
+        Hotel hotel = queryHotelUseCase.getById(booking.getHotelId());
         if (!hotel.isOwnedBy(ownerUserId)) {
             throw new CoreException(CoreErrorCode.HOTEL_NOT_OWNED);
         }
 
-        Page<BookingResponse> bookings = queryBookingUseCase
-                .getByHotelId(hotelId, status, pageable)
-                .map(mapper::toResponse);
-
-        return ResponseEntity.ok(ApiResponse.success(bookings));
+        return ResponseEntity.ok(ApiResponse.success(mapper.toResponse(booking)));
     }
 }

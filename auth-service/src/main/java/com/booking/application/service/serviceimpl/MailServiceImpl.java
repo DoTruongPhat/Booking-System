@@ -39,6 +39,25 @@ public class MailServiceImpl implements MailService {
         }
     }
 
+    @Override
+    public void sendHotelDecision(String to, String hotelName, String decision, String comment) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject("SmartBooking hotel review: " + decision);
+            helper.setText(getHotelDecisionBody(hotelName, decision, comment), true);
+
+            mailSender.send(message);
+            log.info("[Mail] Sent hotel decision email to {} for hotel={}", to, hotelName);
+        } catch (MessagingException e) {
+            log.error("[Mail] Failed to send hotel decision to {}: {}", to, e.getMessage());
+            throw new IllegalStateException("Failed to send hotel decision email", e);
+        }
+    }
+
     private String getSubject(String purpose) {
         return switch (purpose) {
             case "FORGOT_PASSWORD" -> "Reset your SmartBooking password";
@@ -59,5 +78,24 @@ public class MailServiceImpl implements MailService {
             </body>
             </html>
             """.formatted(purpose, otp);
+    }
+
+    private String getHotelDecisionBody(String hotelName, String decision, String comment) {
+        String safeComment = comment == null || comment.isBlank() ? "No comment." : comment;
+        String mainMessage = "APPROVED".equals(decision)
+                ? "Your hotel has been approved and is now active on SmartBooking."
+                : "Your hotel submission has been rejected. Please update it and submit again.";
+
+        return """
+            <html>
+            <body style="font-family: Arial, sans-serif;">
+                <h2>SmartBooking - Hotel Review Result</h2>
+                <p>Hotel: <strong>%s</strong></p>
+                <p>Status: <strong>%s</strong></p>
+                <p>%s</p>
+                <p>Admin comment: %s</p>
+            </body>
+            </html>
+            """.formatted(hotelName, decision, mainMessage, safeComment);
     }
 }

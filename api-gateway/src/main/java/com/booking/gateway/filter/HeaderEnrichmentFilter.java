@@ -34,6 +34,7 @@ public class HeaderEnrichmentFilter implements GlobalFilter, Ordered {
             "/api/internal",
             "/api/rooms",
             "/api/hotels",
+            "/api/vouchers",
             "/actuator"
     );
 

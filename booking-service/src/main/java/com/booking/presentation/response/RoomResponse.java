@@ -22,6 +22,7 @@ public class RoomResponse {
     private Integer capacity;
     private BigDecimal basePrice;
     private Integer totalRooms;
+    private Integer available;
     private List<String> amenities;
     private String status;
     private List<String> images;

@@ -11,6 +11,8 @@ public interface SupportTicketService {
     SupportTicket createTicket(UUID userId, String title, String description, String priority);
     Page<SupportTicket> getMyTickets(UUID userId, Pageable pageable);
     SupportTicket getTicketById(UUID ticketId);
+    Page<SupportTicket> getAssignedTickets(UUID staffId, String status, Pageable pageable);
+    SupportTicket getAssignedTicketById(UUID ticketId, UUID staffId);
 
     // Admin
     Page<SupportTicket> getAllTickets(Pageable pageable);

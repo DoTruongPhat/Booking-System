@@ -108,18 +108,22 @@ services:
       KEYCLOAK_ADMIN: ${KC_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-Admin@2024}
       KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
       KC_URL: http://keycloak:8180
       KC_HOSTNAME_URL: http://localhost:8180
       KC_HOSTNAME_ADMIN_URL: http://localhost:8180
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-booking_db}
+      KC_DB_SCHEMA: keycloak
       KC_DB_USERNAME: ${DB_USER:-booking_user}
       KC_DB_PASSWORD: ${DB_PASSWORD:-BookingPass@2024}
+      KC_IMPORT_STRATEGY: IGNORE_EXISTING
     ports:
       - "${KC_PORT:-8180}:8180"
     volumes:
       - ./docker/keycloak/providers:/opt/keycloak/providers:ro
       - ./docker/keycloak/realms:/opt/keycloak/data/import:ro
+      - ./docker/keycloak/themes/booking:/opt/keycloak/themes/booking:ro
     healthcheck:
       test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/8180 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && cat <&3 | grep -q '\"status\":\"UP\"'" ]
       interval: 10s
@@ -150,11 +154,13 @@ services:
       KC_ISSUER_URL: http://localhost:8180
       KC_ADMIN: ${KC_ADMIN:-admin}
       KC_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-Admin@2024}
+      INTERNAL_API_KEY: internal-workflow-key-2024
       MAIL_HOST: smtp.gmail.com
       MAIL_PORT: 587
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      TEMPO_HOST: tempo
     ports:
       - "8081:8081"
     depends_on:
@@ -172,6 +178,27 @@ services:
       start_period: 45s
 
   # ─── Booking Service ────────────────────────────────────────
+#  booking-service:
+#    build: ./booking-service
+#    container_name: booking-service
+#    restart: unless-stopped
+#    mem_limit: 1g
+#    cpus: 1.5
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      DB_HOST: postgres
+#      DB_USERNAME: ${DB_USERNAME:-booking_user}
+#      DB_PASSWORD: ${DB_PASSWORD:-BookingPass@2024}
+#      DB_NAME: ${DB_NAME:-booking_db}
+#      REDIS_HOST: redis
+#      REDIS_PASSWORD: ${REDIS_PASSWORD:-RedisPass@2024}
+#      KAFKA_SERVERS: kafka:9092
+#      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-booking-system-jwt-secret-key-very-long-at-least-32-chars-2024}
+#      JWT_PUBLIC_KEY_URL: http://localhost:8081/api/auth/public-key
+#      JWT_ISSUER_URI: http://auth-service:8081
+#      JWT_JWK_SET_URI: http://auth-service:8081/api/auth/public-key
+#      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-internal-payment-key-2024}
+#      INTERNAL_API_KEY: internal-workflow-key-2024
   booking-service:
     build: ./booking-service
     container_name: booking-service
@@ -191,6 +218,14 @@ services:
       JWT_PUBLIC_KEY_URL: http://localhost:8081/api/auth/public-key
       JWT_ISSUER_URI: http://auth-service:8081
       JWT_JWK_SET_URI: http://auth-service:8081/api/auth/public-key
+      INTERNAL_API_KEY: internal-workflow-key-2024
+      BOOKING_PENDING_TIMEOUT_MINUTES: 30
+      BOOKING_PAYMENT_DEADLINE_DAYS_BEFORE_CHECKIN: 1
+      TEMPO_HOST: tempo
+      MAIL_ENABLED: "true"
+      MAIL_USERNAME: "dotruongphat9@gmail.com"
+      MAIL_PASSWORD: "jfpx qbld lajn kdbn"
+      MAIL_FROM: "dotruongphat9@gmail.com"
     ports:
       - "8082:8082"
     depends_on:
@@ -202,7 +237,43 @@ services:
         condition: service_started
       auth-service:
         condition: service_healthy
-  # ─── API Gateway ─────────────────────────────────────────────
+
+  payment-service:
+    build: ./payment-service
+    container_name: booking-payment
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 1
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_USERNAME: ${DB_USERNAME:-booking_user}
+      DB_PASSWORD: ${DB_PASSWORD:-BookingPass@2024}
+      DB_NAME: ${DB_NAME:-booking_db}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-RedisPass@2024}
+      KAFKA_SERVERS: kafka:9092
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-booking-system-jwt-secret-key-very-long-at-least-32-chars-2024}
+      BOOKING_SERVICE_URL: http://booking-service:8082
+      INTERNAL_API_KEY: internal-workflow-key-2024
+      PAYMENT_EXPIRATION_MINUTES: 30
+      TEMPO_HOST: tempo
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   gateway:
     build: ./api-gateway
     container_name: booking-gateway
@@ -215,11 +286,15 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-RedisPass@2024}
       BOOKING_SERVICE_URL: http://booking-service:8082
       AUTH_SERVICE_URL: http://auth-service:8081
+      PAYMENT_SERVICE_URL: http://payment-service:8083
+      WORKFLOW_SERVICE_URL: http://camunda-service:8084
     ports:
       - "8080:8080"
     depends_on:
       - auth-service
       - booking-service
+      - payment-service
+      - camunda-service
 
   # ─── Mail (Dev) ─────────────────────────────────────────────
   mailhog:
@@ -229,7 +304,130 @@ services:
       - "1025:1025"   # SMTP server
       - "8025:8025"   # Web UI
 
+
+  # ─── Camunda Workflow Service ────────────────────────────────
+  camunda-service:
+    build: ./camunda-service
+    container_name: booking-camunda
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.5
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_USERNAME: ${DB_USERNAME:-booking_user}
+      DB_PASSWORD: ${DB_PASSWORD:-BookingPass@2024}
+      DB_NAME: ${DB_NAME:-booking_db}
+      DB_SCHEMA: public
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-booking-system-jwt-secret-key-very-long-at-least-32-chars-2024}
+      BOOKING_SERVICE_URL: http://booking-service:8082
+      AUTH_SERVICE_URL: http://auth-service:8081
+      KAFKA_SERVERS: kafka:9092
+      INTERNAL_API_KEY: internal-workflow-key-2024
+      TEMPO_HOST: tempo
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      booking-service:
+        condition: service_started
+      kafka:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+  # ─── Observability Stack ─────────────────────────────────────
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: booking-loki
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./observability/loki-config.yaml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/config.yaml
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: booking-promtail
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.3
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./observability/promtail-config.yaml:/etc/promtail/config.yaml:ro
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+
+  tempo:
+    image: grafana/tempo:2.3.0
+    container_name: booking-tempo
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./observability/tempo-config.yaml:/etc/tempo/config.yaml:ro
+      - tempo_data:/var/tempo
+    command: -config.file=/etc/tempo/config.yaml
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: booking-prometheus
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus-config.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-remote-write-receiver'
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: booking-grafana
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./observability/grafana-dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
+      - ./observability/grafana-dashboards/json:/etc/grafana/provisioning/dashboards/json:ro
+      - ./observability/grafana-alerts.yaml:/etc/grafana/provisioning/alerting/alerts.yaml:ro
+    depends_on:
+      - loki
+      - tempo
+      - prometheus
   # ─── Volumes ────────────────────────────────────────────────
 volumes:
   postgres_data:
   redisinsight_data:
+  loki_data:
+  tempo_data:
+  prometheus_data:
+  grafana_data:

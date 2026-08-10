@@ -1,0 +1,200 @@
+<div class="marketing-page">
+  <div class="page-header">
+    <div class="title-icon">
+      <span nz-icon [nzType]="page.icon"></span>
+    </div>
+    <div>
+      <h1>{{ page.title }}</h1>
+      <p class="subtitle">{{ page.subtitle }}</p>
+    </div>
+    <div class="page-actions">
+      <button nz-button (click)="loadItems()">
+        <span nz-icon nzType="reload"></span>
+        Tải lại
+      </button>
+      <button nz-button nzType="primary" (click)="openCreateModal()">
+        <span nz-icon nzType="plus"></span>
+        Thêm mới
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <nz-card>
+      <span>Tổng</span>
+      <strong>{{ items.length }}</strong>
+    </nz-card>
+    <nz-card>
+      <span>Đang hoạt động</span>
+      <strong>{{ activeCount }}</strong>
+    </nz-card>
+    <nz-card>
+      <span>Global</span>
+      <strong>{{ globalCount }}</strong>
+    </nz-card>
+  </div>
+
+  <nz-card class="table-card">
+    <nz-table [nzData]="items" [nzLoading]="isLoading" [nzShowPagination]="false" nzSize="middle">
+      <thead>
+        <tr>
+          <th>{{ isVoucherPage ? 'Mã' : 'Tên khuyến mãi' }}</th>
+          <th>Khách sạn</th>
+          <th>Giảm giá</th>
+          <th>Hiệu lực</th>
+          <th *ngIf="isVoucherPage">Lượt dùng</th>
+          <th>Status</th>
+          <th nzWidth="160px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of items">
+          <td>
+            <strong>{{ itemName(item) }}</strong>
+            <div class="muted">{{ item.description }}</div>
+          </td>
+          <td>{{ item.hotelName || 'Global' }}</td>
+          <td>
+            <nz-tag [nzColor]="item.discountType === 'PERCENT' ? 'green' : 'green'">
+              {{ discountLabel(item) }}
+            </nz-tag>
+          </td>
+          <td>{{ item.startDate }} → {{ item.endDate }}</td>
+          <td *ngIf="isVoucherPage">
+            {{ usedCount(item) }} / {{ usageLimit(item) }}
+          </td>
+          <td>
+            <nz-tag [nzColor]="item.active ? 'green' : 'default'">
+              {{ item.active ? 'Active' : 'Inactive' }}
+            </nz-tag>
+          </td>
+          <td>
+            <button nz-button nzSize="small" (click)="openEditModal(item)">
+              <span nz-icon nzType="edit"></span>
+            </button>
+            <button
+              nz-button
+              nzSize="small"
+              nzDanger
+              nz-popconfirm
+              nzPopconfirmTitle="Xóa mục này?"
+              (nzOnConfirm)="delete(item)"
+            >
+              <span nz-icon nzType="delete"></span>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="!isLoading && !items.length">
+          <td [attr.colspan]="isVoucherPage ? 7 : 6" class="empty-row">
+            <nz-empty nzNotFoundContent="Chưa có dữ liệu"></nz-empty>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+
+  <nz-modal
+    [(nzVisible)]="isModalOpen"
+    [nzTitle]="form.id ? 'Cập nhật' : 'Thêm mới'"
+    [nzOkLoading]="isSubmitting"
+    nzOkText="Lưu"
+    (nzOnCancel)="isModalOpen = false"
+    (nzOnOk)="submit()"
+    nzWidth="680px"
+  >
+    <form *nzModalContent nz-form nzLayout="vertical" class="marketing-form">
+      <nz-form-item *ngIf="isVoucherPage">
+        <nz-form-label>Mã giảm giá</nz-form-label>
+        <nz-form-control>
+          <input nz-input [(ngModel)]="form.code" name="code" placeholder="SUMMER20" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item *ngIf="!isVoucherPage">
+        <nz-form-label>Tên khuyến mãi</nz-form-label>
+        <nz-form-control>
+          <input nz-input [(ngModel)]="form.title" name="title" placeholder="Ưu đãi mùa hè" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Khách sạn</nz-form-label>
+        <nz-form-control>
+          <nz-select [(ngModel)]="form.hotelId" name="hotelId" [nzAllowClear]="!isHost" nzPlaceHolder="Global">
+            <nz-option *ngIf="!isHost" [nzValue]="null" nzLabel="Global"></nz-option>
+            <nz-option *ngFor="let hotel of hotels" [nzValue]="hotel.id" [nzLabel]="hotel.name"></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Mô tả</nz-form-label>
+        <nz-form-control>
+          <textarea nz-input [(ngModel)]="form.description" name="description" rows="2"></textarea>
+        </nz-form-control>
+      </nz-form-item>
+
+      <div class="form-grid">
+        <nz-form-item>
+          <nz-form-label>Kiểu giảm</nz-form-label>
+          <nz-form-control>
+            <nz-select [(ngModel)]="form.discountType" name="discountType">
+              <nz-option *ngFor="let type of discountTypes" [nzValue]="type.value" [nzLabel]="type.label"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Giá trị</nz-form-label>
+          <nz-form-control>
+            <input nz-input type="number" min="1" [(ngModel)]="form.discountValue" name="discountValue" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
+      <div class="form-grid">
+        <nz-form-item>
+          <nz-form-label>Ngày bắt đầu</nz-form-label>
+          <nz-form-control>
+            <input nz-input type="date" [(ngModel)]="form.startDate" name="startDate" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Ngày kết thúc</nz-form-label>
+          <nz-form-control>
+            <input nz-input type="date" [(ngModel)]="form.endDate" name="endDate" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
+      <div class="form-grid" *ngIf="isVoucherPage">
+        <nz-form-item>
+          <nz-form-label>Đơn tối thiểu</nz-form-label>
+          <nz-form-control>
+            <input nz-input type="number" min="0" [(ngModel)]="form.minOrderAmount" name="minOrderAmount" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Giảm tối đa</nz-form-label>
+          <nz-form-control>
+            <input nz-input type="number" min="0" [(ngModel)]="form.maxDiscountAmount" name="maxDiscountAmount" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Giới hạn lượt dùng</nz-form-label>
+          <nz-form-control>
+            <input nz-input type="number" min="1" [(ngModel)]="form.usageLimit" name="usageLimit" />
+          </nz-form-control>
+        </nz-form-item>
+      </div>
+
+      <label class="checkbox-line">
+        <input type="checkbox" [(ngModel)]="form.active" name="active" />
+        Đang hoạt động
+      </label>
+    </form>
+  </nz-modal>
+</div>

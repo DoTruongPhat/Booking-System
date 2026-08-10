@@ -8,6 +8,8 @@ import java.util.UUID;
 
 public interface GetTicketsUseCase {
     Page<SupportTicket> getMyTickets(UUID userId, Pageable pageable);
+    Page<SupportTicket> getAssignedTickets(UUID staffId, String status, Pageable pageable);
+    SupportTicket getAssignedTicketById(UUID ticketId, UUID staffId);
     SupportTicket getTicketById(UUID ticketId);
     Page<SupportTicket> getAllTickets(Pageable pageable);
     Page<SupportTicket> getTicketsByStatus(String status, Pageable pageable);

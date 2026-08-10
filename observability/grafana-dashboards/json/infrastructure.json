@@ -1,0 +1,76 @@
+{
+  "id": null,
+  "uid": "infrastructure",
+  "title": "Infrastructure - JVM & Database",
+  "tags": ["booking-system", "infra"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "CPU Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "process_cpu_usage", "legendFormat": "{{job}}", "refId": "A" }
+      ],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1 } }
+    },
+    {
+      "id": 2,
+      "title": "JVM Heap Used",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{area=\"heap\"}", "legendFormat": "{{job}}", "refId": "A" }
+      ],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 3,
+      "title": "JVM Threads Live",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "jvm_threads_live_threads", "legendFormat": "{{job}}", "refId": "A" }
+      ],
+      "datasource": "Prometheus"
+    },
+    {
+      "id": 4,
+      "title": "HikariCP Connections",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "hikaricp_connections_active", "legendFormat": "{{job}} active", "refId": "A" },
+        { "expr": "hikaricp_connections_idle", "legendFormat": "{{job}} idle", "refId": "B" }
+      ],
+      "datasource": "Prometheus"
+    },
+    {
+      "id": 5,
+      "title": "JVM Non-Heap Memory",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "jvm_memory_used_bytes{area=\"nonheap\"}", "legendFormat": "{{job}}", "refId": "A" }
+      ],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 6,
+      "title": "JVM GC Pause Total",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        { "expr": "rate(jvm_gc_pause_seconds_sum[5m])", "legendFormat": "{{job}} {{action}}", "refId": "A" }
+      ],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    }
+  ]
+}

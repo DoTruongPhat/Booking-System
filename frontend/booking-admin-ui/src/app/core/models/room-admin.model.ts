@@ -4,17 +4,9 @@
 // Cùng data với A.6 (Hotel Rooms master-detail)
 // ═══════════════════════════════════════════════════════════
 
-export type RoomType =
-  | 'SINGLE'
-  | 'DOUBLE'
-  | 'STANDARD'
-  | 'DELUXE'
-  | 'SUITE'
-  | 'FAMILY'
-  | 'PRESIDENTIAL'
-  | 'VILLA';
+export type RoomType = string;
 
-export const ROOM_TYPE_LABELS: Record<RoomType, string> = {
+export const ROOM_TYPE_LABELS: Record<string, string> = {
   SINGLE: 'Single',
   DOUBLE: 'Double',
   STANDARD: 'Standard',

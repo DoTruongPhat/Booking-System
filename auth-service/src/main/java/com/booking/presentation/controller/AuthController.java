@@ -108,7 +108,7 @@ public class AuthController {
            .anyMatch(r -> List.of("ADMIN_ALL", "ADMIN", "HOST").contains(r))) {
     redirectUrl = "http://localhost:4200/admin/dashboard";
    } else {
-    redirectUrl = "http://localhost:4200/user/bookings";
+    redirectUrl = feRedirectUrl;
    }
 
    log.info("[BFF] Login success, redirecting to: {}", redirectUrl);

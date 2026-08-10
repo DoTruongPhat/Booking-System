@@ -3,7 +3,6 @@ import { authGuard } from './core/guards/auth.guard';
 import { roleGuard, adminGuard } from './core/guards/role.guard';
 import { onboardingGuard } from './core/guards/onboarding.guard';
 
-// Lazy load Layouts
 const AdminLayout = () =>
   import('./layouts/admin-layout/admin-layout.component').then((m) => m.AdminLayoutComponent);
 
@@ -11,14 +10,12 @@ const AuthLayout = () =>
   import('./layouts/auth-layout/auth-layout.component').then((m) => m.AuthLayoutComponent);
 
 export const routes: Routes = [
-  // ═══ HOMEPAGE ═══ (public)
   {
     path: '',
     pathMatch: 'full',
     loadComponent: () => import('./views/home/home.component').then((m) => m.HomeComponent),
   },
 
-  // ═══ AUTH ROUTES ═══ (dùng AuthLayout)
   {
     path: 'auth',
     loadComponent: AuthLayout,
@@ -63,7 +60,6 @@ export const routes: Routes = [
     ],
   },
 
-  // ═══ HOTEL ROUTES ═══ (public)
   {
     path: 'hotels',
     children: [
@@ -80,14 +76,43 @@ export const routes: Routes = [
     ],
   },
 
-  // ═══ BOOKING SUCCESS ═══ (public, có booking ID là đủ)
   {
     path: 'booking/success/:id',
     loadComponent: () =>
       import('./views/booking/success/success.component').then((m) => m.BookingSuccessComponent),
   },
+  {
+    path: 'booking/checkout/:bookingId',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./views/booking/checkout/checkout.component').then((m) => m.CheckoutComponent),
+  },
 
-  // ═══ USER ROUTES ═══ (cần authGuard + onboardingGuard)
+  {
+    path: 'payment',
+    children: [
+      {
+        path: 'callback',
+        loadComponent: () =>
+          import('./views/payment/callback/callback.component').then(
+            (m) => m.PaymentCallbackComponent,
+          ),
+      },
+      {
+        path: 'success',
+        loadComponent: () =>
+          import('./views/payment/success/success.component').then(
+            (m) => m.PaymentSuccessComponent,
+          ),
+      },
+      {
+        path: 'failed',
+        loadComponent: () =>
+          import('./views/payment/failed/failed.component').then((m) => m.PaymentFailedComponent),
+      },
+    ],
+  },
+
   {
     path: 'user',
     canActivate: [authGuard, onboardingGuard],
@@ -97,6 +122,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./views/user/booking/my-bookings/my-bookings.component').then(
             (m) => m.MyBookingsComponent,
+          ),
+      },
+      {
+        path: 'bookings/:id',
+        loadComponent: () =>
+          import('./views/user/booking/booking-detail/booking-detail.component').then(
+            (m) => m.UserBookingDetailComponent,
           ),
       },
       {
@@ -110,15 +142,19 @@ export const routes: Routes = [
           import('./views/user/tickets/tickets.component').then((m) => m.MyTicketsComponent),
       },
       {
-        path: 'booking/new',
+        path: 'payments',
         loadComponent: () =>
-          import('./views/hotels/detail/detail.component').then((m) => m.HotelDetailComponent),
+          import('./views/user/payments/payments.component').then((m) => m.UserPaymentsComponent),
+      },
+      {
+        path: 'booking/new',
+        redirectTo: '/hotels',
+        pathMatch: 'full',
       },
       { path: '', redirectTo: 'bookings', pathMatch: 'full' },
     ],
   },
 
-  // ═══ ADMIN ROUTES ═══ (dùng AdminLayout + adminGuard + onboardingGuard)
   {
     path: 'admin',
     loadComponent: AdminLayout,
@@ -129,7 +165,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./layouts/admin/dashboard/dashboard').then((m) => m.DashboardComponent),
       },
-      // Thêm sau route 'dashboard':
       {
         path: 'profile',
         loadComponent: () =>
@@ -152,11 +187,15 @@ export const routes: Routes = [
         loadComponent: () => import('./layouts/admin/roles/roles').then((m) => m.Roles),
       },
       {
-        path: 'staff/tickets',
+        path: 'audit-logs',
+        canActivate: [roleGuard(['ADMIN_ALL', 'ADMIN'])],
         loadComponent: () =>
-          import('./layouts/staff/staff-tickets/staff-tickets').then(
-            (m) => m.StaffTicketsComponent,
-          ),
+          import('./layouts/admin/audit-logs/audit-logs').then((m) => m.AuditLogs),
+      },
+      {
+        path: 'staff/tickets',
+        redirectTo: 'tickets',
+        pathMatch: 'full',
       },
       {
         path: 'tickets',
@@ -182,9 +221,25 @@ export const routes: Routes = [
           import('./layouts/admin/bookings/booking-detail').then((m) => m.AdminBookingDetail),
       },
       {
+        path: 'reports',
+        canActivate: [roleGuard(['ADMIN_ALL', 'ADMIN', 'HOST'])],
+        loadComponent: () => import('./layouts/admin/reports/reports').then((m) => m.Reports),
+      },
+      {
+        path: 'payments',
+        canActivate: [roleGuard(['ADMIN_ALL', 'ADMIN'])],
+        loadComponent: () => import('./layouts/admin/payments/payments').then((m) => m.Payments),
+      },
+      {
         path: 'rooms',
         canActivate: [roleGuard(['ADMIN_ALL', 'ADMIN', 'HOST'])],
         loadComponent: () => import('./layouts/admin/rooms/rooms').then((m) => m.Rooms),
+      },
+      {
+        path: 'room-types',
+        canActivate: [roleGuard(['ADMIN_ALL', 'ADMIN', 'HOST'])],
+        loadComponent: () =>
+          import('./layouts/admin/room-types/room-types').then((m) => m.RoomTypes),
       },
       {
         path: 'hotels',
@@ -192,10 +247,35 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./layouts/admin/hotels/manage-hotels.component').then((m) => m.ManageHotels),
       },
+      {
+        path: 'promotions',
+        redirectTo: 'vouchers',
+        pathMatch: 'full',
+      },
+      {
+        path: 'vouchers',
+        canActivate: [roleGuard(['ADMIN_ALL', 'ADMIN', 'HOST'])],
+        data: {
+          title: 'Mã giảm giá',
+          subtitle: 'Quản lý voucher, điều kiện áp dụng và số lượt sử dụng',
+          icon: 'tags',
+          apiNote:
+            'Đã có backend CRUD và API validate voucher. Bước còn lại là nối voucher vào luồng tạo booking nếu muốn giảm giá khi thanh toán.',
+        },
+        loadComponent: () =>
+          import('./layouts/admin/marketing/marketing-placeholder').then(
+            (m) => m.MarketingPlaceholder,
+          ),
+      },
+      {
+        path: 'workflow',
+        canActivate: [roleGuard(['ADMIN_ALL', 'ADMIN'])],
+        loadComponent: () =>
+          import('./layouts/admin/workflow/workflow').then((m) => m.WorkflowComponent),
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },
 
-  // ═══ WILDCARD ═══
   { path: '**', redirectTo: '' },
 ];

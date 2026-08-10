@@ -1,21 +1,20 @@
 <div class="search-page">
   <app-navbar></app-navbar>
 
-  <!-- === TOP BAR (compact search) === -->
   <section class="search-top">
     <div class="container">
       <div class="search-top-bar">
         <div class="search-top-field">
-          <span nz-icon nzType="aim"></span>
+          <span nz-icon nzType="environment"></span>
           <input
             type="text"
-            placeholder="Tìm kiếm khách sạn, điểm đến..."
+            placeholder="Tìm khách sạn, điểm đến..."
             [(ngModel)]="searchQuery"
             name="searchQuery"
             (keyup.enter)="onSearch()"
           />
         </div>
-        <button class="search-top-btn" (click)="onSearch()">
+        <button class="search-top-btn" (click)="onSearch()" aria-label="Tìm kiếm">
           <span nz-icon nzType="search"></span>
         </button>
       </div>
@@ -23,14 +22,12 @@
   </section>
 
   <div class="search-container">
-    <!-- === FILTER SIDEBAR === -->
     <aside class="filter-sidebar">
       <div class="filter-header">
         <h3>Bộ lọc</h3>
         <button class="reset-btn" (click)="resetFilters()">Đặt lại</button>
       </div>
 
-      <!-- City -->
       <div class="filter-section">
         <h4>Thành phố</h4>
         <div class="filter-options">
@@ -45,7 +42,6 @@
         </div>
       </div>
 
-      <!-- Price -->
       <div class="filter-section">
         <h4>Khoảng giá</h4>
         <div class="price-display">
@@ -62,7 +58,6 @@
         ></nz-slider>
       </div>
 
-      <!-- Stars -->
       <div class="filter-section">
         <h4>Hạng sao</h4>
         <div class="stars-filter">
@@ -79,7 +74,6 @@
       </div>
     </aside>
 
-    <!-- === RESULTS === -->
     <main class="results">
       <div class="results-header">
         <div>
@@ -92,46 +86,37 @@
         </div>
       </div>
 
-      <!-- Loading -->
       <nz-spin [nzSpinning]="loading" nzTip="Đang tìm kiếm...">
-        <!-- Room cards -->
         <div class="hotels-grid" *ngIf="rooms.length > 0; else emptyState">
           <article *ngFor="let room of rooms" class="hotel-card" (click)="viewRoom(room.id)">
             <div class="hotel-image">
-              <img
-                [src]="
-                  (room.images && room.images[0]) ||
-                  room.hotelThumbnail ||
-                  'assets/placeholder-room.jpg'
-                "
-                [alt]="room.name"
-                loading="lazy"
-              />
+              <ng-container *ngIf="(room.images && room.images[0]) || room.hotelThumbnail; else noRoomImage">
+                <img
+                  [src]="(room.images && room.images[0]) || room.hotelThumbnail"
+                  [alt]="room.name"
+                  loading="lazy"
+                />
+              </ng-container>
+              <ng-template #noRoomImage>
+                <div class="hotel-image-empty">
+                  <span nz-icon nzType="picture"></span>
+                </div>
+              </ng-template>
               <div class="hotel-badge" *ngIf="room.freeCancellation">Hủy miễn phí</div>
-              <button
-                class="hotel-favorite"
-                (click)="$event.stopPropagation()"
-                aria-label="Yêu thích"
-              >
-                <span nz-icon nzType="heart"></span>
-              </button>
             </div>
 
             <div class="hotel-body">
-              <!-- Rating -->
               <div class="hotel-rating">
                 <span class="rating-score">{{ room.hotelRating | number: '1.1-1' }}</span>
                 <span class="rating-count">{{ getRatingLabel(room.hotelRating) }}</span>
               </div>
 
-              <!-- Room name + hotel name -->
               <h3 class="hotel-name">{{ room.name }}</h3>
               <p class="hotel-location">
-                <span nz-icon nzType="aim"></span>
-                {{ room.hotelName }} · {{ room.hotelCity }}
+                <span nz-icon nzType="environment"></span>
+                {{ room.hotelName }}<span *ngIf="room.hotelCity"> · {{ room.hotelCity }}</span>
               </p>
 
-              <!-- Room details -->
               <div class="hotel-amenities">
                 <span class="amenity-tag">
                   <span nz-icon nzType="team"></span>
@@ -151,7 +136,6 @@
                 </span>
               </div>
 
-              <!-- Price -->
               <div class="hotel-price-row">
                 <div class="hotel-price">
                   <span class="price-from">Từ</span>
@@ -166,18 +150,16 @@
           </article>
         </div>
 
-        <!-- Empty state -->
         <ng-template #emptyState>
           <div class="empty-state" *ngIf="!loading">
             <span nz-icon nzType="search" class="empty-icon"></span>
             <h3>Không tìm thấy phòng phù hợp</h3>
-            <p>Vui lòng thử điều chỉnh bộ lọc hoặc thay đổi điểm đến</p>
+            <p>Vui lòng điều chỉnh bộ lọc hoặc thay đổi điểm đến</p>
             <button class="reset-btn-large" (click)="resetFilters()">Đặt lại bộ lọc</button>
           </div>
         </ng-template>
       </nz-spin>
 
-      <!-- Pagination -->
       <div class="search-pagination" *ngIf="totalElements > pageSize">
         <nz-pagination
           [nzPageIndex]="currentPage"

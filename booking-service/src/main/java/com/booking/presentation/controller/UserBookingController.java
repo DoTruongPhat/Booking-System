@@ -4,6 +4,8 @@ import com.booking.application.port.in.CancelBookingUseCase;
 import com.booking.application.port.in.CreateBookingUseCase;
 import com.booking.application.port.in.QueryBookingUseCase;
 import com.booking.domain.enums.CancelledBy;
+import com.booking.domain.exception.CoreErrorCode;
+import com.booking.domain.exception.CoreException;
 import com.booking.domain.model.Booking;
 import com.booking.presentation.mapper.BookingDtoMapper;
 import com.booking.presentation.request.CancelBookingRequest;
@@ -72,7 +74,11 @@ public class UserBookingController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BookingResponse>> getBooking(@PathVariable UUID id) {
+        UUID userId = SecurityUtils.getCurrentUserId();
         Booking booking = queryBookingUseCase.getById(id);
+        if (!userId.equals(booking.getUserId())) {
+            throw new CoreException(CoreErrorCode.BOOKING_NOT_OWNED);
+        }
         return ResponseEntity.ok(ApiResponse.success(mapper.toResponse(booking)));
     }
 }

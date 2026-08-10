@@ -1,0 +1,41 @@
+<div class="failed-page">
+  <app-navbar></app-navbar>
+
+  <div class="failed-container">
+    <div class="failed-card">
+      <div class="failed-icon">
+        <span nz-icon nzType="close-circle" nzTheme="outline"></span>
+      </div>
+
+      <h1>Thanh toán thất bại</h1>
+      <p class="failed-subtitle">
+        Giao dịch không thể hoàn tất. Vui lòng thử lại hoặc chọn phương thức khác.
+      </p>
+
+      <div class="failed-reasons">
+        <h4>Nguyên nhân có thể:</h4>
+        <ul>
+          <li>Số dư tài khoản không đủ</li>
+          <li>Giao dịch bị hủy bởi ngân hàng</li>
+          <li>Phiên thanh toán đã hết hạn</li>
+          <li>Lỗi kết nối mạng</li>
+        </ul>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn-primary" (click)="retryPayment()" *ngIf="bookingId">
+          <span nz-icon nzType="reload"></span>
+          Thử lại
+        </button>
+        <button class="btn-secondary" routerLink="/user/bookings">
+          <span nz-icon nzType="calendar"></span>
+          Xem đặt phòng
+        </button>
+        <button class="btn-secondary" routerLink="/">
+          <span nz-icon nzType="home"></span>
+          Về trang chủ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

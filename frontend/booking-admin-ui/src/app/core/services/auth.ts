@@ -12,7 +12,7 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import {
   LoginResponse,
   AuthUser,
@@ -24,7 +24,11 @@ import {
 const USER_KEY = 'user';
 
 function hasStorage(): boolean {
-  return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+  try {
+    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+  } catch {
+    return false;
+  }
 }
 
 @Injectable({
@@ -53,11 +57,13 @@ export class Auth {
 
   // ── 2.5 LOGIN WITH KEYCLOAK (SSO via PKCE) ──────────────
   loginWithKeycloak(): void {
-    window.location.href = 'http://localhost:8081/api/auth/sso/login';
+    this.clearAll();
+    window.location.href = '/api/auth/sso/login';
   }
 
   loginWithGoogle(): void {
-    window.location.href = 'http://localhost:8081/api/auth/sso/login?provider=google';
+    this.clearAll();
+    window.location.href = '/api/auth/sso/login?provider=google';
   }
 
   // ── 2.7 REGISTER ─────────────────────────────────────────
@@ -123,18 +129,39 @@ export class Auth {
   // User info KHÔNG nhạy cảm (username, email, roles) → lưu localStorage OK.
   saveUser(user: AuthUser): void {
     if (!hasStorage()) return;
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    try {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch {
+      // Ignore storage failures; auth cookies remain the source of truth.
+    }
   }
 
   getUser(): AuthUser | null {
     if (!hasStorage()) return null;
-    const raw = localStorage.getItem(USER_KEY);
-    return raw ? JSON.parse(raw) : null;
+
+    try {
+      const raw = localStorage.getItem(USER_KEY);
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw) as AuthUser;
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch {
+      try {
+        localStorage.removeItem(USER_KEY);
+      } catch {
+        // Ignore storage cleanup failures.
+      }
+      return null;
+    }
   }
 
   removeUser(): void {
     if (!hasStorage()) return;
-    localStorage.removeItem(USER_KEY);
+    try {
+      localStorage.removeItem(USER_KEY);
+    } catch {
+      // Ignore storage cleanup failures.
+    }
   }
 
   // ── 6. ROLE HELPERS ─────────────────────────────────────
@@ -161,6 +188,10 @@ export class Auth {
     if (roles.includes('HOST')) return 'HOST';
     return 'USER';
   }
+  getUserId(): string {
+    const user = this.getUser();
+    return user?.id || '';
+  }
 
   getLandingPath(): string {
     const role = this.getPrimaryRole();
@@ -169,12 +200,32 @@ export class Auth {
       case 'HOST':
         return '/admin/dashboard';
       default:
-        return '/user/bookings';
+        return '/';
     }
   }
 
   getProfile(): Observable<any> {
     return this.http.get('/api/users/me', { withCredentials: true });
+  }
+
+  hydrateUserFromProfile(): Observable<AuthUser> {
+    return this.getProfile().pipe(
+      map((profile: any) => {
+        const user: AuthUser = {
+          id: profile.id,
+          username: profile.username,
+          email: profile.email,
+          roles: profile.roles?.map((r: any) => (typeof r === 'string' ? r : r.code)) || [],
+          timezone: profile.timezone,
+          phone: profile.phone,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+        };
+
+        this.saveUser(user);
+        return user;
+      }),
+    );
   }
 
   // ── 7. CLEAR ALL (logout phía FE) ───────────────────────

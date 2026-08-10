@@ -1,0 +1,44 @@
+<div class="callback-page">
+  <app-navbar></app-navbar>
+
+  <div class="callback-container">
+    <div class="callback-card">
+      <!-- Loading -->
+      <div class="callback-status" *ngIf="status === 'loading'">
+        <nz-spin nzSimple [nzSize]="'large'"></nz-spin>
+        <h2>{{ message }}</h2>
+        <p class="hint">Vui lòng không đóng trang này</p>
+        <div class="dots"><span></span><span></span><span></span></div>
+      </div>
+
+      <!-- Success -->
+      <div class="callback-status success" *ngIf="status === 'success'">
+        <div class="status-icon success-icon">
+          <span nz-icon nzType="check" nzTheme="outline"></span>
+        </div>
+        <h2>{{ message }}</h2>
+        <p>Đang chuyển hướng...</p>
+      </div>
+
+      <!-- Failed -->
+      <div class="callback-status failed" *ngIf="status === 'failed'">
+        <div class="status-icon failed-icon">
+          <span nz-icon nzType="close" nzTheme="outline"></span>
+        </div>
+        <h2>{{ message }}</h2>
+        <p>Đang chuyển hướng...</p>
+      </div>
+
+      <!-- Error -->
+      <div class="callback-status error" *ngIf="status === 'error'">
+        <div class="status-icon failed-icon">
+          <span nz-icon nzType="warning" nzTheme="outline"></span>
+        </div>
+        <h2>{{ message }}</h2>
+        <div class="error-actions">
+          <button class="btn-primary" routerLink="/user/bookings">Xem đơn đặt phòng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,86 @@
+.workflow-page {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    color: #888;
+    font-size: 14px;
+  }
+}
+
+.text-muted {
+  font-size: 12px;
+  color: #999;
+}
+
+tr.focused-task > td {
+  background: #f1f8ec !important;
+  border-top: 1px solid #b7d7a6;
+  border-bottom: 1px solid #b7d7a6;
+}
+
+tr.reminder-task > td {
+  background: #fff7ed !important;
+}
+
+tr.reminder-task.focused-task > td {
+  background: #f1f8ec !important;
+}
+
+.review-info {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px;
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 6px 0;
+    font-size: 14px;
+
+    .label {
+      color: #666;
+    }
+  }
+}
+
+.change-list {
+  margin-top: 12px;
+  border-top: 1px solid #ececec;
+  padding-top: 12px;
+}
+
+.change-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.change-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.change-key {
+  color: #666;
+}
+
+.change-value {
+  color: #1f2a1f;
+  word-break: break-word;
+}

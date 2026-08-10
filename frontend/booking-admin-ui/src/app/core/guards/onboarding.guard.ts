@@ -20,13 +20,8 @@ export const onboardingGuard: CanActivateFn = (_route, state) => {
   }
 
   // User đã có trong localStorage
-  const user = auth.getUser();
-  if (user) {
-    return checkPhone(user, router, state.url);
-  }
-
   // localStorage trống → gọi API
-  return auth.getProfile().pipe(
+  return auth.hydrateUserFromProfile().pipe(
     map((profile: any) => {
       auth.saveUser({
         username: profile.username,

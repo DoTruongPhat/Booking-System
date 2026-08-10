@@ -23,6 +23,14 @@ public interface RoomAvailabilityJpaRepository extends JpaRepository<RoomAvailab
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
 
+    @Query("SELECT MIN(ra.availableCount) FROM RoomAvailabilityEntity ra " +
+            "WHERE ra.room.id = :roomId " +
+            "AND ra.date >= :startDate AND ra.date < :endDate")
+    Integer findMinAvailableCount(
+            @Param("roomId") UUID roomId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT ra FROM RoomAvailabilityEntity ra " +
             "WHERE ra.room.id = :roomId " +

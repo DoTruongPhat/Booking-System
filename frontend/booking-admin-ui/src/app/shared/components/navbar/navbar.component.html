@@ -17,7 +17,7 @@
       >
         Trang chủ
       </a>
-      <a routerLink="/user/booking/new" class="nav-item" (click)="closeDropdown()"> Đặt phòng </a>
+      <a routerLink="/hotels" class="nav-item" (click)="closeDropdown()"> Đặt phòng </a>
 
       <!-- Khách sạn Dropdown -->
       <div class="nav-item-dropdown" [class.is-open]="openDropdown() === hotelsDropdown.label">
@@ -32,12 +32,16 @@
 
         <div class="dropdown-panel hotels-panel">
           <div class="dropdown-grid">
-            <div class="dropdown-section" *ngFor="let section of hotelsDropdown.sections">
+            <div
+              class="dropdown-section"
+              *ngFor="let section of hotelsDropdown.sections; trackBy: trackBySection"
+            >
               <h4 class="dropdown-section-title">{{ section.title }}</h4>
               <a
-                *ngFor="let item of section.items"
+                *ngFor="let item of section.items; trackBy: trackByDropdownItem"
                 class="dropdown-item"
                 [routerLink]="item.link"
+                [queryParams]="item.queryParams"
                 (click)="closeDropdown()"
               >
                 <span
@@ -58,9 +62,6 @@
         </div>
       </div>
 
-      <a class="nav-item" (click)="closeDropdown()">Khuyến mãi</a>
-      <a class="nav-item" (click)="closeDropdown()">Liên hệ</a>
-
       <!-- Xem thêm Dropdown -->
       <div class="nav-item-dropdown" [class.is-open]="openDropdown() === moreDropdown.label">
         <button
@@ -74,27 +75,53 @@
 
         <div class="dropdown-panel more-panel">
           <div class="dropdown-grid">
-            <div class="dropdown-section" *ngFor="let section of moreDropdown.sections">
+            <div
+              class="dropdown-section"
+              *ngFor="let section of visibleMoreSections; trackBy: trackBySection"
+            >
               <h4 class="dropdown-section-title">{{ section.title }}</h4>
-              <a
-                *ngFor="let item of section.items"
-                class="dropdown-item"
-                [routerLink]="item.link"
-                (click)="handleItemAction(item.action); closeDropdown()"
-              >
-                <span
-                  class="dropdown-item-icon"
-                  nz-icon
-                  [nzType]="item.icon"
-                  nzTheme="outline"
-                ></span>
-                <div class="dropdown-item-content">
-                  <span class="dropdown-item-label">{{ item.label }}</span>
-                  <span class="dropdown-item-desc" *ngIf="item.description">{{
-                    item.description
-                  }}</span>
-                </div>
-              </a>
+              <ng-container *ngFor="let item of section.items; trackBy: trackByDropdownItem">
+                <a
+                  *ngIf="item.href; else appDropdownItem"
+                  class="dropdown-item"
+                  [href]="item.href"
+                  (click)="closeDropdown()"
+                >
+                  <span
+                    class="dropdown-item-icon"
+                    nz-icon
+                    [nzType]="item.icon"
+                    nzTheme="outline"
+                  ></span>
+                  <div class="dropdown-item-content">
+                    <span class="dropdown-item-label">{{ item.label }}</span>
+                    <span class="dropdown-item-desc" *ngIf="item.description">{{
+                      item.description
+                    }}</span>
+                  </div>
+                </a>
+                <ng-template #appDropdownItem>
+                  <a
+                    class="dropdown-item"
+                    [routerLink]="item.link || null"
+                    [queryParams]="item.queryParams"
+                    (click)="handleItemAction(item.action); closeDropdown()"
+                  >
+                    <span
+                      class="dropdown-item-icon"
+                      nz-icon
+                      [nzType]="item.icon"
+                      nzTheme="outline"
+                    ></span>
+                    <div class="dropdown-item-content">
+                      <span class="dropdown-item-label">{{ item.label }}</span>
+                      <span class="dropdown-item-desc" *ngIf="item.description">{{
+                        item.description
+                      }}</span>
+                    </div>
+                  </a>
+                </ng-template>
+              </ng-container>
             </div>
           </div>
         </div>
@@ -133,11 +160,11 @@
           nzTrigger="click"
           nzPlacement="bottomRight"
         >
-          <nz-avatar
-            [nzText]="userInitial"
-            nzSize="small"
-            style="background-color: #1890ff; cursor: pointer"
-          ></nz-avatar>
+        <nz-avatar
+          [nzText]="userInitial"
+          nzSize="small"
+          class="avatar-circle"
+        ></nz-avatar>
           <span class="avatar-username">{{ user?.username }}</span>
           <span nz-icon nzType="down" style="font-size: 10px; margin-left: 4px"></span>
         </div>

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  id="Definitions_HotelApproval"
+                  targetNamespace="http://booking-system/camunda/hotel-approval">
+    <bpmn:process id="hotel_approval_flow" name="Hotel Approval Flow" isExecutable="true">
+        <bpmn:startEvent id="StartEvent_HotelSubmitted" name="Hotel Submitted">
+            <bpmn:outgoing>Flow_Start_Prepare</bpmn:outgoing>
+        </bpmn:startEvent>
+
+        <bpmn:serviceTask id="ServiceTask_PrepareAdminReview"
+                          name="Prepare Admin Review"
+                          camunda:delegateExpression="${prepareAdminReviewDelegate}">
+            <bpmn:incoming>Flow_Start_Prepare</bpmn:incoming>
+            <bpmn:outgoing>Flow_Prepare_AdminReview</bpmn:outgoing>
+        </bpmn:serviceTask>
+
+        <bpmn:userTask id="UserTask_AdminReviewHotel"
+                       name="Admin Review Hotel"
+                       camunda:candidateGroups="ADMIN">
+            <bpmn:extensionElements>
+                <camunda:taskListener event="create" delegateExpression="${taskCreatedLogger}" />
+            </bpmn:extensionElements>
+            <bpmn:incoming>Flow_Prepare_AdminReview</bpmn:incoming>
+            <bpmn:outgoing>Flow_AdminReview_Gateway</bpmn:outgoing>
+        </bpmn:userTask>
+
+        <bpmn:boundaryEvent id="BoundaryEvent_AdminReviewReminder"
+                            name="Admin Review Reminder"
+                            cancelActivity="false"
+                            attachedToRef="UserTask_AdminReviewHotel">
+            <bpmn:outgoing>Flow_Reminder_Send</bpmn:outgoing>
+            <bpmn:timerEventDefinition id="TimerEventDefinition_AdminReviewReminder">
+                <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">${reviewReminderCycle}</bpmn:timeCycle>
+            </bpmn:timerEventDefinition>
+        </bpmn:boundaryEvent>
+
+        <bpmn:serviceTask id="ServiceTask_SendReviewReminder"
+                          name="Send Review Reminder"
+                          camunda:delegateExpression="${sendReviewReminderDelegate}">
+            <bpmn:incoming>Flow_Reminder_Send</bpmn:incoming>
+            <bpmn:outgoing>Flow_Reminder_End</bpmn:outgoing>
+        </bpmn:serviceTask>
+
+        <bpmn:endEvent id="EndEvent_ReminderSent" name="Reminder Sent">
+            <bpmn:incoming>Flow_Reminder_End</bpmn:incoming>
+        </bpmn:endEvent>
+
+        <bpmn:exclusiveGateway id="Gateway_Approved" name="Approved?">
+            <bpmn:incoming>Flow_AdminReview_Gateway</bpmn:incoming>
+            <bpmn:outgoing>Flow_Gateway_Approved</bpmn:outgoing>
+            <bpmn:outgoing>Flow_Gateway_Rejected</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+
+        <bpmn:serviceTask id="ServiceTask_ApproveHotel"
+                          name="Approve Hotel"
+                          camunda:delegateExpression="${approveHotelDelegate}">
+            <bpmn:incoming>Flow_Gateway_Approved</bpmn:incoming>
+            <bpmn:outgoing>Flow_Approve_Audit</bpmn:outgoing>
+        </bpmn:serviceTask>
+
+        <bpmn:serviceTask id="ServiceTask_RecordApprovalAudit"
+                          name="Record Approval Audit"
+                          camunda:delegateExpression="${recordApprovalAuditDelegate}">
+            <bpmn:incoming>Flow_Approve_Audit</bpmn:incoming>
+            <bpmn:outgoing>Flow_Audit_ApprovedMail</bpmn:outgoing>
+        </bpmn:serviceTask>
+
+        <bpmn:serviceTask id="ServiceTask_SendHotelApprovedMail"
+                          name="Send Hotel Approved Mail"
+                          camunda:delegateExpression="${sendHotelApprovedMailDelegate}">
+            <bpmn:incoming>Flow_Audit_ApprovedMail</bpmn:incoming>
+            <bpmn:outgoing>Flow_ApprovedMail_End</bpmn:outgoing>
+        </bpmn:serviceTask>
+
+        <bpmn:endEvent id="EndEvent_Approved" name="Hotel Approved">
+            <bpmn:incoming>Flow_ApprovedMail_End</bpmn:incoming>
+        </bpmn:endEvent>
+
+        <bpmn:serviceTask id="ServiceTask_RejectHotel"
+                          name="Reject Hotel"
+                          camunda:delegateExpression="${rejectHotelDelegate}">
+            <bpmn:incoming>Flow_Gateway_Rejected</bpmn:incoming>
+            <bpmn:outgoing>Flow_Reject_Audit</bpmn:outgoing>
+        </bpmn:serviceTask>
+
+        <bpmn:serviceTask id="ServiceTask_RecordRejectionAudit"
+                          name="Record Rejection Audit"
+                          camunda:delegateExpression="${recordRejectionAuditDelegate}">
+            <bpmn:incoming>Flow_Reject_Audit</bpmn:incoming>
+            <bpmn:outgoing>Flow_Audit_RejectedMail</bpmn:outgoing>
+        </bpmn:serviceTask>
+
+        <bpmn:serviceTask id="ServiceTask_SendHotelRejectedMail"
+                          name="Send Hotel Rejected Mail"
+                          camunda:delegateExpression="${sendHotelRejectedMailDelegate}">
+            <bpmn:incoming>Flow_Audit_RejectedMail</bpmn:incoming>
+            <bpmn:outgoing>Flow_RejectedMail_End</bpmn:outgoing>
+        </bpmn:serviceTask>
+
+        <bpmn:endEvent id="EndEvent_Rejected" name="Hotel Rejected">
+            <bpmn:incoming>Flow_RejectedMail_End</bpmn:incoming>
+        </bpmn:endEvent>
+
+        <bpmn:sequenceFlow id="Flow_Start_Prepare" sourceRef="StartEvent_HotelSubmitted" targetRef="ServiceTask_PrepareAdminReview" />
+        <bpmn:sequenceFlow id="Flow_Prepare_AdminReview" sourceRef="ServiceTask_PrepareAdminReview" targetRef="UserTask_AdminReviewHotel" />
+        <bpmn:sequenceFlow id="Flow_AdminReview_Gateway" sourceRef="UserTask_AdminReviewHotel" targetRef="Gateway_Approved" />
+        <bpmn:sequenceFlow id="Flow_Reminder_Send" sourceRef="BoundaryEvent_AdminReviewReminder" targetRef="ServiceTask_SendReviewReminder" />
+        <bpmn:sequenceFlow id="Flow_Reminder_End" sourceRef="ServiceTask_SendReviewReminder" targetRef="EndEvent_ReminderSent" />
+        <bpmn:sequenceFlow id="Flow_Gateway_Approved" name="Approved" sourceRef="Gateway_Approved" targetRef="ServiceTask_ApproveHotel">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision == 'APPROVED'}</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_Gateway_Rejected" name="Rejected" sourceRef="Gateway_Approved" targetRef="ServiceTask_RejectHotel">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision == 'REJECTED'}</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_Approve_Audit" sourceRef="ServiceTask_ApproveHotel" targetRef="ServiceTask_RecordApprovalAudit" />
+        <bpmn:sequenceFlow id="Flow_Audit_ApprovedMail" sourceRef="ServiceTask_RecordApprovalAudit" targetRef="ServiceTask_SendHotelApprovedMail" />
+        <bpmn:sequenceFlow id="Flow_ApprovedMail_End" sourceRef="ServiceTask_SendHotelApprovedMail" targetRef="EndEvent_Approved" />
+        <bpmn:sequenceFlow id="Flow_Reject_Audit" sourceRef="ServiceTask_RejectHotel" targetRef="ServiceTask_RecordRejectionAudit" />
+        <bpmn:sequenceFlow id="Flow_Audit_RejectedMail" sourceRef="ServiceTask_RecordRejectionAudit" targetRef="ServiceTask_SendHotelRejectedMail" />
+        <bpmn:sequenceFlow id="Flow_RejectedMail_End" sourceRef="ServiceTask_SendHotelRejectedMail" targetRef="EndEvent_Rejected" />
+    </bpmn:process>
+
+    <bpmndi:BPMNDiagram id="BPMNDiagram_HotelApproval">
+        <bpmndi:BPMNPlane id="BPMNPlane_HotelApproval" bpmnElement="hotel_approval_flow">
+            <bpmndi:BPMNShape id="Shape_StartEvent_HotelSubmitted" bpmnElement="StartEvent_HotelSubmitted">
+                <dc:Bounds x="120" y="170" width="36" height="36" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_ServiceTask_PrepareAdminReview" bpmnElement="ServiceTask_PrepareAdminReview">
+                <dc:Bounds x="210" y="148" width="130" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_UserTask_AdminReviewHotel" bpmnElement="UserTask_AdminReviewHotel">
+                <dc:Bounds x="400" y="148" width="130" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_BoundaryEvent_AdminReviewReminder" bpmnElement="BoundaryEvent_AdminReviewReminder">
+                <dc:Bounds x="455" y="210" width="36" height="36" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_ServiceTask_SendReviewReminder" bpmnElement="ServiceTask_SendReviewReminder">
+                <dc:Bounds x="410" y="300" width="130" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_EndEvent_ReminderSent" bpmnElement="EndEvent_ReminderSent">
+                <dc:Bounds x="590" y="322" width="36" height="36" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_Gateway_Approved" bpmnElement="Gateway_Approved" isMarkerVisible="true">
+                <dc:Bounds x="590" y="163" width="50" height="50" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_ServiceTask_ApproveHotel" bpmnElement="ServiceTask_ApproveHotel">
+                <dc:Bounds x="700" y="80" width="130" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_ServiceTask_RecordApprovalAudit" bpmnElement="ServiceTask_RecordApprovalAudit">
+                <dc:Bounds x="880" y="80" width="130" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_ServiceTask_SendHotelApprovedMail" bpmnElement="ServiceTask_SendHotelApprovedMail">
+                <dc:Bounds x="1060" y="80" width="130" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_EndEvent_Approved" bpmnElement="EndEvent_Approved">
+                <dc:Bounds x="1250" y="102" width="36" height="36" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_ServiceTask_RejectHotel" bpmnElement="ServiceTask_RejectHotel">
+                <dc:Bounds x="700" y="230" width="130" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_ServiceTask_RecordRejectionAudit" bpmnElement="ServiceTask_RecordRejectionAudit">
+                <dc:Bounds x="880" y="230" width="130" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_ServiceTask_SendHotelRejectedMail" bpmnElement="ServiceTask_SendHotelRejectedMail">
+                <dc:Bounds x="1060" y="230" width="130" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Shape_EndEvent_Rejected" bpmnElement="EndEvent_Rejected">
+                <dc:Bounds x="1250" y="252" width="36" height="36" />
+            </bpmndi:BPMNShape>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn:definitions>

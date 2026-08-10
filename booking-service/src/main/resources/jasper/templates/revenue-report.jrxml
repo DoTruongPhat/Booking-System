@@ -13,6 +13,8 @@
     <!-- PARAMETERS (from Java) -->
     <parameter name="fromDate" class="java.sql.Date"/>
     <parameter name="toDate" class="java.sql.Date"/>
+    <parameter name="ownerUserId" class="java.lang.String"/>
+    <parameter name="hotelId" class="java.lang.String"/>
     <parameter name="reportTitle" class="java.lang.String">
         <defaultValueExpression><![CDATA["REVENUE REPORT"]]></defaultValueExpression>
     </parameter>
@@ -25,14 +27,18 @@
                 h.city AS hotel_city,
                 COUNT(b.id) AS total_bookings,
                 SUM(CASE WHEN b.status = 'CANCELLED' THEN 1 ELSE 0 END) AS cancelled_count,
-                SUM(CASE WHEN b.status IN ('CONFIRMED', 'COMPLETED') THEN b.total_price ELSE 0 END) AS total_revenue,
-                AVG(CASE WHEN b.status IN ('CONFIRMED', 'COMPLETED') THEN b.total_price ELSE NULL END) AS avg_booking_value,
+                SUM(COALESCE(b.total_price, 0) - COALESCE(b.refund_amount, 0)) AS total_revenue,
+                AVG(COALESCE(b.total_price, 0) - COALESCE(b.refund_amount, 0)) AS avg_booking_value,
                 SUM(b.num_nights) AS total_nights,
                 SUM(b.num_rooms) AS total_rooms_booked
             FROM booking.bookings b
             JOIN booking.hotels h ON b.hotel_id = h.id
-            WHERE b.created_at >= CAST($P{fromDate} AS timestamp)
-              AND b.created_at <= CAST($P{toDate} AS timestamp) + INTERVAL '1 day'
+            WHERE b.paid_at >= CAST($P{fromDate} AS timestamp)
+              AND CAST($P{toDate} AS timestamp) + INTERVAL '1 day' > b.paid_at
+              AND b.payment_status IN ('PAID', 'PARTIALLY_REFUNDED', 'REFUNDED')
+              AND b.status IN ('CONFIRMED', 'COMPLETED')
+              AND ($P{ownerUserId} IS NULL OR h.owner_user_id = CAST($P{ownerUserId} AS uuid))
+              AND ($P{hotelId} IS NULL OR h.id = CAST($P{hotelId} AS uuid))
             GROUP BY h.name, h.city
             ORDER BY total_revenue DESC
         ]]>
@@ -62,14 +68,14 @@
             <textField>
                 <reportElement x="0" y="0" width="802" height="30" uuid="c0000001-0001-0001-0001-000000000002"/>
                 <textElement textAlignment="Center">
-                    <font size="20" isBold="true"/>
+                    <font fontName="DejaVu Sans" size="20" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/>
                 </textElement>
                 <textFieldExpression><![CDATA[$P{reportTitle}]]></textFieldExpression>
             </textField>
             <textField>
                 <reportElement x="0" y="35" width="802" height="20" forecolor="#666666" uuid="c0000001-0001-0001-0001-000000000003"/>
                 <textElement textAlignment="Center">
-                    <font size="11"/>
+                    <font fontName="DejaVu Sans" size="11" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/>
                 </textElement>
                 <textFieldExpression><![CDATA["Period: " + new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{fromDate})
                     + " - " + new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{toDate})]]></textFieldExpression>
@@ -86,42 +92,42 @@
         <band height="25">
             <staticText>
                 <reportElement x="0" y="0" width="160" height="25" backcolor="#2196F3" mode="Opaque" forecolor="#FFFFFF" uuid="c0000001-0001-0001-0001-000000000010"/>
-                <textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <textElement verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[  Hotel]]></text>
             </staticText>
             <staticText>
                 <reportElement x="160" y="0" width="90" height="25" backcolor="#2196F3" mode="Opaque" forecolor="#FFFFFF" uuid="c0000001-0001-0001-0001-000000000011"/>
-                <textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <textElement verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[  City]]></text>
             </staticText>
             <staticText>
                 <reportElement x="250" y="0" width="80" height="25" backcolor="#2196F3" mode="Opaque" forecolor="#FFFFFF" uuid="c0000001-0001-0001-0001-000000000012"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[Bookings]]></text>
             </staticText>
             <staticText>
                 <reportElement x="330" y="0" width="80" height="25" backcolor="#2196F3" mode="Opaque" forecolor="#FFFFFF" uuid="c0000001-0001-0001-0001-000000000013"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[Cancelled]]></text>
             </staticText>
             <staticText>
                 <reportElement x="410" y="0" width="100" height="25" backcolor="#2196F3" mode="Opaque" forecolor="#FFFFFF" uuid="c0000001-0001-0001-0001-000000000014"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[Total Nights]]></text>
             </staticText>
             <staticText>
                 <reportElement x="510" y="0" width="100" height="25" backcolor="#2196F3" mode="Opaque" forecolor="#FFFFFF" uuid="c0000001-0001-0001-0001-000000000015"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[Rooms Booked]]></text>
             </staticText>
             <staticText>
                 <reportElement x="610" y="0" width="96" height="25" backcolor="#2196F3" mode="Opaque" forecolor="#FFFFFF" uuid="c0000001-0001-0001-0001-000000000016"/>
-                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[Avg Value  ]]></text>
             </staticText>
             <staticText>
                 <reportElement x="706" y="0" width="96" height="25" backcolor="#2196F3" mode="Opaque" forecolor="#FFFFFF" uuid="c0000001-0001-0001-0001-000000000017"/>
-                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[Revenue  ]]></text>
             </staticText>
         </band>
@@ -132,42 +138,42 @@
         <band height="20">
             <textField isBlankWhenNull="true">
                 <reportElement x="0" y="0" width="160" height="20" uuid="c0000001-0001-0001-0001-000000000020"/>
-                <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+                <textElement verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA["  " + $F{hotel_name}]]></textFieldExpression>
             </textField>
             <textField isBlankWhenNull="true">
                 <reportElement x="160" y="0" width="90" height="20" uuid="c0000001-0001-0001-0001-000000000021"/>
-                <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+                <textElement verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA["  " + $F{hotel_city}]]></textFieldExpression>
             </textField>
             <textField>
                 <reportElement x="250" y="0" width="80" height="20" uuid="c0000001-0001-0001-0001-000000000022"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$F{total_bookings}]]></textFieldExpression>
             </textField>
             <textField>
                 <reportElement x="330" y="0" width="80" height="20" forecolor="#D32F2F" uuid="c0000001-0001-0001-0001-000000000023"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$F{cancelled_count}]]></textFieldExpression>
             </textField>
             <textField>
                 <reportElement x="410" y="0" width="100" height="20" uuid="c0000001-0001-0001-0001-000000000024"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$F{total_nights}]]></textFieldExpression>
             </textField>
             <textField>
                 <reportElement x="510" y="0" width="100" height="20" uuid="c0000001-0001-0001-0001-000000000025"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$F{total_rooms_booked}]]></textFieldExpression>
             </textField>
             <textField pattern="#,##0.00">
                 <reportElement x="610" y="0" width="96" height="20" uuid="c0000001-0001-0001-0001-000000000026"/>
-                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8"/></textElement>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$F{avg_booking_value}]]></textFieldExpression>
             </textField>
             <textField pattern="#,##0.00">
                 <reportElement x="706" y="0" width="96" height="20" uuid="c0000001-0001-0001-0001-000000000027"/>
-                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$F{total_revenue}]]></textFieldExpression>
             </textField>
             <line>
@@ -180,17 +186,17 @@
         <band height="25">
             <staticText>
                 <reportElement x="0" y="5" width="400" height="15" forecolor="#999999" uuid="c0000001-0001-0001-0001-000000000040"/>
-                <textElement><font size="7"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="7" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Generated by Booking System | Data source: PostgreSQL Direct Query]]></text>
             </staticText>
             <textField>
                 <reportElement x="650" y="5" width="100" height="15" forecolor="#999999" uuid="c0000001-0001-0001-0001-000000000041"/>
-                <textElement textAlignment="Right"><font size="7"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="7" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER} + " / "]]></textFieldExpression>
             </textField>
             <textField evaluationTime="Report">
                 <reportElement x="750" y="5" width="52" height="15" forecolor="#999999" uuid="c0000001-0001-0001-0001-000000000042"/>
-                <textElement><font size="7"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="7" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
             </textField>
         </band>
@@ -204,21 +210,19 @@
             </line>
             <staticText>
                 <reportElement x="0" y="5" width="250" height="25" uuid="c0000001-0001-0001-0001-000000000031"/>
-                <textElement verticalAlignment="Middle"><font size="12" isBold="true"/></textElement>
+                <textElement verticalAlignment="Middle"><font fontName="DejaVu Sans" size="12" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[  GRAND TOTAL]]></text>
             </staticText>
             <textField>
                 <reportElement x="250" y="5" width="80" height="25" uuid="c0000001-0001-0001-0001-000000000032"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"><font size="10" isBold="true"/></textElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="10" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$V{grandTotalBookings}]]></textFieldExpression>
             </textField>
             <textField pattern="#,##0.00">
                 <reportElement x="706" y="5" width="96" height="25" forecolor="#D32F2F" uuid="c0000001-0001-0001-0001-000000000033"/>
-                <textElement textAlignment="Right" verticalAlignment="Middle"><font size="12" isBold="true"/></textElement>
+                <textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="12" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$V{grandTotalRevenue}]]></textFieldExpression>
             </textField>
         </band>
     </summary>
-
-
 </jasperReport>

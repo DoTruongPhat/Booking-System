@@ -12,6 +12,7 @@ public interface SupportTicketRepositoryPort {
     Optional<SupportTicket> findById(UUID id);
     Page<SupportTicket> findByCreatedBy(UUID createdBy, Pageable pageable);
     Page<SupportTicket> findByAssignedTo(UUID assignedTo, Pageable pageable);
+    Page<SupportTicket> findByAssignedToAndStatus(UUID assignedTo, String status, Pageable pageable);
     Page<SupportTicket> findByStatus(String status, Pageable pageable);
     Page<SupportTicket> findAll(Pageable pageable);
 }

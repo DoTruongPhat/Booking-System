@@ -169,14 +169,14 @@ export class RegisterComponent {
    * Google user mới → Case C → BE tạo user (username = email) + sync KC
    */
   registerWithGoogle(): void {
-    window.location.href = 'http://localhost:8081/api/auth/sso/login?provider=google';
+    this.auth.loginWithGoogle();
   }
 
   /**
    * Đăng nhập SSO → KC form (có Google + username/password)
    */
   loginWithKeycloak(): void {
-    window.location.href = '/api/auth/sso/login';
+    this.auth.loginWithKeycloak();
   }
 
   goToLogin(): void {

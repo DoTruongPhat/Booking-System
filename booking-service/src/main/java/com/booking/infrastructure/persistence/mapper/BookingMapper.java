@@ -28,6 +28,7 @@ public class BookingMapper {
         booking.setNumRooms(entity.getNumRooms());
         booking.setUnitPrice(entity.getUnitPrice());
         booking.setDiscountAmount(entity.getDiscountAmount());
+        booking.setVoucherCode(entity.getVoucherCode());
         booking.setTotalPrice(entity.getTotalPrice());
         booking.setStatus(BookingStatus.valueOf(entity.getStatus()));
         booking.setPaymentStatus(PaymentStatus.valueOf(entity.getPaymentStatus()));
@@ -64,6 +65,7 @@ public class BookingMapper {
                 .numRooms(domain.getNumRooms())
                 .unitPrice(domain.getUnitPrice())
                 .discountAmount(domain.getDiscountAmount())
+                .voucherCode(domain.getVoucherCode())
                 .totalPrice(domain.getTotalPrice())
                 .status(domain.getStatus().name())
                 .paymentStatus(domain.getPaymentStatus().name())
@@ -85,6 +87,10 @@ public class BookingMapper {
         entity.setPaymentStatus(domain.getPaymentStatus().name());
         entity.setPaymentMethod(domain.getPaymentMethod());
         entity.setPaidAt(domain.getPaidAt());
+        entity.setUnitPrice(domain.getUnitPrice());
+        entity.setDiscountAmount(domain.getDiscountAmount());
+        entity.setVoucherCode(domain.getVoucherCode());
+        entity.setTotalPrice(domain.getTotalPrice());
         entity.setRefundAmount(domain.getRefundAmount());
         entity.setCancellationReason(domain.getCancellationReason());
         entity.setCancelledAt(domain.getCancelledAt());

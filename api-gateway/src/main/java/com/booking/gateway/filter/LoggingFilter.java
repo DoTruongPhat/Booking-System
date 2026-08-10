@@ -75,11 +75,15 @@ public class LoggingFilter implements GlobalFilter, Ordered {
         // Core / Booking Service (8082)
         if (path.startsWith("/api/admin/hotels"))    return "CORE-SERVICE";
         if (path.startsWith("/api/admin/bookings"))  return "CORE-SERVICE";
+        if (path.startsWith("/api/admin/room-types")) return "CORE-SERVICE";
+        if (path.startsWith("/api/admin/promotions")) return "CORE-SERVICE";
+        if (path.startsWith("/api/admin/vouchers"))  return "CORE-SERVICE";
         if (path.startsWith("/api/user/bookings"))   return "CORE-SERVICE";
         if (path.startsWith("/api/host/dashboard"))  return "CORE-SERVICE";
         if (path.startsWith("/api/host"))            return "CORE-SERVICE";
         if (path.startsWith("/api/rooms"))           return "CORE-SERVICE";
         if (path.startsWith("/api/hotels"))          return "CORE-SERVICE";
+        if (path.startsWith("/api/vouchers"))        return "CORE-SERVICE";
         if (path.startsWith("/api/bookings"))        return "CORE-SERVICE";
 
         // Payment Service (8083)

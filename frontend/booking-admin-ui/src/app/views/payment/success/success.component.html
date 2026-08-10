@@ -1,0 +1,85 @@
+<div class="success-page">
+  <app-navbar></app-navbar>
+
+  <div class="success-loading" *ngIf="loading">
+    <nz-spin nzSimple [nzSize]="'large'"></nz-spin>
+  </div>
+
+  <div class="success-container" *ngIf="!loading">
+    <div class="success-card">
+      <!-- Icon -->
+      <div class="success-icon-wrapper">
+        <div class="success-icon">
+          <span nz-icon nzType="check" nzTheme="outline"></span>
+        </div>
+        <div class="success-rings">
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
+        </div>
+      </div>
+
+      <h1 class="success-title">Thanh toán thành công!</h1>
+      <p class="success-subtitle">Cảm ơn bạn. Booking đã được xác nhận.</p>
+
+      <!-- Payment Code -->
+      <div class="code-card" *ngIf="paymentCode">
+        <div class="code-label">Mã thanh toán</div>
+        <div class="code-row">
+          <span class="code-value">{{ paymentCode }}</span>
+          <button class="copy-btn" (click)="copyPaymentCode()">
+            <span nz-icon nzType="copy"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div class="details-card" *ngIf="booking && payment">
+        <h3>Chi tiết</h3>
+
+        <div class="detail-row">
+          <span class="label">Khách sạn</span>
+          <span class="value">{{ booking.hotelName }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Phòng</span>
+          <span class="value">{{ booking.roomName }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Nhận phòng</span>
+          <span class="value">{{ formatDateTime(booking.checkIn) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Trả phòng</span>
+          <span class="value">{{ formatDateTime(booking.checkOut) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Phương thức</span>
+          <span class="value">{{ payment.method }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Mã giao dịch</span>
+          <span class="value">{{ payment.gatewayTxnId }}</span>
+        </div>
+
+        <div class="detail-divider"></div>
+
+        <div class="detail-row total">
+          <span class="label">Tổng thanh toán</span>
+          <span class="value">{{ formatVND(payment.amount) }}</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-buttons">
+        <button class="btn-secondary" routerLink="/user/bookings">
+          <span nz-icon nzType="calendar"></span>
+          Xem đặt phòng
+        </button>
+        <button class="btn-primary" routerLink="/">
+          <span nz-icon nzType="home"></span>
+          Về trang chủ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

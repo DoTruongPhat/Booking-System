@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
 import java.util.List;
@@ -233,12 +234,14 @@ public class KeycloakAdminClient implements KeycloakAdminPort {
     @Override
     @SuppressWarnings("unchecked")
     public KcUserInfo findUserByUsername(String username) {
-        String url = String.format(
-                "%s/admin/realms/%s/users?username=%s&exact=true",
-                appProperties.getKeycloak().getUrl(),
-                appProperties.getKeycloak().getRealm(),
-                username
-        );
+        String url = UriComponentsBuilder
+                .fromHttpUrl(appProperties.getKeycloak().getUrl())
+                .pathSegment("admin", "realms", appProperties.getKeycloak().getRealm(), "users")
+                .queryParam("username", username)
+                .queryParam("exact", true)
+                .build()
+                .encode()
+                .toUriString();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(getAdminToken());
@@ -261,12 +264,14 @@ public class KeycloakAdminClient implements KeycloakAdminPort {
     @Override
     @SuppressWarnings("unchecked")
     public KcUserInfo findUserByEmail(String email) {
-        String url = String.format(
-                "%s/admin/realms/%s/users?email=%s&exact=true",
-                appProperties.getKeycloak().getUrl(),
-                appProperties.getKeycloak().getRealm(),
-                email
-        );
+        String url = UriComponentsBuilder
+                .fromHttpUrl(appProperties.getKeycloak().getUrl())
+                .pathSegment("admin", "realms", appProperties.getKeycloak().getRealm(), "users")
+                .queryParam("email", email)
+                .queryParam("exact", true)
+                .build()
+                .encode()
+                .toUriString();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(getAdminToken());

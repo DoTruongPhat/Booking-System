@@ -1,29 +1,18 @@
-// ═══════════════════════════════════════════════════════════
-// HOTEL SEARCH COMPONENT — REFACTORED Phase E
-// Bỏ mock data → gọi GET /api/rooms/search
-// Đọc queryParams từ HomeComponent search bar
-// Hỗ trợ pagination + server-side filtering
-// ═══════════════════════════════════════════════════════════
-
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
-import { NzIconModule } from 'ng-zorro-antd/icon';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzMessageService } from 'ng-zorro-antd/message';
+import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSliderModule } from 'ng-zorro-antd/slider';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
-import { NzPaginationModule } from 'ng-zorro-antd/pagination';
-import { NzMessageService } from 'ng-zorro-antd/message';
+import { Subject, takeUntil } from 'rxjs';
+import { RoomSearchParams, RoomSearchResult, RoomService } from '../../../core/services/rooms.service';
 import { NavbarComponent } from '../../../shared/components/navbar/navbar.component';
-import {
-  RoomService,
-  RoomSearchResult,
-  RoomSearchParams,
-} from '../../../../app/core/services/rooms.service';
 
 @Component({
   selector: 'app-hotel-search',
@@ -49,10 +38,8 @@ export class HotelSearchComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private roomService = inject(RoomService);
   private message = inject(NzMessageService);
-
   private destroy$ = new Subject<void>();
 
-  // ── Search state ──────────────────────────────────────
   searchQuery = '';
   selectedCity = '';
   priceRange: number[] = [0, 20000000];
@@ -61,15 +48,13 @@ export class HotelSearchComponent implements OnInit, OnDestroy {
   checkOut = '';
   guests = 2;
 
-  // ── Results ───────────────────────────────────────────
   rooms: RoomSearchResult[] = [];
   loading = false;
   totalElements = 0;
   currentPage = 1;
   pageSize = 10;
 
-  // ── Filter options ────────────────────────────────────
-  cities = [
+  readonly cities = [
     { label: 'Tất cả', value: '' },
     { label: 'Hà Nội', value: 'Hà Nội' },
     { label: 'TP. Hồ Chí Minh', value: 'TP. Hồ Chí Minh' },
@@ -80,7 +65,7 @@ export class HotelSearchComponent implements OnInit, OnDestroy {
     { label: 'Sa Pa', value: 'Sa Pa' },
   ];
 
-  amenityLabels: Record<string, string> = {
+  readonly amenityLabels: Record<string, string> = {
     wifi: 'WiFi',
     pool: 'Hồ bơi',
     breakfast: 'Bữa sáng',
@@ -94,18 +79,18 @@ export class HotelSearchComponent implements OnInit, OnDestroy {
     bathtub: 'Bồn tắm',
     balcony: 'Ban công',
     'sea-view': 'View biển',
-    'city-view': 'View TP',
+    'city-view': 'View thành phố',
   };
 
   ngOnInit(): void {
-    // Đọc query params từ URL (HomeComponent truyền sang)
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-      if (params['city']) this.selectedCity = params['city'];
-      if (params['q']) this.searchQuery = params['q'];
-      if (params['checkIn']) this.checkIn = params['checkIn'];
-      if (params['checkOut']) this.checkOut = params['checkOut'];
-      if (params['guests']) this.guests = +params['guests'];
-      if (params['page']) this.currentPage = +params['page'];
+      this.selectedCity = params['city'] || '';
+      this.searchQuery = params['q'] || '';
+      this.checkIn = params['checkIn'] || '';
+      this.checkOut = params['checkOut'] || '';
+      this.guests = params['guests'] ? Number(params['guests']) : 2;
+      this.currentPage = params['page'] ? Number(params['page']) : 1;
+      this.selectedStars = params['minRating'] ? [Number(params['minRating'])] : [];
       this.search();
     });
   }
@@ -115,33 +100,22 @@ export class HotelSearchComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ══════════════════════════════════════════════════════
-  // SEARCH (gọi API thật)
-  // ══════════════════════════════════════════════════════
-
   search(): void {
     this.loading = true;
 
     const params: RoomSearchParams = {
-      page: this.currentPage - 1, // backend 0-based
+      page: this.currentPage - 1,
       size: this.pageSize,
     };
 
-    // City: từ sidebar filter hoặc search query
     const city = this.selectedCity || this.searchQuery;
     if (city?.trim()) params.city = city.trim();
     if (this.checkIn) params.checkIn = this.checkIn;
     if (this.checkOut) params.checkOut = this.checkOut;
     if (this.guests > 0) params.guests = this.guests;
-
-    // Price filter
     if (this.priceRange[0] > 0) params.minPrice = this.priceRange[0];
     if (this.priceRange[1] < 20000000) params.maxPrice = this.priceRange[1];
-
-    // Star rating → minRating (lấy min trong selectedStars)
-    if (this.selectedStars.length > 0) {
-      params.minRating = Math.min(...this.selectedStars);
-    }
+    if (this.selectedStars.length > 0) params.minRating = Math.min(...this.selectedStars);
 
     this.roomService.search(params).subscribe({
       next: (data) => {
@@ -162,20 +136,18 @@ export class HotelSearchComponent implements OnInit, OnDestroy {
 
   onSearch(): void {
     this.currentPage = 1;
-    this.updateUrlParams();
-    this.search();
+    this.updateUrlParams().then((changed) => {
+      if (!changed) this.search();
+    });
   }
 
   onPageChange(page: number): void {
     this.currentPage = page;
-    this.updateUrlParams();
-    this.search();
+    this.updateUrlParams().then((changed) => {
+      if (!changed) this.search();
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-
-  // ══════════════════════════════════════════════════════
-  // FILTERS
-  // ══════════════════════════════════════════════════════
 
   selectCity(city: string): void {
     this.selectedCity = city;
@@ -187,7 +159,7 @@ export class HotelSearchComponent implements OnInit, OnDestroy {
     if (idx >= 0) {
       this.selectedStars.splice(idx, 1);
     } else {
-      this.selectedStars.push(rating);
+      this.selectedStars = [rating];
     }
     this.onSearch();
   }
@@ -203,20 +175,18 @@ export class HotelSearchComponent implements OnInit, OnDestroy {
     this.onSearch();
   }
 
-  // ══════════════════════════════════════════════════════
-  // NAVIGATION
-  // ══════════════════════════════════════════════════════
-
   viewRoom(roomId: string): void {
-    this.router.navigate(['/hotels', roomId]);
+    this.router.navigate(['/hotels', roomId], {
+      queryParams: {
+        checkIn: this.checkIn || undefined,
+        checkOut: this.checkOut || undefined,
+        guests: this.guests || undefined,
+      },
+    });
   }
 
-  // ══════════════════════════════════════════════════════
-  // HELPERS
-  // ══════════════════════════════════════════════════════
-
   formatPrice(price: number): string {
-    return new Intl.NumberFormat('vi-VN').format(price) + 'đ';
+    return new Intl.NumberFormat('vi-VN').format(Number.isFinite(price) ? price : 0) + 'đ';
   }
 
   getAmenityLabel(key: string): string {
@@ -227,10 +197,10 @@ export class HotelSearchComponent implements OnInit, OnDestroy {
     if (rating >= 9) return 'Xuất sắc';
     if (rating >= 8) return 'Rất tốt';
     if (rating >= 7) return 'Tốt';
-    return '';
+    return 'Mới';
   }
 
-  private updateUrlParams(): void {
+  private updateUrlParams(): Promise<boolean> {
     const qp: Record<string, string> = {};
     if (this.selectedCity) qp['city'] = this.selectedCity;
     if (this.searchQuery) qp['q'] = this.searchQuery;
@@ -238,8 +208,9 @@ export class HotelSearchComponent implements OnInit, OnDestroy {
     if (this.checkOut) qp['checkOut'] = this.checkOut;
     if (this.guests && this.guests !== 2) qp['guests'] = String(this.guests);
     if (this.currentPage > 1) qp['page'] = String(this.currentPage);
+    if (this.selectedStars.length > 0) qp['minRating'] = String(Math.min(...this.selectedStars));
 
-    this.router.navigate([], {
+    return this.router.navigate([], {
       relativeTo: this.route,
       queryParams: qp,
       queryParamsHandling: 'replace',

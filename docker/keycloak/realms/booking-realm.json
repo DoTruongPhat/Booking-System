@@ -16,7 +16,7 @@
       "name": "Booking Backend",
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
-      "secret": "CHANGE_ME_AFTER_KC_SETUP",
+      "secret": "amuZJJJWEjL8Mm1h8D960UoRqeXSphiW",
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": true,
       "publicClient": false,

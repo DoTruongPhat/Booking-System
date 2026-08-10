@@ -1,2 +1,10 @@
-/mvnw text eol=lf
+*.java text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sql text eol=lf
+*.jrxml text eol=lf
+*.properties text eol=lf
 *.cmd text eol=crlf
+*.jpg binary
+*.png binary

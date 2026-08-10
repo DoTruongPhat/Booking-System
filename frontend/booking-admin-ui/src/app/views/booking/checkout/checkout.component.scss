@@ -1,0 +1,281 @@
+.checkout-page {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.checkout-loading {
+  display: flex;
+  justify-content: center;
+  padding: 100px 0;
+}
+
+.checkout-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.timer-bar {
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 8px;
+  padding: 12px 20px;
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 15px;
+  color: #6fbf73;
+
+  &.urgent {
+    background: #fff2e8;
+    border-color: #ffbb96;
+    color: #fa541c;
+  }
+
+  strong {
+    font-size: 18px;
+    margin-left: 8px;
+  }
+}
+
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.summary-card,
+.payment-card {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #1a1a1a;
+  }
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 14px;
+
+  .label {
+    color: #666;
+  }
+  .value {
+    font-weight: 500;
+    color: #1a1a1a;
+  }
+
+  &.total {
+    font-size: 18px;
+    font-weight: 700;
+    padding-top: 16px;
+
+    .value {
+      color: #e11d48;
+    }
+  }
+}
+
+.summary-divider {
+  border-top: 1px dashed #e5e5e5;
+  margin: 8px 0;
+}
+
+.payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.method-option {
+  border: 2px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 16px;
+  transition: border-color 0.2s;
+  width: 100%;
+
+  &:hover {
+    border-color: #6fbf73;
+  }
+
+  ::ng-deep .ant-radio-checked + span {
+    .method-option {
+      border-color: #6fbf73;
+    }
+  }
+}
+
+.method-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.method-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  color: white;
+  flex-shrink: 0;
+
+  &.vnpay-icon {
+    background: linear-gradient(135deg, #1a56db, #3b82f6);
+  }
+  &.vietqr-icon {
+    background: linear-gradient(135deg, #e11d48, #f43f5e);
+  }
+}
+
+.method-info {
+  display: flex;
+  flex-direction: column;
+
+  strong {
+    font-size: 15px;
+    color: #1a1a1a;
+  }
+  span {
+    font-size: 13px;
+    color: #888;
+    margin-top: 2px;
+  }
+}
+
+.pay-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #1a56db, #3b82f6);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: opacity 0.2s;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.secure-note {
+  text-align: center;
+  font-size: 13px;
+  color: #999;
+  margin-top: 12px;
+}
+
+// === PUBLIC PURPLE THEME SYNC ===
+.checkout-page {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(111, 191, 115, 0.13), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #f6f3ff 360px, #fafafa 100%);
+  font-family: 'Inter', sans-serif;
+}
+
+.checkout-container {
+  max-width: 1040px;
+  padding-top: 32px;
+}
+
+.timer-bar {
+  background: rgba(111, 191, 115, 0.08);
+  border-color: rgba(111, 191, 115, 0.20);
+  border-radius: 16px;
+  color: #6fbf73;
+  font-family: 'Manrope', sans-serif;
+
+  &.urgent {
+    background: #fff2e8;
+    border-color: #ffbb96;
+    color: #fa541c;
+  }
+}
+
+.summary-card,
+.payment-card {
+  border: 1px solid rgba(111, 191, 115, 0.10);
+  border-radius: 20px;
+  box-shadow: 0 22px 55px rgba(43, 35, 68, 0.08);
+
+  h2 {
+    color: #2b2344;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+}
+
+.summary-row {
+  font-family: 'Manrope', sans-serif;
+
+  &.discount {
+    .label,
+    .value {
+      color: #3d7a41;
+      font-weight: 700;
+    }
+  }
+
+  &.total {
+    .value {
+      color: #6fbf73;
+    }
+  }
+}
+
+.method-option {
+  border-radius: 16px;
+  border-color: rgba(111, 191, 115, 0.14);
+
+  &:hover {
+    border-color: rgba(111, 191, 115, 0.42);
+    box-shadow: 0 14px 30px rgba(43, 35, 68, 0.08);
+  }
+}
+
+.method-icon.vietqr-icon {
+  background: #6fbf73;
+  box-shadow: 0 12px 24px rgba(111, 191, 115, 0.28);
+}
+
+.method-info strong {
+  color: #2b2344;
+  font-family: 'Manrope', sans-serif;
+}
+
+.pay-btn {
+  background: #6fbf73;
+  border-radius: 14px;
+  box-shadow: 0 18px 36px rgba(111, 191, 115, 0.30);
+  font-family: 'Cabin', sans-serif;
+
+  &:hover:not(:disabled) {
+    background: #8b50fc;
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}

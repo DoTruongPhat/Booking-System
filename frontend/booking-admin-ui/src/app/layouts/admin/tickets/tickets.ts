@@ -113,7 +113,7 @@ export class AdminTickets implements OnInit {
     { label: string; color: string; icon: string }
   > = {
     OPEN: { label: 'Mở', color: 'orange', icon: 'inbox' },
-    IN_PROGRESS: { label: 'Đang xử lý', color: 'blue', icon: 'sync' },
+    IN_PROGRESS: { label: 'Đang xử lý', color: 'green', icon: 'sync' },
     RESOLVED: { label: 'Đã giải quyết', color: 'green', icon: 'check-circle' },
     CLOSED: { label: 'Đã đóng', color: 'default', icon: 'close-circle' },
   };
@@ -123,7 +123,7 @@ export class AdminTickets implements OnInit {
     { label: string; color: string }
   > = {
     LOW: { label: 'Thấp', color: 'default' },
-    MEDIUM: { label: 'Trung bình', color: 'blue' },
+    MEDIUM: { label: 'Trung bình', color: 'green' },
     HIGH: { label: 'Cao', color: 'orange' },
     URGENT: { label: 'Khẩn cấp', color: 'red' },
   };
@@ -262,6 +262,11 @@ export class AdminTickets implements OnInit {
 
   // ── ASSIGN MODAL ────────────────────────────────────────
   openAssignModal(ticket: SupportTicket) {
+    if (!this.canAssign(ticket)) {
+      this.message.warning('Ticket da duoc xu ly, khong the assign lai');
+      return;
+    }
+
     this.selectedTicket = ticket;
     this.assignForm.reset({
       staffId: ticket.assignedTo ?? '',
@@ -325,6 +330,10 @@ export class AdminTickets implements OnInit {
     if (!s) return staffId.substring(0, 8);
     const fullName = `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim();
     return fullName || s.username;
+  }
+
+  canAssign(ticket: SupportTicket): boolean {
+    return ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED';
   }
 
   formatDate(iso: string): string {

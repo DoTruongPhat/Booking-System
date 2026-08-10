@@ -1,6 +1,5 @@
 package com.booking.infrastructure.mail;
 
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,8 +7,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class MailService {
@@ -28,11 +28,26 @@ public class MailService {
         this.mailSender = mailSender;
     }
 
-    @Async
+    public record MailAttachment(String filename, byte[] content, String contentType) {}
+
     public void sendWithAttachment(String to, String subject, String htmlBody,
                                    byte[] attachment, String attachmentFilename) {
+        send(to, subject, htmlBody, List.of(
+                new MailAttachment(attachmentFilename, attachment, "application/pdf")
+        ));
+    }
+
+    public void sendWithAttachments(
+            String to,
+            String subject,
+            String htmlBody,
+            List<MailAttachment> attachments) {
+        send(to, subject, htmlBody, attachments);
+    }
+
+    private void send(String to, String subject, String htmlBody, List<MailAttachment> attachments) {
         if (!mailEnabled) {
-            log.info("Mail disabled — skip send to {}", to);
+            log.info("Mail disabled - skip send to {}", to);
             return;
         }
         try {
@@ -42,31 +57,50 @@ public class MailService {
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlBody, true);
-            helper.addAttachment(attachmentFilename,
-                    new ByteArrayResource(attachment), "application/pdf");
+
+            for (MailAttachment attachment : attachments) {
+                helper.addAttachment(
+                        attachment.filename(),
+                        new ByteArrayResource(attachment.content()),
+                        attachment.contentType()
+                );
+            }
+
             mailSender.send(message);
-            log.info("Email sent to {} with {}", to, attachmentFilename);
-        } catch (MessagingException e) {
+            log.info("Email sent to {} with {} attachment(s)", to, attachments.size());
+        } catch (Exception e) {
             log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
-            // Fail-open: log lỗi, không throw
+            throw new IllegalStateException("Failed to send confirmation email", e);
         }
     }
 
     public static String buildConfirmationEmailBody(String bookingCode, String guestName) {
+        return buildConfirmationEmailBody(bookingCode, guestName, false);
+    }
+
+    public static String buildConfirmationEmailBody(
+            String bookingCode,
+            String guestName,
+            boolean includeReceipt) {
+        String receiptLine = includeReceipt
+                ? "<p>Bien nhan thanh toan duoc dinh kem cung email nay.</p>"
+                : "";
+
         return """
             <html>
             <body style="font-family: Arial, sans-serif; color: #333;">
-                <h2 style="color: #2196F3;">Xác nhận đặt phòng thành công!</h2>
-                <p>Xin chào <strong>%s</strong>,</p>
-                <p>Đặt phòng mã <strong>%s</strong> đã được xác nhận.</p>
-                <p>Vui lòng xem chi tiết trong file PDF đính kèm.</p>
+                <h2 style="color: #2196F3;">Xac nhan dat phong thanh cong!</h2>
+                <p>Xin chao <strong>%s</strong>,</p>
+                <p>Dat phong ma <strong>%s</strong> da duoc xac nhan.</p>
+                <p>Vui long xem chi tiet trong file PDF dinh kem.</p>
+                %s
                 <hr style="border: 1px solid #eee;"/>
                 <p style="color: #999; font-size: 12px;">
-                    Email tự động — không trả lời.<br/>
-                    Hỗ trợ: support@bookingsystem.vn | 1900-xxxx
+                    Email tu dong - khong tra loi.<br/>
+                    Ho tro: support@bookingsystem.vn | 1900-xxxx
                 </p>
             </body>
             </html>
-            """.formatted(guestName, bookingCode);
+            """.formatted(guestName, bookingCode, receiptLine);
     }
 }

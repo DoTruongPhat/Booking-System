@@ -104,6 +104,7 @@
 }
 
 .booking-image {
+  grid-row: 1 / 3;
   position: relative;
   border-radius: 8px;
   overflow: hidden;
@@ -124,11 +125,30 @@
   }
 }
 
+.booking-header-row {
+  grid-column: 2 / 4;
+}
+
 .booking-info {
+  grid-column: 2 / 3;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+}
+
+.booking-actions {
+  grid-column: 3 / 4;
+}
+
+@media (max-width: 768px) {
+  .booking-image,
+  .booking-header-row,
+  .booking-info,
+  .booking-actions {
+    grid-column: auto;
+    grid-row: auto;
+  }
 }
 
 .booking-header {
@@ -151,6 +171,90 @@
   gap: 6px;
   font-size: 13px;
   color: var(--color-text-secondary);
+}
+
+.booking-progress {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  align-items: start;
+  padding: 10px 0 2px;
+}
+
+.progress-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: #9aa39a;
+
+  .step-dot {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #dbe5d6;
+    border-radius: 999px;
+    background: #fff;
+    color: #9aa39a;
+    font-size: 13px;
+  }
+
+  .step-label {
+    max-width: 100%;
+    overflow: hidden;
+    color: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .step-line {
+    position: absolute;
+    top: 14px;
+    left: calc(50% + 14px);
+    width: calc(100% - 28px);
+    height: 2px;
+    background: #dbe5d6;
+  }
+
+  &.done {
+    color: #5f8f3d;
+
+    .step-dot,
+    .step-line {
+      border-color: #8dbf6a;
+      background: #eaf5e2;
+      color: #4f7d2c;
+    }
+  }
+
+  &.current {
+    color: #355f20;
+
+    .step-dot {
+      border-color: #6f9d38;
+      background: #6f9d38;
+      color: #fff;
+      box-shadow: 0 0 0 4px rgba(111, 157, 56, 0.14);
+    }
+  }
+
+  &.danger {
+    color: #c2413a;
+
+    .step-dot {
+      border-color: #f3b2ae;
+      background: #fff2f0;
+      color: #c2413a;
+    }
+  }
 }
 
 .booking-details {
@@ -243,7 +347,7 @@
 .booking-id {
   font-size: 13px;
   font-weight: 600;
-  color: #1890ff;
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -261,8 +365,8 @@
   gap: 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #1890ff;
-  background: #e6f7ff;
+  color: #3d7a41;
+  background: var(--color-primary-soft);
   padding: 2px 8px;
   border-radius: 4px;
   font-variant-numeric: tabular-nums;
@@ -309,4 +413,101 @@
   display: flex;
   justify-content: center;
   padding: 24px 0;
+}
+
+// === PUBLIC OLIVE THEME SYNC ===
+.my-bookings {
+  font-family: 'Inter', sans-serif;
+  max-width: 1160px;
+}
+
+.page-header {
+  h1 {
+    color: #2b2344;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  p {
+    font-family: 'Manrope', sans-serif;
+  }
+}
+
+.filter-tabs {
+  border-color: rgba(111, 191, 115, 0.14);
+  border-radius: 16px;
+  box-shadow: 0 14px 34px rgba(43, 35, 68, 0.06);
+}
+
+.tab-btn {
+  border-radius: 12px;
+  font-family: 'Cabin', sans-serif;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+
+  &.active {
+    background: var(--color-primary);
+    box-shadow: 0 10px 24px rgba(111, 191, 115, 0.24);
+  }
+}
+
+.booking-card {
+  border: 1px solid rgba(111, 191, 115, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 22px 55px rgba(43, 35, 68, 0.08);
+  overflow: hidden;
+
+  &:hover {
+    border-color: rgba(111, 191, 115, 0.28);
+    box-shadow: 0 26px 64px rgba(43, 35, 68, 0.12);
+  }
+}
+
+.booking-header-row {
+  background: rgba(111, 191, 115, 0.06);
+  border-bottom-color: rgba(111, 191, 115, 0.12);
+}
+
+.booking-id,
+.countdown-badge {
+  color: #3d7a41;
+}
+
+.countdown-badge {
+  background: rgba(111, 191, 115, 0.12);
+  border-radius: 999px;
+}
+
+.booking-info h3,
+.booking-header h3 {
+  color: #2b2344;
+  font-family: 'Manrope', sans-serif;
+}
+
+.booking-location span[nz-icon],
+.booking-details span[nz-icon] {
+  color: var(--color-primary);
+}
+
+.booking-actions button,
+.booking-actions a {
+  border-radius: 12px;
+  font-family: 'Cabin', sans-serif;
+}
+
+.empty-state {
+  border: 1px solid rgba(111, 191, 115, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 22px 55px rgba(43, 35, 68, 0.08);
+
+  h3 {
+    color: #2b2344;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 30px;
+    font-weight: 500;
+  }
 }

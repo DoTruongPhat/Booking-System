@@ -19,6 +19,8 @@ public enum CoreErrorCode {
     ROOM_NOT_FOUND("CORE_010", "Room not found", HttpStatus.NOT_FOUND),
     ROOM_NOT_OWNED("CORE_011", "You do not own this room's hotel", HttpStatus.FORBIDDEN),
     ROOM_NOT_AVAILABLE("CORE_012", "Room is not available", HttpStatus.BAD_REQUEST),
+    ROOM_TYPE_NOT_FOUND("CORE_013", "Room type not found", HttpStatus.NOT_FOUND),
+    ROOM_TYPE_DUPLICATE("CORE_014", "Room type code already exists", HttpStatus.CONFLICT),
 
     // ─── Availability ────────────────────────
     AVAILABILITY_NOT_FOUND("CORE_020", "Room availability not found for date range", HttpStatus.NOT_FOUND),
@@ -35,6 +37,11 @@ public enum CoreErrorCode {
     BOOKING_GUEST_EXCEEDS_CAPACITY("CORE_037", "Number of guests exceeds room capacity", HttpStatus.BAD_REQUEST),
     BOOKING_DUPLICATE("CORE_038", "Duplicate booking for same room with overlapping dates", HttpStatus.CONFLICT),
     BOOKING_INVALID_STATUS("CORE_039", "Booking status does not allow this action", HttpStatus.BAD_REQUEST),
+
+    // ─── Marketing ─────────────────────────────────────────
+    PROMOTION_NOT_FOUND("CORE_050", "Promotion not found", HttpStatus.NOT_FOUND),
+    VOUCHER_NOT_FOUND("CORE_060", "Voucher not found", HttpStatus.NOT_FOUND),
+    VOUCHER_CODE_DUPLICATE("CORE_061", "Voucher code already exists", HttpStatus.CONFLICT),
 
 
     // ─── General ─────────────────────────────

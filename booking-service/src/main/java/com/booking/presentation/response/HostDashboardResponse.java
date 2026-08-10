@@ -3,8 +3,8 @@ package com.booking.presentation.response;
 import java.math.BigDecimal;
 
 public record HostDashboardResponse(
-        long totalUsers,
         long totalHotels,
+        long totalHotelCount,
         long activeHotels,
         long pendingHotels,
         long totalRooms,

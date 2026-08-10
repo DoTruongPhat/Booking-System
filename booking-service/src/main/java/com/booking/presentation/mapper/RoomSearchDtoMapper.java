@@ -42,7 +42,7 @@ public class RoomSearchDtoMapper {
         return RoomDetailResponse.builder()
                 .roomId(room.getId())
                 .roomName(room.getName())
-                .roomType(room.getRoomType().name())
+                .roomType(room.getRoomType())
                 .roomDescription(room.getDescription())
                 .capacity(room.getCapacity())
                 .basePrice(room.getBasePrice())

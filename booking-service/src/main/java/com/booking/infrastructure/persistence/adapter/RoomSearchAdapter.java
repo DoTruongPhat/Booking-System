@@ -45,6 +45,7 @@ public class RoomSearchAdapter implements RoomSearchPort {
                     GROUP BY r.id
                     HAVING COUNT(ra.id) = :totalDays
                        AND MIN(ra.available_count) >= 1
+                    """ + buildHavingFilters(criteria) + """
                 ) sub
                 """;
 
@@ -135,7 +136,7 @@ public class RoomSearchAdapter implements RoomSearchPort {
 
     private Map<String, Object> buildParams(SearchCriteria criteria, long totalDays) {
         Map<String, Object> params = new HashMap<>();
-        params.put("city", "%" + criteria.city() + "%");
+        params.put("city", "%" + (criteria.city() == null ? "" : criteria.city()) + "%");
         params.put("checkIn", criteria.checkIn());
         params.put("checkOut", criteria.checkOut());
         params.put("guests", criteria.guests());
@@ -172,14 +173,15 @@ public class RoomSearchAdapter implements RoomSearchPort {
                 ((Number) row[7]).intValue(),
                 (BigDecimal) row[8],
                 (BigDecimal) row[9],
-                parseJsonbArray((String) row[10]),
-                parseJsonbArray((String) row[11]),
-                parseJsonbArray((String) row[12]),
+                parseJsonbArray(row[10]),
+                parseJsonbArray(row[11]),
+                parseJsonbArray(row[12]),
                 (BigDecimal) row[13]
         );
     }
 
-    private List<String> parseJsonbArray(String jsonb) {
+    private List<String> parseJsonbArray(Object value) {
+        String jsonb = value != null ? value.toString() : null;
         if (jsonb == null || jsonb.isBlank() || "[]".equals(jsonb)) {
             return List.of();
         }

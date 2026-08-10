@@ -21,7 +21,7 @@ export class TicketService {
 
   // User tạo ticket mới
   createTicket(body: { title: string; description: string; priority?: string }): Observable<SupportTicket> {
-    return this.http.post<SupportTicket>(this.apiUrl, body);
+    return this.http.post<SupportTicket>(this.apiUrl, body, { withCredentials: true });
   }
 
   // User xem tickets của mình
@@ -30,12 +30,12 @@ export class TicketService {
       .set('page', String(page))
       .set('size', String(size));
     if (status) params = params.set('status', status);
-    return this.http.get<SpringPage<SupportTicket>>(this.apiUrl, { params });
+    return this.http.get<SpringPage<SupportTicket>>(this.apiUrl, { params, withCredentials: true });
   }
 
   // User xem chi tiết 1 ticket
   getTicketById(id: string): Observable<SupportTicket> {
-    return this.http.get<SupportTicket>(`${this.apiUrl}/${id}`);
+    return this.http.get<SupportTicket>(`${this.apiUrl}/${id}`, { withCredentials: true });
   }
 
   // ── STAFF ENDPOINTS (tickets được assign cho mình) ──────
@@ -52,13 +52,21 @@ export class TicketService {
     if (status) params = params.set('status', status);
     return this.http.get<SpringPage<SupportTicket>>(
       `${this.apiUrl}/assigned`,
-      { params }
+      { params, withCredentials: true }
     );
   }
 
   // Staff xem chi tiết 1 ticket được assign (có security check ở BE)
   getAssignedTicketById(id: string): Observable<SupportTicket> {
-    return this.http.get<SupportTicket>(`${this.apiUrl}/assigned/${id}`);
+    return this.http.get<SupportTicket>(`${this.apiUrl}/assigned/${id}`, { withCredentials: true });
+  }
+
+  updateAssignedTicketStatus(ticketId: string, status: TicketStatus): Observable<SupportTicket> {
+    return this.http.put<SupportTicket>(
+      `${this.apiUrl}/assigned/${ticketId}/status`,
+      null,
+      { params: new HttpParams().set('status', status), withCredentials: true }
+    );
   }
 
   // ── ADMIN ENDPOINTS ─────────────────────────────────────
@@ -73,7 +81,7 @@ export class TicketService {
       .set('page', String(page))
       .set('size', String(size));
     if (status) params = params.set('status', status);
-    return this.http.get<SpringPage<SupportTicket>>(this.adminUrl, { params });
+    return this.http.get<SpringPage<SupportTicket>>(this.adminUrl, { params, withCredentials: true });
   }
 
   // Admin assign ticket cho staff
@@ -81,7 +89,7 @@ export class TicketService {
     return this.http.put<SupportTicket>(
       `${this.adminUrl}/${ticketId}/assign`,
       null,
-      { params: new HttpParams().set('staffId', staffId) }
+      { params: new HttpParams().set('staffId', staffId), withCredentials: true }
     );
   }
 
@@ -90,7 +98,7 @@ export class TicketService {
     return this.http.put<SupportTicket>(
       `${this.adminUrl}/${ticketId}/status`,
       null,
-      { params: new HttpParams().set('status', status) }
+      { params: new HttpParams().set('status', status), withCredentials: true }
     );
   }
 }

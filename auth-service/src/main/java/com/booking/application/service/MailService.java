@@ -8,4 +8,6 @@ public interface MailService {
      * @param purpose mục đích (FORGOT_PASSWORD, ...)
      */
     void sendOtp(String to, String otp, String purpose);
+
+    void sendHotelDecision(String to, String hotelName, String decision, String comment);
 }

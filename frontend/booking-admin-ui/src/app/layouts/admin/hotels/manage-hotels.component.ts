@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -20,6 +21,7 @@ import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { Auth } from '../../../core/services/auth';
 import { HotelService, HotelStatus } from '../../../core/services/hotel.service';
 import { Hotel } from '../../../core/models/hotel.model';
+import { generateIdempotencyKey } from '../../../core/http/idempotency';
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING_APPROVAL: 'Cho duyet',
@@ -61,6 +63,7 @@ export class ManageHotels implements OnInit {
   private message = inject(NzMessageService);
   private modal = inject(NzModalService);
   private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
 
   role: 'ADMIN' | 'HOST' | 'USER' = 'USER';
 
@@ -69,6 +72,7 @@ export class ManageHotels implements OnInit {
   totalElements = 0;
   currentPage = 1;
   pageSize = 10;
+  focusedHotelId: string | null = null;
 
   statusFilter: HotelStatus | '' = '';
   statusOptions: Array<{ label: string; value: HotelStatus | '' }> = [
@@ -81,6 +85,8 @@ export class ManageHotels implements OnInit {
   isFormModalOpen = false;
   isSubmitting = false;
   editingHotel: Hotel | null = null;
+  uploadedHotelImages: string[] = [];
+  private createHotelIdempotencyKey: string | null = null;
 
   hotelForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(255)]],
@@ -104,6 +110,9 @@ export class ManageHotels implements OnInit {
 
   ngOnInit(): void {
     this.role = this.auth.getPrimaryRole();
+    this.route.queryParamMap.subscribe((params) => {
+      this.focusedHotelId = params.get('hotelId');
+    });
     this.loadHotels();
   }
 
@@ -173,6 +182,52 @@ export class ManageHotels implements OnInit {
     });
   }
 
+  deactivateHotel(hotel: Hotel): void {
+    this.modal.confirm({
+      nzTitle: 'Tat hoat dong khach san',
+      nzContent: `Khach san <strong>${hotel.name}</strong> se khong hien thi cho khach dat phong. Ban co chac khong?`,
+      nzOkText: 'Tat hoat dong',
+      nzOkDanger: true,
+      nzCancelText: 'Huy',
+      nzOnOk: () => {
+        const request$ = this.isAdmin
+          ? this.hotelService.deactivateAdminHotel(hotel.id)
+          : this.hotelService.deactivateMyHotel(hotel.id);
+
+        request$.subscribe({
+          next: () => {
+            this.message.success('Da tat hoat dong khach san.');
+            this.loadHotels();
+          },
+          error: (err) => this.message.error(err?.error?.message || 'Khong the tat hoat dong.'),
+        });
+      },
+    });
+  }
+
+  deleteHotel(hotel: Hotel): void {
+    this.modal.confirm({
+      nzTitle: 'Xoa khach san',
+      nzContent: `Chi xoa duoc <strong>${hotel.name}</strong> khi khach san chua co phong va don dat phong. Ban co chac muon xoa?`,
+      nzOkText: 'Xoa',
+      nzOkDanger: true,
+      nzCancelText: 'Huy',
+      nzOnOk: () => {
+        const request$ = this.isAdmin
+          ? this.hotelService.deleteAdminHotel(hotel.id)
+          : this.hotelService.deleteMyHotel(hotel.id);
+
+        request$.subscribe({
+          next: () => {
+            this.message.success('Da xoa khach san.');
+            this.loadHotels();
+          },
+          error: (err) => this.message.error(err?.error?.message || 'Khong the xoa khach san.'),
+        });
+      },
+    });
+  }
+
   openCreateHotelModal(): void {
     this.editingHotel = null;
     this.hotelForm.reset({
@@ -186,11 +241,14 @@ export class ManageHotels implements OnInit {
       amenitiesText: '',
       imagesText: '',
     });
+    this.uploadedHotelImages = [];
     this.isFormModalOpen = true;
+    this.createHotelIdempotencyKey = null;
   }
 
   openEditHotelModal(hotel: Hotel): void {
     this.editingHotel = hotel;
+    this.uploadedHotelImages = this.getUploadedImages(hotel.images);
     this.hotelForm.reset({
       name: hotel.name || '',
       description: hotel.description || '',
@@ -200,7 +258,7 @@ export class ManageHotels implements OnInit {
       checkInTime: this.toInputTime((hotel as any).checkInTime || hotel.policies?.checkIn),
       checkOutTime: this.toInputTime((hotel as any).checkOutTime || hotel.policies?.checkOut),
       amenitiesText: this.listToText(hotel.amenities),
-      imagesText: this.listToText(hotel.images),
+      imagesText: this.listToText(this.getUrlImages(hotel.images)),
     });
     this.isFormModalOpen = true;
   }
@@ -218,19 +276,27 @@ export class ManageHotels implements OnInit {
     const payload = this.buildHotelPayload();
     this.isSubmitting = true;
 
+    if (!this.editingHotel) {
+      this.createHotelIdempotencyKey = this.createHotelIdempotencyKey ?? generateIdempotencyKey();
+    }
+
     const request$ = this.editingHotel
       ? this.hotelService.updateHotel(this.editingHotel.id, payload)
-      : this.hotelService.createHotel(payload);
+      : this.hotelService.createHotel(payload, this.createHotelIdempotencyKey ?? undefined);
 
     request$.subscribe({
       next: () => {
         this.message.success(this.editingHotel ? 'Da cap nhat khach san.' : 'Da tao khach san.');
+        this.createHotelIdempotencyKey = null;
         this.isSubmitting = false;
         this.isFormModalOpen = false;
         this.loadHotels();
       },
       error: (err) => {
         this.message.error(err?.error?.message || 'Khong the luu khach san.');
+        if (!this.editingHotel && err?.status !== 409) {
+          this.createHotelIdempotencyKey = null;
+        }
         this.isSubmitting = false;
       },
     });
@@ -243,6 +309,49 @@ export class ManageHotels implements OnInit {
   getStatusColor(status: string): string {
     return STATUS_COLORS[status] || 'default';
   }
+
+  isFocusedHotel(hotel: Hotel): boolean {
+    return !!this.focusedHotelId && hotel.id === this.focusedHotelId;
+  }
+
+  canDeactivateHotel(hotel: Hotel): boolean {
+    return ((hotel as any).status || 'ACTIVE') !== 'INACTIVE';
+  }
+
+  canDeleteHotel(hotel: Hotel): boolean {
+    return ((hotel as any).status || 'ACTIVE') !== 'ACTIVE';
+  }
+
+  onHotelImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    if (!files.length) return;
+
+    files.forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        this.message.error('Chi duoc chon file anh.');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        this.message.error('Anh toi da 2MB.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.uploadedHotelImages = [...this.uploadedHotelImages, reader.result as string];
+      };
+      reader.readAsDataURL(file);
+    });
+
+    input.value = '';
+  }
+
+  removeUploadedHotelImage(index: number): void {
+    this.uploadedHotelImages = this.uploadedHotelImages.filter((_, i) => i !== index);
+  }
+
+  trackByImage = (_: number, image: string) => image;
 
   formatPrice(price: number): string {
     return new Intl.NumberFormat('vi-VN').format(price || 0) + 'd';
@@ -258,7 +367,7 @@ export class ManageHotels implements OnInit {
       city: raw.city.trim(),
       country: raw.country.trim(),
       amenities: this.parseList(raw.amenitiesText),
-      images: this.parseList(raw.imagesText),
+      images: this.uniqueList([...this.parseList(raw.imagesText), ...this.uploadedHotelImages]),
       checkInTime: this.toInputTime(raw.checkInTime),
       checkOutTime: this.toInputTime(raw.checkOutTime),
     } as Partial<Hotel>;
@@ -273,6 +382,22 @@ export class ManageHotels implements OnInit {
 
   private listToText(value: string[] | undefined): string {
     return Array.isArray(value) ? value.join('\n') : '';
+  }
+
+  private getUrlImages(images: string[] | undefined): string[] {
+    return (images ?? []).filter((image) => !this.isUploadedImage(image));
+  }
+
+  private getUploadedImages(images: string[] | undefined): string[] {
+    return (images ?? []).filter((image) => this.isUploadedImage(image));
+  }
+
+  private isUploadedImage(image: string): boolean {
+    return image.startsWith('data:image/');
+  }
+
+  private uniqueList(values: string[]): string[] {
+    return Array.from(new Set(values.filter(Boolean)));
   }
 
   private toInputTime(value: string | undefined | null): string {

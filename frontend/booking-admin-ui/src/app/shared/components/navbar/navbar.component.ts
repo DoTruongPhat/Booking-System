@@ -13,7 +13,10 @@ interface DropdownItem {
   label: string;
   description?: string;
   link?: string;
+  href?: string;
+  queryParams?: Record<string, string>;
   action?: string;
+  visible?: 'guest' | 'auth' | 'adminOrHost';
 }
 
 interface NavDropdown {
@@ -54,8 +57,7 @@ export class NavbarComponent implements OnInit {
       this.user = this.auth.getUser();
 
       // BFF: localStorage có thể trống → fetch từ API
-      if (!this.user) {
-        this.auth.getProfile().subscribe({
+      this.auth.hydrateUserFromProfile().subscribe({
           next: (profile: any) => {
             this.auth.saveUser({
               username: profile.username,
@@ -69,10 +71,11 @@ export class NavbarComponent implements OnInit {
             this.user = this.auth.getUser();
           },
           error: () => {
+            this.auth.clearAll();
+            this.user = null;
             // Không đăng nhập — OK, navbar hiện nút login
           },
-        });
-      }
+      });
 
       this.checkScroll();
     }
@@ -104,7 +107,7 @@ export class NavbarComponent implements OnInit {
   }
 
   goToLogin(): void {
-    window.location.href = '/api/auth/sso/login';
+    this.auth.loginWithKeycloak();
   }
 
   goToProfile(): void {
@@ -138,6 +141,23 @@ export class NavbarComponent implements OnInit {
     }
   }
 
+  get visibleMoreSections(): NavDropdown['sections'] {
+    return this.moreDropdown.sections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => this.isDropdownItemVisible(item)),
+      }))
+      .filter((section) => section.items.length > 0);
+  }
+
+  trackBySection(_index: number, section: NavDropdown['sections'][number]): string {
+    return section.title || String(_index);
+  }
+
+  trackByDropdownItem(_index: number, item: DropdownItem): string {
+    return item.label;
+  }
+
   get userInitial(): string {
     return this.user?.username?.charAt(0).toUpperCase() || 'U';
   }
@@ -145,6 +165,14 @@ export class NavbarComponent implements OnInit {
   get isAdminOrHost(): boolean {
     const roles = this.user?.roles || [];
     return roles.some((r: string) => ['ADMIN_ALL', 'ADMIN', 'HOST'].includes(r));
+  }
+
+  private isDropdownItemVisible(item: DropdownItem): boolean {
+    if (!item.visible) return true;
+    if (item.visible === 'guest') return !this.user;
+    if (item.visible === 'auth') return !!this.user;
+    if (item.visible === 'adminOrHost') return this.isAdminOrHost;
+    return true;
   }
 
   private checkScroll(): void {
@@ -162,25 +190,29 @@ export class NavbarComponent implements OnInit {
             icon: 'aim',
             label: 'Hà Nội',
             description: 'Thủ đô nghìn năm văn hiến',
-            link: '/hotels/hanoi',
+            link: '/hotels',
+            queryParams: { city: 'Hà Nội' },
           },
           {
             icon: 'aim',
             label: 'TP. Hồ Chí Minh',
             description: 'Thành phố không ngủ',
-            link: '/hotels/hcmc',
+            link: '/hotels',
+            queryParams: { city: 'TP. Hồ Chí Minh' },
           },
           {
             icon: 'aim',
             label: 'Đà Nẵng',
             description: 'Thành phố đáng sống',
-            link: '/hotels/danang',
+            link: '/hotels',
+            queryParams: { city: 'Đà Nẵng' },
           },
           {
             icon: 'aim',
             label: 'Nha Trang',
             description: 'Biển xanh cát trắng',
-            link: '/hotels/nhatrang',
+            link: '/hotels',
+            queryParams: { city: 'Nha Trang' },
           },
         ],
       },
@@ -191,19 +223,22 @@ export class NavbarComponent implements OnInit {
             icon: 'home',
             label: 'Khách sạn 5 sao',
             description: 'Sang trọng, đẳng cấp',
-            link: '/hotels/5-star',
+            link: '/hotels',
+            queryParams: { minRating: '5' },
           },
           {
             icon: 'home',
             label: 'Khách sạn 3-4 sao',
             description: 'Tiện nghi, giá tốt',
-            link: '/hotels/3-4-star',
+            link: '/hotels',
+            queryParams: { minRating: '3' },
           },
           {
             icon: 'home',
             label: 'Resort & Villa',
             description: 'Nghỉ dưỡng riêng tư',
-            link: '/hotels/resort',
+            link: '/hotels',
+            queryParams: { q: 'resort' },
           },
         ],
       },
@@ -215,28 +250,41 @@ export class NavbarComponent implements OnInit {
     sections: [
       {
         title: 'Tài khoản',
-        items: [{ icon: 'key', label: 'Quên mật khẩu', link: '/auth/forgot-password' }],
-      },
-      {
-        title: 'Giới thiệu & Liên hệ',
         items: [
           {
-            icon: 'info-circle',
-            label: 'Về SmartBooking',
-            description: 'Câu chuyện của chúng tôi',
-            link: '/about',
+            icon: 'user',
+            label: 'Hồ sơ của tôi',
+            description: 'Quản lý thông tin cá nhân',
+            action: 'profile',
+            visible: 'auth',
           },
           {
-            icon: 'phone',
-            label: 'Thông tin liên lạc',
-            description: 'Hotline, email, chat',
-            link: '/contact',
+            icon: 'calendar',
+            label: 'Đơn đặt phòng của tôi',
+            description: 'Theo dõi booking đã tạo',
+            link: '/user/bookings',
+            visible: 'auth',
           },
           {
-            icon: 'customer-service',
-            label: 'Hỗ trợ 24/7',
-            description: 'Đội ngũ tư vấn luôn sẵn sàng',
-            link: '/support',
+            icon: 'credit-card',
+            label: 'Thanh toán của tôi',
+            description: 'Lịch sử giao dịch',
+            link: '/user/payments',
+            visible: 'auth',
+          },
+          {
+            icon: 'dashboard',
+            label: 'Dashboard',
+            description: 'Quản lý vận hành khách sạn',
+            link: '/admin/dashboard',
+            visible: 'adminOrHost',
+          },
+          {
+            icon: 'key',
+            label: 'Quên mật khẩu',
+            description: 'Khôi phục quyền truy cập',
+            link: '/auth/forgot-password',
+            visible: 'guest',
           },
         ],
       },
@@ -247,19 +295,20 @@ export class NavbarComponent implements OnInit {
             icon: 'file-text',
             label: 'Tạo phiếu Ticket',
             description: 'Gửi yêu cầu hỗ trợ',
-            link: '/support/ticket',
+            link: '/user/tickets',
+            visible: 'auth',
           },
           {
-            icon: 'star',
-            label: 'Đánh giá dịch vụ',
-            description: 'Chia sẻ trải nghiệm của bạn',
-            link: '/review',
+            icon: 'phone',
+            label: 'Hotline hỗ trợ',
+            description: '1900-1234',
+            href: 'tel:19001234',
           },
           {
-            icon: 'question-circle',
-            label: 'Câu hỏi thường gặp',
-            description: 'FAQ - Giải đáp nhanh',
-            link: '/faq',
+            icon: 'mail',
+            label: 'Email hỗ trợ',
+            description: 'support@smartbooking.vn',
+            href: 'mailto:support@smartbooking.vn',
           },
         ],
       },

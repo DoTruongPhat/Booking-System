@@ -30,7 +30,7 @@ export class UserLayoutComponent {
 
   navItems = [
     { path: '/user/bookings', label: 'Đặt phòng của tôi', icon: 'calendar' },
-    { path: '/user/booking/new', label: 'Đặt phòng mới', icon: 'plus-circle' },
+    { path: '/hotels', label: 'Đặt phòng mới', icon: 'plus-circle' },
     { path: '/user/profile', label: 'Tài khoản', icon: 'user' },
     { path: '/user/tickets', label: 'Hỗ trợ', icon: 'inbox' },
   ];

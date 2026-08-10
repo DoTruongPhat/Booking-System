@@ -53,6 +53,8 @@ public class SecurityConfig {
                                 "/auth/reset-password",
                                 "/auth/refresh",
                                 "/actuator/health",
+                                "/actuator/prometheus",
+                                "/actuator/metrics",
                                 "/auth/complete-profile",
                                 "/auth/sso/login",
                                 "/auth/sso/callback").permitAll()

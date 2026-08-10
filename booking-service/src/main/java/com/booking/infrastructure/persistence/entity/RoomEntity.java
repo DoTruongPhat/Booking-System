@@ -24,11 +24,11 @@ public class RoomEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "hotel_id", nullable = false)
     private HotelEntity hotel;
 
-    @Column(name = "room_type", nullable = false, length = 20)
+    @Column(name = "room_type", nullable = false, length = 50)
     private String roomType;
 
     @Column(nullable = false)

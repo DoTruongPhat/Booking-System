@@ -81,7 +81,7 @@ export class StaffTicketsComponent implements OnInit {
 
   // Status options (cho filter + modal update)
   statusOptions: { value: TicketStatus; label: string; color: string }[] = [
-    { value: 'OPEN', label: 'Open', color: 'blue' },
+    { value: 'OPEN', label: 'Open', color: 'green' },
     { value: 'IN_PROGRESS', label: 'In Progress', color: 'orange' },
     { value: 'RESOLVED', label: 'Resolved', color: 'green' },
     { value: 'CLOSED', label: 'Closed', color: 'default' },
@@ -158,7 +158,7 @@ export class StaffTicketsComponent implements OnInit {
   submitStatusUpdate() {
     if (!this.selectedTicket) return;
     this.isSubmitting = true;
-    this.ticketService.updateTicketStatus(this.selectedTicket.id, this.newStatus).subscribe({
+    this.ticketService.updateAssignedTicketStatus(this.selectedTicket.id, this.newStatus).subscribe({
       next: () => {
         this.isSubmitting = false;
         this.message.success('Ticket status updated');
@@ -175,7 +175,7 @@ export class StaffTicketsComponent implements OnInit {
   // ── HELPERS ────────────────────────────────────────────
   getStatusColor(status: TicketStatus): string {
     const map: Record<TicketStatus, string> = {
-      OPEN: 'blue',
+      OPEN: 'green',
       IN_PROGRESS: 'orange',
       RESOLVED: 'green',
       CLOSED: 'default',
@@ -186,7 +186,7 @@ export class StaffTicketsComponent implements OnInit {
   getPriorityColor(priority: TicketPriority): string {
     const map: Record<TicketPriority, string> = {
       LOW: 'default',
-      MEDIUM: 'blue',
+      MEDIUM: 'green',
       HIGH: 'orange',
       URGENT: 'red',
     };

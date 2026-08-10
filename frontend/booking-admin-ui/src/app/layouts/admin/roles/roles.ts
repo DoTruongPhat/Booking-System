@@ -144,7 +144,7 @@ export class Roles implements OnInit {
     const map: Record<string, string> = {
       ADMIN: 'red',
       HOST: 'orange',
-      USER: 'blue',
+      USER: 'green',
     };
     return map[code] ?? 'default';
   }

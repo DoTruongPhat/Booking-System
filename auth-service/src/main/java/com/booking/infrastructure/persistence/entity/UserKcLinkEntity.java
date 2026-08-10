@@ -19,7 +19,7 @@ public class UserKcLinkEntity {
     @Column(name = "user_id")
     private UUID userId;
 
-    @Column(name = "kc_user_id", nullable = false, length = 100)
+    @Column(name = "kc_user_id", length = 100)
     private String kcUserId;
 
     @Column(name = "kc_provider", length = 50)

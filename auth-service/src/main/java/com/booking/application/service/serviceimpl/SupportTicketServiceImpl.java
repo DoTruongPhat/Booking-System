@@ -64,6 +64,26 @@ public class SupportTicketServiceImpl implements SupportTicketService,
     }
 
     @Override
+    public Page<SupportTicket> getAssignedTickets(UUID staffId, String status, Pageable pageable) {
+        log.info("[Ticket] Get assigned tickets for staff: {}, status={}", staffId, status);
+        if (status == null || status.isBlank()) {
+            return supportTicketRepositoryPort.findByAssignedTo(staffId, pageable);
+        }
+        return supportTicketRepositoryPort.findByAssignedToAndStatus(
+                staffId,
+                status.toUpperCase(),
+                pageable
+        );
+    }
+
+    @Override
+    public SupportTicket getAssignedTicketById(UUID ticketId, UUID staffId) {
+        SupportTicket ticket = getTicketById(ticketId);
+        ensureAssignedTo(ticket, staffId);
+        return ticket;
+    }
+
+    @Override
     public Page<SupportTicket> getAllTickets(Pageable pageable) {
         log.info("[Ticket] Get all tickets");
         return supportTicketRepositoryPort.findAll(pageable);
@@ -95,6 +115,18 @@ public class SupportTicketServiceImpl implements SupportTicketService,
         log.info("[Ticket] Update ticket {} status to {}", ticketId, status);
 
         SupportTicket ticket = getTicketById(ticketId);
+        return updateStatus(ticket, status);
+    }
+
+    @Override
+    @Transactional
+    public SupportTicket updateAssignedTicketStatus(UUID ticketId, UUID staffId, String status) {
+        log.info("[Ticket] Staff {} updates ticket {} status to {}", staffId, ticketId, status);
+        SupportTicket ticket = getAssignedTicketById(ticketId, staffId);
+        return updateStatus(ticket, status);
+    }
+
+    private SupportTicket updateStatus(SupportTicket ticket, String status) {
         TicketStatus newStatus = TicketStatus.valueOf(status.toUpperCase());
 
         if (newStatus == TicketStatus.CLOSED) {
@@ -110,5 +142,11 @@ public class SupportTicketServiceImpl implements SupportTicketService,
         }
 
         return supportTicketRepositoryPort.save(ticket);
+    }
+
+    private void ensureAssignedTo(SupportTicket ticket, UUID staffId) {
+        if (ticket.getAssignedTo() == null || !ticket.getAssignedTo().equals(staffId)) {
+            throw new ValidationException(ErrorCode.CMN_003, ErrorCode.CMN_003_MSG);
+        }
     }
 }

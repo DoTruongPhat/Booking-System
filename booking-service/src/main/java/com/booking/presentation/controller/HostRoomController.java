@@ -2,8 +2,12 @@ package com.booking.presentation.controller;
 
 import com.booking.application.port.in.BlockRoomDatesUseCase;
 import com.booking.application.port.in.CreateRoomUseCase;
+import com.booking.application.port.in.QueryHotelUseCase;
 import com.booking.application.port.in.QueryRoomUseCase;
 import com.booking.application.port.in.UpdateRoomUseCase;
+import com.booking.domain.exception.CoreErrorCode;
+import com.booking.domain.exception.CoreException;
+import com.booking.domain.model.Hotel;
 import com.booking.domain.model.Room;
 import com.booking.presentation.mapper.RoomDtoMapper;
 import com.booking.presentation.request.BlockDatesRequest;
@@ -31,6 +35,7 @@ public class HostRoomController {
     private final UpdateRoomUseCase updateRoomUseCase;
     private final BlockRoomDatesUseCase blockRoomDatesUseCase;
     private final QueryRoomUseCase queryRoomUseCase;
+    private final QueryHotelUseCase queryHotelUseCase;
     private final RoomDtoMapper mapper;
 
     @PostMapping("/api/host/hotels/{hotelId}/rooms")
@@ -73,6 +78,12 @@ public class HostRoomController {
     public ResponseEntity<ApiResponse<Page<RoomResponse>>> getRoomsByHotel(
             @PathVariable UUID hotelId,
             @PageableDefault(size = 10) Pageable pageable) {
+
+        UUID ownerUserId = SecurityUtils.getCurrentUserId();
+        Hotel hotel = queryHotelUseCase.getById(hotelId);
+        if (!hotel.isOwnedBy(ownerUserId)) {
+            throw new CoreException(CoreErrorCode.HOTEL_NOT_OWNED);
+        }
 
         Page<RoomResponse> rooms = queryRoomUseCase
                 .getByHotelId(hotelId, pageable)

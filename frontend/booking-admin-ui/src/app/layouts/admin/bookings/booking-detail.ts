@@ -20,6 +20,7 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzMessageService } from 'ng-zorro-antd/message';
 
 import { AdminBookingService } from '../../../core/services/admin-booking.service';
+import { Auth } from '../../../core/services/auth';
 import { Booking, BookingStatus, PaymentStatus } from '../../../core/models/booking.model';
 import { AdminBooking } from '../../../core/models/admin-booking.model';
 
@@ -47,6 +48,7 @@ export class AdminBookingDetail implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private message = inject(NzMessageService);
+  private auth = inject(Auth);
 
   booking: AdminBooking | null = null;
   isLoading = false;
@@ -55,7 +57,8 @@ export class AdminBookingDetail implements OnInit {
   readonly statusConfig: Record<string, { label: string; color: string }> = {
     PENDING: { label: 'Chờ xác nhận', color: 'orange' },
     CONFIRMED: { label: 'Đã xác nhận', color: 'green' },
-    COMPLETED: { label: 'Hoàn thành', color: 'blue' },
+    CHECKED_IN: { label: 'Đã nhận phòng', color: 'blue' },
+    COMPLETED: { label: 'Hoàn thành', color: 'green' },
     CANCELLED: { label: 'Đã hủy', color: 'red' },
     NO_SHOW: { label: 'Không đến', color: 'red' },
   };
@@ -64,7 +67,7 @@ export class AdminBookingDetail implements OnInit {
     UNPAID: { label: 'Chưa thanh toán', color: 'orange' },
     PAID: { label: 'Đã thanh toán', color: 'green' },
     REFUNDED: { label: 'Đã hoàn tiền', color: 'default' },
-    PARTIALLY_REFUNDED: { label: 'Hoàn 1 phần', color: 'blue' },
+    PARTIALLY_REFUNDED: { label: 'Hoàn 1 phần', color: 'green' },
   };
 
   ngOnInit() {
@@ -74,7 +77,12 @@ export class AdminBookingDetail implements OnInit {
 
   loadBooking(id: string) {
     this.isLoading = true;
-    this.adminBookingService.getAdminBookingById(id).subscribe({
+    const request$ =
+      this.auth.getPrimaryRole() === 'HOST'
+        ? this.adminBookingService.getHostBookingById(id)
+        : this.adminBookingService.getAdminBookingById(id);
+
+    request$.subscribe({
       next: (data) => {
         // Cast to AdminBooking (backend may return extra fields)
         this.booking = data as AdminBooking;

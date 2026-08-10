@@ -1,4 +1,4 @@
-<div class="rooms-page">
+<div class="rooms-page" *ngIf="!isFormModalOpen; else roomFormPage">
   <!-- HEADER -->
   <div class="page-header">
     <div>
@@ -14,15 +14,15 @@
   <div class="stats-row">
     <div class="stat-card">
       <div class="stat-label">Tổng phòng (còn)</div>
-      <div class="stat-value">{{ totalAvailable() }}</div>
+      <div class="stat-value">{{ roomStats.available }}</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Tổng số phòng</div>
-      <div class="stat-value">{{ totalRooms() }}</div>
+      <div class="stat-value">{{ roomStats.total }}</div>
     </div>
     <div class="stat-card stat-active">
       <div class="stat-label">Đang hoạt động</div>
-      <div class="stat-value">{{ countActive() }}</div>
+      <div class="stat-value">{{ roomStats.active }}</div>
     </div>
     <div class="stat-card stat-hotel">
       <div class="stat-label">Số khách sạn</div>
@@ -50,7 +50,11 @@
         class="filter-select"
       >
         <nz-option nzValue="all" nzLabel="Tất cả khách sạn"></nz-option>
-        <nz-option *ngFor="let h of hotelOptions" [nzValue]="h.id" [nzLabel]="h.name"></nz-option>
+        <nz-option
+          *ngFor="let h of hotelOptions; trackBy: trackByHotel"
+          [nzValue]="h.id"
+          [nzLabel]="h.name"
+        ></nz-option>
       </nz-select>
 
       <nz-select
@@ -61,9 +65,9 @@
       >
         <nz-option nzValue="all" nzLabel="Tất cả loại"></nz-option>
         <nz-option
-          *ngFor="let t of allRoomTypes"
+          *ngFor="let t of allRoomTypes; trackBy: trackByRoomType"
           [nzValue]="t"
-          [nzLabel]="roomTypeLabels[t]"
+          [nzLabel]="roomTypeLabels[t] || t"
         ></nz-option>
       </nz-select>
 
@@ -84,14 +88,20 @@
 
   <!-- TABLE -->
   <nz-card class="table-card">
-    <nz-table [nzData]="rooms" [nzLoading]="isLoading" [nzShowPagination]="false" nzSize="middle">
+    <nz-table
+      [nzData]="rooms"
+      [nzLoading]="isLoading"
+      [nzShowPagination]="false"
+      [nzScroll]="{ x: '1180px' }"
+      nzSize="middle"
+    >
       <thead>
         <tr>
           <th nzWidth="80px">Ảnh</th>
-          <th>Tên phòng</th>
-          <th>Khách sạn</th>
-          <th nzWidth="100px">Loại</th>
-          <th nzWidth="140px" nzRight>Giá/đêm</th>
+          <th nzWidth="220px">Tên phòng</th>
+          <th nzWidth="220px">Khách sạn</th>
+          <th nzWidth="140px">Loại</th>
+          <th nzWidth="140px">Giá/đêm</th>
           <th nzWidth="120px">Sức chứa</th>
           <th nzWidth="100px">Còn/Tổng</th>
           <th nzWidth="200px">Tiện ích</th>
@@ -100,7 +110,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let r of rooms">
+        <tr *ngFor="let r of rooms; trackBy: trackByRoom">
           <td>
             <nz-avatar
               *ngIf="r.images[0]; else noImage"
@@ -117,18 +127,22 @@
             </ng-template>
           </td>
           <td>
-            <div class="room-name">{{ r.name }}</div>
-            <div class="text-muted small">{{ r.bedType }} · {{ r.size }}m²</div>
+            <div class="room-name" [title]="r.name">{{ r.name }}</div>
+            <div class="text-muted small cell-ellipsis" [title]="r.bedType">
+              {{ r.bedType }} · {{ r.size }}m²
+            </div>
           </td>
           <td>
-            <div>{{ getHotelName(r.hotelId) }}</div>
+            <div class="hotel-cell" [title]="getHotelName(r.hotelId)">
+              {{ getHotelName(r.hotelId) }}
+            </div>
           </td>
           <td>
-            <nz-tag [nzColor]="getRoomTypeColor(r.roomType)">
-              {{ roomTypeLabels[r.roomType] }}
+            <nz-tag class="room-type-tag" [nzColor]="getRoomTypeColor(r.roomType)">
+              {{ roomTypeLabels[r.roomType] || r.roomType }}
             </nz-tag>
           </td>
-          <td nzRight>
+          <td>
             <div class="price">{{ formatVND(r.pricePerNight) }}</div>
             <div *ngIf="r.originalPrice && getDiscountPercent(r) > 0" class="discount-badge">
               <nz-tag nzColor="red">-{{ getDiscountPercent(r) }}%</nz-tag>
@@ -156,7 +170,7 @@
             <div class="amenities-preview">
               <nz-tag
                 *ngFor="let a of (r.amenities || []).slice(0, 3)"
-                nzColor="blue"
+                nzColor="green"
                 class="amenity-tag"
               >
                 {{ getAmenityLabel(a) }}
@@ -235,7 +249,7 @@
         <nz-image-group>
           <div class="image-grid">
             <img
-              *ngFor="let img of selectedRoom.images"
+              *ngFor="let img of selectedRoom.images; trackBy: trackByImage"
               [src]="img"
               nz-image
               class="gallery-img"
@@ -253,7 +267,7 @@
         </nz-descriptions-item>
         <nz-descriptions-item nzTitle="Loại phòng">
           <nz-tag [nzColor]="getRoomTypeColor(selectedRoom.roomType)">
-            {{ roomTypeLabels[selectedRoom.roomType] }}
+            {{ roomTypeLabels[selectedRoom.roomType] || selectedRoom.roomType }}
           </nz-tag>
         </nz-descriptions-item>
         <nz-descriptions-item nzTitle="Diện tích">
@@ -281,7 +295,7 @@
           {{ selectedRoom.description }}
         </nz-descriptions-item>
         <nz-descriptions-item nzTitle="Tiện ích" [nzSpan]="2">
-          <nz-tag *ngFor="let a of selectedRoom.amenities" nzColor="blue">{{
+          <nz-tag *ngFor="let a of selectedRoom.amenities" nzColor="green">{{
             getAmenityLabel(a)
           }}</nz-tag>
         </nz-descriptions-item>
@@ -310,18 +324,24 @@
   </ng-container>
 </nz-modal>
 
-<!-- ═══ CREATE / EDIT MODAL ═══ -->
-<nz-modal
-  [(nzVisible)]="isFormModalOpen"
-  [nzTitle]="editingRoom ? 'Sửa phòng: ' + editingRoom.name : 'Thêm phòng mới'"
-  [nzOkLoading]="isSubmitting"
-  [nzOkText]="editingRoom ? 'Cập nhật' : 'Tạo'"
-  nzWidth="900"
-  (nzOnCancel)="isFormModalOpen = false"
-  (nzOnOk)="submitForm()"
->
-  <ng-container *nzModalContent>
-    <form nz-form [formGroup]="form" nzLayout="vertical">
+<!-- ═══ CREATE / EDIT PAGE ═══ -->
+<ng-template #roomFormPage>
+  <div class="rooms-page room-form-page">
+    <div class="page-header">
+      <div>
+        <h1>{{ editingRoom ? 'Sửa phòng' : 'Thêm phòng mới' }}</h1>
+        <p class="subtitle">
+          {{ editingRoom ? editingRoom.name : 'Nhập thông tin phòng, tiện ích, giá và chính sách' }}
+        </p>
+      </div>
+      <button nz-button type="button" (click)="isFormModalOpen = false">
+        <span nz-icon nzType="arrow-left"></span>
+        Quay lại
+      </button>
+    </div>
+
+    <nz-card class="form-page-card">
+      <form nz-form [formGroup]="form" nzLayout="vertical" class="compact-room-form">
       <!-- HOTEL + NAME -->
       <div class="form-row">
         <nz-form-item class="form-col">
@@ -329,7 +349,7 @@
           <nz-form-control>
             <nz-select formControlName="hotelId" nzPlaceHolder="Chọn khách sạn">
               <nz-option
-                *ngFor="let h of hotelOptions"
+                *ngFor="let h of hotelOptions; trackBy: trackByHotel"
                 [nzValue]="h.id"
                 [nzLabel]="h.name"
               ></nz-option>
@@ -364,9 +384,9 @@
           <nz-form-control>
             <nz-select formControlName="roomType">
               <nz-option
-                *ngFor="let t of allRoomTypes"
+                *ngFor="let t of allRoomTypes; trackBy: trackByRoomType"
                 [nzValue]="t"
-                [nzLabel]="roomTypeLabels[t]"
+                [nzLabel]="roomTypeLabels[t] || t"
               ></nz-option>
             </nz-select>
           </nz-form-control>
@@ -375,7 +395,11 @@
           <nz-form-label nzRequired>Loại giường</nz-form-label>
           <nz-form-control>
             <nz-select formControlName="bedType">
-              <nz-option *ngFor="let b of bedTypeOptions" [nzValue]="b" [nzLabel]="b"></nz-option>
+              <nz-option
+                *ngFor="let b of bedTypeOptions; trackBy: trackByRoomType"
+                [nzValue]="b"
+                [nzLabel]="b"
+              ></nz-option>
             </nz-select>
           </nz-form-control>
         </nz-form-item>
@@ -471,13 +495,12 @@
       <nz-divider nzText="Tiện ích"></nz-divider>
 
       <!-- AMENITIES (multi-checkbox) -->
-      <div formArrayName="amenities" class="amenities-grid">
+      <div class="amenities-grid">
         <label
           nz-checkbox
-          *ngFor="let a of amenityOptions"
-          [ngModel]="form.value.amenities?.includes(a.value)"
-          (ngModelChange)="toggleAmenity(a.value, $event)"
-          [ngModelOptions]="{ standalone: true }"
+          *ngFor="let a of amenityOptions; trackBy: trackByAmenity"
+          [nzChecked]="selectedAmenities.has(a.value)"
+          (nzCheckedChange)="toggleAmenity(a.value, $event)"
         >
           {{ a.label }}
         </label>
@@ -488,7 +511,7 @@
       <!-- IMAGES -->
       <div class="image-uploader">
         <div class="image-list" *ngIf="imagePreviews.length">
-          <div *ngFor="let img of imagePreviews; let i = index" class="image-item">
+          <div *ngFor="let img of imagePreviews; let i = index; trackBy: trackByImage" class="image-item">
             <img [src]="img" alt="preview" />
             <button
               type="button"
@@ -547,6 +570,19 @@
           <nz-switch formControlName="active"></nz-switch>
         </nz-form-control>
       </nz-form-item>
+      <div class="form-actions">
+        <button nz-button type="button" (click)="isFormModalOpen = false">Hủy</button>
+        <button
+          nz-button
+          nzType="primary"
+          type="button"
+          [nzLoading]="isSubmitting"
+          (click)="submitForm()"
+        >
+          {{ editingRoom ? 'Cập nhật' : 'Tạo phòng' }}
+        </button>
+      </div>
     </form>
-  </ng-container>
-</nz-modal>
+    </nz-card>
+  </div>
+</ng-template>

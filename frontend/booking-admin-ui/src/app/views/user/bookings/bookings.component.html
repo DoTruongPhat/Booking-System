@@ -102,6 +102,44 @@
           <button nz-button nzType="default" nzSize="small" (click)="viewDetail(booking.id)">
             <span nz-icon nzType="eye"></span> Chi tiết
           </button>
+
+          <!-- Thanh toán (PENDING) -->
+          <button
+            *ngIf="booking.status === 'PENDING'"
+            nz-button
+            nzType="primary"
+            nzSize="small"
+            (click)="onPayment(booking)"
+          >
+            <span nz-icon nzType="credit-card"></span> Thanh toán
+          </button>
+
+          <!-- Download PDF (CONFIRMED/COMPLETED/CANCELLED) -->
+          <button
+            *ngIf="
+              booking.status === 'CONFIRMED' ||
+              booking.status === 'CHECKED_IN' ||
+              booking.status === 'COMPLETED' ||
+              booking.status === 'CANCELLED'
+            "
+            nz-button
+            nzSize="small"
+            (click)="onDownloadPdf(booking)"
+          >
+            <span nz-icon nzType="file-pdf"></span> PDF
+          </button>
+
+          <!-- Download Receipt (CONFIRMED/COMPLETED) -->
+          <button
+            *ngIf="booking.status === 'CONFIRMED' || booking.status === 'CHECKED_IN' || booking.status === 'COMPLETED'"
+            nz-button
+            nzSize="small"
+            (click)="onDownloadReceipt(booking)"
+          >
+            <span nz-icon nzType="dollar"></span> Biên lai
+          </button>
+
+          <!-- Hủy -->
           <button
             *ngIf="booking.status === 'PENDING' || booking.status === 'CONFIRMED'"
             nz-button

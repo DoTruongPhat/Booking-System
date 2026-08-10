@@ -3,6 +3,8 @@ package com.booking.application.service;
 import com.booking.application.port.in.CancelBookingUseCase;
 import com.booking.application.port.in.ConfirmBookingUseCase;
 import com.booking.application.port.in.CreateBookingUseCase;
+import com.booking.application.port.in.ManageStayUseCase;
+import com.booking.application.port.in.PaymentBookingSyncUseCase;
 import com.booking.application.port.in.QueryBookingUseCase;
 import com.booking.application.port.out.*;
 import com.booking.domain.enums.BookingStatus;
@@ -17,6 +19,7 @@ import com.booking.domain.model.Hotel;
 import com.booking.domain.model.Room;
 import com.booking.domain.model.RoomAvailability;
 import com.booking.infrastructure.cache.RoomCacheAdapter;
+import com.booking.infrastructure.metrics.BookingMetrics;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +43,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
-public class BookingService implements CreateBookingUseCase, QueryBookingUseCase, CancelBookingUseCase, ConfirmBookingUseCase {
+public class BookingService implements CreateBookingUseCase, QueryBookingUseCase, CancelBookingUseCase, ConfirmBookingUseCase, PaymentBookingSyncUseCase, ManageStayUseCase {
 
     private final BookingRepositoryPort bookingRepository;
     private final RoomRepositoryPort roomRepository;
@@ -51,6 +54,8 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
     private final AuditEventPort auditEventPort;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+    private final BookingMetrics bookingMetrics;
+    private final VoucherManagementService voucherManagementService;
 
     @Value("${app.kafka.topic.booking-confirmed:booking-confirmed-events}")
     private String bookingConfirmedTopic;
@@ -119,8 +124,19 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
         }
         BigDecimal unitPrice = totalBeforeDiscount.divide(
                 BigDecimal.valueOf(numNights), 2, RoundingMode.HALF_UP);
-        BigDecimal totalPrice = totalBeforeDiscount
+        BigDecimal subtotal = totalBeforeDiscount
                 .multiply(BigDecimal.valueOf(command.numRooms()));
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        String voucherCode = null;
+        if (command.voucherCode() != null && !command.voucherCode().isBlank()) {
+            var voucher = voucherManagementService.redeem(command.voucherCode(), hotel.getId(), subtotal);
+            if (!voucher.valid()) {
+                throw new CoreException(CoreErrorCode.INVALID_REQUEST, voucher.message());
+            }
+            discountAmount = voucher.discountAmount() == null ? BigDecimal.ZERO : voucher.discountAmount();
+            voucherCode = voucher.code();
+        }
+        BigDecimal totalPrice = subtotal.subtract(discountAmount).max(BigDecimal.ZERO);
 
         // 8. Generate booking code (BR-BOOK-021)
         String bookingCode = generateBookingCode();
@@ -137,7 +153,8 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
         booking.setNumGuests(command.numGuests());
         booking.setNumRooms(command.numRooms());
         booking.setUnitPrice(unitPrice);
-        booking.setDiscountAmount(BigDecimal.ZERO);
+        booking.setDiscountAmount(discountAmount);
+        booking.setVoucherCode(voucherCode);
         booking.setTotalPrice(totalPrice);
         booking.setStatus(BookingStatus.PENDING);
         booking.setPaymentStatus(PaymentStatus.UNPAID);
@@ -148,6 +165,7 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
 
 
         Booking saved = bookingRepository.save(booking);
+        bookingMetrics.recordCreated();
 
         log.info("Booking created: code={}, user={}, room={}, hotel={}, dates={}/{}, nights={}, total={}",
                 bookingCode, userId, command.roomId(), hotel.getId(),
@@ -198,18 +216,14 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
 
         // Update booking state
         booking.cancel(cancelledBy, reason);
-        booking.setRefundAmount(refundAmount);
+        bookingMetrics.recordCancelled(reason);
+        booking.setRefundAmount(
+                booking.getPaymentStatus() == PaymentStatus.PAID && refundAmount.compareTo(BigDecimal.ZERO) > 0
+                        ? null
+                        : BigDecimal.ZERO
+        );
 
-        // Update payment status only if it was paid (BR-CANCEL-007)
-        if (booking.getPaymentStatus() == PaymentStatus.PAID) {
-            if (refundAmount.compareTo(booking.getTotalPrice()) == 0) {
-                booking.setPaymentStatus(PaymentStatus.REFUNDED);
-            } else if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
-                booking.setPaymentStatus(PaymentStatus.PARTIALLY_REFUNDED);
-            }
-            // refundAmount = 0 → payment stays PAID (no refund, per policy)
-        }
-
+        // Refund status is updated after payment-service publishes RefundCompleted.
         Booking saved = bookingRepository.save(booking);
 
         log.info("Booking cancelled: code={}, by={}, refund={}, reason={}",
@@ -218,12 +232,13 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
         eventPublisher.publishBookingCancelled(new CoreDomainEvent.BookingCancelled(
                 saved.getId(), saved.getBookingCode(), saved.getUserId(), saved.getRoomId(),
                 saved.getCheckInDate(), saved.getCheckOutDate(), saved.getNumRooms(),
-                cancelledBy.name(), Instant.now()
+                refundAmount, cancelledBy.name(), Instant.now()
         ));
         roomCacheAdapter.invalidateOnBookingChange(saved.getRoomId());
+        String auditActorId = requesterId != null ? requesterId.toString() : "SYSTEM";
         auditEventPort.publish(AuditEventPort.AuditEvent.bookingCancel(
                 saved.getId().toString(),
-                requesterId.toString(),
+                auditActorId,
                 cancelledBy.name(),
                 reason,
                 cancelledBy.name()
@@ -290,6 +305,12 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
 
     @Override
     @Transactional(readOnly = true)
+    public Page<Booking> getByOwnerUserId(UUID ownerUserId, String status, Pageable pageable) {
+        return bookingRepository.findByOwnerUserId(ownerUserId, status, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<Booking> getAll(String status, Pageable pageable) {
         return bookingRepository.findAll(status, pageable);
     }
@@ -326,9 +347,15 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
             throw new CoreException(CoreErrorCode.BOOKING_INVALID_STATUS,
                     "Only PENDING bookings can be confirmed. Current: " + booking.getStatus());
         }
+        if (booking.getPaymentStatus() != PaymentStatus.PAID) {
+            throw new CoreException(CoreErrorCode.BOOKING_INVALID_STATUS,
+                    "Booking must be paid before admin confirmation. Current payment: "
+                            + booking.getPaymentStatus());
+        }
 
         // 3. Confirm
         booking.confirm();
+        bookingMetrics.recordConfirmed();
         Booking saved = bookingRepository.save(booking);
 
         log.info("Booking confirmed: code={}, by={}", booking.getBookingCode(), confirmedByUserId);
@@ -350,6 +377,216 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
         ));
 
         return saved;
+    }
+
+    @Override
+    public Booking markPaidAndConfirm(UUID bookingId, UUID paymentId, BigDecimal amount, String method, Instant paidAt) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new CoreException(CoreErrorCode.BOOKING_NOT_FOUND));
+
+        if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.NO_SHOW) {
+            log.warn("Payment {} cannot mark booking {} as paid because status is {}",
+                    paymentId, bookingId, booking.getStatus());
+            return booking;
+        }
+
+        if (booking.getTotalPrice().compareTo(amount) != 0) {
+            throw new CoreException(CoreErrorCode.INVALID_REQUEST,
+                    "Payment amount does not match booking total");
+        }
+
+        booking.setPaymentStatus(PaymentStatus.PAID);
+        booking.setPaymentMethod(method != null && !method.isBlank() ? method : "ONLINE");
+        booking.setPaidAt(paidAt != null ? paidAt : Instant.now());
+
+        Booking saved = bookingRepository.save(booking);
+
+        roomCacheAdapter.invalidateOnBookingChange(saved.getRoomId());
+        auditEventPort.publish(AuditEventPort.AuditEvent.bookingCreate(
+                saved.getId().toString(),
+                paymentId.toString(),
+                "PAYMENT",
+                saved.getRoomId().toString(),
+                "Booking paid, waiting for admin confirmation"
+        ));
+
+        log.info("Booking marked paid, waiting for admin confirmation: bookingId={}, paymentId={}",
+                bookingId, paymentId);
+        return saved;
+    }
+
+    @Override
+    public Booking cancelForPaymentEvent(UUID bookingId, CancelledBy cancelledBy, String reason) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new CoreException(CoreErrorCode.BOOKING_NOT_FOUND));
+
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            return booking;
+        }
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            log.warn("Payment event cannot cancel booking {} because status is {}",
+                    bookingId, booking.getStatus());
+            return booking;
+        }
+
+        availabilityRepository.incrementAvailability(
+                booking.getRoomId(),
+                booking.getCheckInDate(),
+                booking.getCheckOutDate(),
+                booking.getNumRooms()
+        );
+
+        booking.cancel(cancelledBy, reason);
+        booking.setRefundAmount(BigDecimal.ZERO);
+        Booking saved = bookingRepository.save(booking);
+
+        eventPublisher.publishBookingCancelled(new CoreDomainEvent.BookingCancelled(
+                saved.getId(), saved.getBookingCode(), saved.getUserId(), saved.getRoomId(),
+                saved.getCheckInDate(), saved.getCheckOutDate(), saved.getNumRooms(),
+                BigDecimal.ZERO, cancelledBy.name(), Instant.now()
+        ));
+        roomCacheAdapter.invalidateOnBookingChange(saved.getRoomId());
+        auditEventPort.publish(AuditEventPort.AuditEvent.bookingCancel(
+                saved.getId().toString(),
+                saved.getUserId().toString(),
+                cancelledBy.name(),
+                reason,
+                "PAYMENT_EVENT"
+        ));
+
+        log.info("Booking cancelled by payment event: bookingId={}, by={}, reason={}",
+                bookingId, cancelledBy, reason);
+        return saved;
+    }
+
+    @Override
+    public Booking applyPaymentRefund(UUID bookingId, UUID paymentId, BigDecimal amount) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new CoreException(CoreErrorCode.BOOKING_NOT_FOUND));
+
+        if (booking.getPaymentStatus() != PaymentStatus.PAID
+                && booking.getPaymentStatus() != PaymentStatus.PARTIALLY_REFUNDED) {
+            log.warn("Refund {} ignored for booking {} with paymentStatus={}",
+                    paymentId, bookingId, booking.getPaymentStatus());
+            return booking;
+        }
+
+        BigDecimal currentRefund = booking.getRefundAmount() != null
+                ? booking.getRefundAmount()
+                : BigDecimal.ZERO;
+        BigDecimal totalRefund = currentRefund.add(amount);
+        if (totalRefund.compareTo(booking.getTotalPrice()) > 0) {
+            totalRefund = booking.getTotalPrice();
+        }
+
+        booking.setRefundAmount(totalRefund);
+        if (totalRefund.compareTo(booking.getTotalPrice()) >= 0) {
+            booking.setPaymentStatus(PaymentStatus.REFUNDED);
+        } else if (totalRefund.compareTo(BigDecimal.ZERO) > 0) {
+            booking.setPaymentStatus(PaymentStatus.PARTIALLY_REFUNDED);
+        }
+
+        Booking saved = bookingRepository.save(booking);
+        auditEventPort.publish(AuditEventPort.AuditEvent.bookingCancel(
+                saved.getId().toString(),
+                paymentId.toString(),
+                "REFUND",
+                "Refund amount: " + amount,
+                "PAYMENT_EVENT"
+        ));
+
+        log.info("Booking refund applied: bookingId={}, paymentId={}, refund={}, totalRefund={}",
+                bookingId, paymentId, amount, totalRefund);
+        return saved;
+    }
+
+    @Override
+    public Booking checkIn(UUID bookingId, UUID hostUserId) {
+        Booking booking = getHostOwnedBooking(bookingId, hostUserId);
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new CoreException(CoreErrorCode.BOOKING_INVALID_STATUS,
+                    "Only CONFIRMED bookings can be checked in. Current: " + booking.getStatus());
+        }
+        if (booking.getCheckInDate().isAfter(LocalDate.now())) {
+            throw new CoreException(CoreErrorCode.BOOKING_INVALID_STATUS,
+                    "Cannot check in before " + booking.getCheckInDate());
+        }
+
+        booking.checkIn();
+        Booking saved = bookingRepository.save(booking);
+        auditBookingStayAction(saved, hostUserId, "BOOKING_CHECK_IN", "Guest checked in");
+        log.info("Booking checked in: bookingId={}, host={}", bookingId, hostUserId);
+        return saved;
+    }
+
+    @Override
+    public Booking checkOut(UUID bookingId, UUID hostUserId) {
+        Booking booking = getHostOwnedBooking(bookingId, hostUserId);
+
+        if (booking.getStatus() != BookingStatus.CHECKED_IN) {
+            throw new CoreException(CoreErrorCode.BOOKING_INVALID_STATUS,
+                    "Only CHECKED_IN bookings can be checked out. Current: " + booking.getStatus());
+        }
+
+        booking.complete();
+        Booking saved = bookingRepository.save(booking);
+        auditBookingStayAction(saved, hostUserId, "BOOKING_CHECK_OUT", "Guest checked out");
+        log.info("Booking checked out: bookingId={}, host={}", bookingId, hostUserId);
+        return saved;
+    }
+
+    @Override
+    public Booking markNoShow(UUID bookingId, UUID hostUserId, String reason) {
+        Booking booking = getHostOwnedBooking(bookingId, hostUserId);
+
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new CoreException(CoreErrorCode.BOOKING_INVALID_STATUS,
+                    "Only CONFIRMED bookings can be marked no-show. Current: " + booking.getStatus());
+        }
+        if (booking.getCheckInDate().isAfter(LocalDate.now())) {
+            throw new CoreException(CoreErrorCode.BOOKING_INVALID_STATUS,
+                    "Cannot mark no-show before " + booking.getCheckInDate());
+        }
+
+        booking.markNoShow();
+        Booking saved = bookingRepository.save(booking);
+        auditBookingStayAction(saved, hostUserId, "BOOKING_NO_SHOW",
+                reason != null && !reason.isBlank() ? reason : "Guest did not arrive");
+        log.info("Booking marked no-show: bookingId={}, host={}, reason={}", bookingId, hostUserId, reason);
+        return saved;
+    }
+
+    private Booking getHostOwnedBooking(UUID bookingId, UUID hostUserId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new CoreException(CoreErrorCode.BOOKING_NOT_FOUND));
+
+        Hotel hotel = hotelRepository.findById(booking.getHotelId())
+                .orElseThrow(() -> new CoreException(CoreErrorCode.HOTEL_NOT_FOUND));
+        if (!hotel.isOwnedBy(hostUserId)) {
+            throw new CoreException(CoreErrorCode.HOTEL_NOT_OWNED);
+        }
+
+        return booking;
+    }
+
+    private void auditBookingStayAction(Booking booking, UUID hostUserId, String eventType, String description) {
+        auditEventPort.publish(new AuditEventPort.AuditEvent(
+                eventType,
+                "BOOKING",
+                booking.getId().toString(),
+                hostUserId.toString(),
+                "HOST",
+                "HOST",
+                description,
+                java.util.Map.of(
+                        "bookingCode", booking.getBookingCode(),
+                        "status", booking.getStatus().name(),
+                        "hotelId", booking.getHotelId().toString()
+                ),
+                Instant.now()
+        ));
     }
 
     private void publishBookingConfirmedEvent(Booking booking) {

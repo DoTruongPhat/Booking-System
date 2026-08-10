@@ -1,0 +1,219 @@
+<div class="booking-detail-page">
+  <button nz-button nzType="text" class="back-btn" (click)="goBack()">
+    <span nz-icon nzType="arrow-left"></span>
+    Quay lại đặt phòng của tôi
+  </button>
+
+  <nz-spin [nzSpinning]="loading" nzTip="Đang tải chi tiết...">
+    <ng-container *ngIf="!loading">
+    <ng-container *ngIf="booking; else emptyState">
+      <section class="detail-hero">
+        <img class="hero-image" [src]="heroImage" [alt]="booking.roomName || booking.hotelName" />
+        <div class="hero-copy">
+          <div class="booking-code-row">
+            <code>{{ booking.id }}</code>
+            <button nz-button nzSize="small" nzType="text" (click)="copyBookingId()">
+              <span nz-icon nzType="copy"></span>
+            </button>
+          </div>
+          <h1>{{ booking.roomName || 'Chi tiết đặt phòng' }}</h1>
+          <p>
+            <span nz-icon nzType="bank"></span>
+            {{ booking.hotelName }}
+          </p>
+          <p *ngIf="booking.hotelAddress">
+            <span nz-icon nzType="environment"></span>
+            {{ booking.hotelAddress }}
+          </p>
+          <div class="tag-row">
+            <nz-tag [nzColor]="statusColors[booking.status]">
+              {{ statusLabels[booking.status] }}
+            </nz-tag>
+            <nz-tag [nzColor]="paymentColors[booking.paymentStatus]">
+              {{ paymentLabels[booking.paymentStatus] }}
+            </nz-tag>
+          </div>
+        </div>
+        <div class="hero-total">
+          <span>Tổng thanh toán</span>
+          <strong>{{ formatPrice(booking.finalPrice) }}</strong>
+          <button nz-button nzType="primary" *ngIf="canPay()" (click)="payBooking()">
+            <span nz-icon nzType="credit-card"></span>
+            Thanh toán tiếp
+          </button>
+        </div>
+      </section>
+
+      <section class="progress-panel">
+        <div class="panel-title compact">
+          <span nz-icon nzType="branches"></span>
+          <h2>Quy trình đặt phòng</h2>
+        </div>
+        <div class="booking-progress detail-progress" aria-label="Quy trình đặt phòng">
+          <div
+            *ngFor="let step of progressSteps; let last = last; trackBy: trackByProgressStep"
+            class="progress-step"
+            [class.done]="step.state === 'done'"
+            [class.current]="step.state === 'current'"
+            [class.todo]="step.state === 'todo'"
+            [class.danger]="step.state === 'danger'"
+          >
+            <div class="step-dot">
+              <span nz-icon [nzType]="step.icon"></span>
+            </div>
+            <span class="step-label">{{ step.label }}</span>
+            <div class="step-line" *ngIf="!last"></div>
+          </div>
+        </div>
+        <div class="payment-callout" *ngIf="canPay()">
+          <div>
+            <strong>Đơn đang chờ thanh toán</strong>
+            <p>Thanh toán để hoàn tất bước tiếp theo của đơn đặt phòng.</p>
+          </div>
+          <button nz-button nzType="primary" (click)="payBooking()">
+            <span nz-icon nzType="credit-card"></span>
+            Thanh toán ngay
+          </button>
+        </div>
+      </section>
+
+      <section class="detail-grid">
+        <article class="detail-panel">
+          <div class="panel-title">
+            <span nz-icon nzType="home"></span>
+            <h2>Thông tin phòng</h2>
+          </div>
+          <dl>
+            <div>
+              <dt>Khách sạn</dt>
+              <dd>{{ booking.hotelName || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Phòng</dt>
+              <dd>{{ booking.roomName || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Số phòng</dt>
+              <dd>{{ booking.rooms }} phòng</dd>
+            </div>
+            <div>
+              <dt>Giá mỗi đêm</dt>
+              <dd>{{ formatPrice(booking.pricePerNight) }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="detail-panel">
+          <div class="panel-title">
+            <span nz-icon nzType="calendar"></span>
+            <h2>Thông tin đặt</h2>
+          </div>
+          <dl>
+            <div>
+              <dt>Nhận phòng</dt>
+              <dd>{{ formatDate(booking.checkIn) }}</dd>
+            </div>
+            <div>
+              <dt>Trả phòng</dt>
+              <dd>{{ formatDate(booking.checkOut) }}</dd>
+            </div>
+            <div>
+              <dt>Số đêm</dt>
+              <dd>{{ booking.nights }} đêm</dd>
+            </div>
+            <div>
+              <dt>Khách</dt>
+              <dd>{{ guestSummary }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="detail-panel">
+          <div class="panel-title">
+            <span nz-icon nzType="user"></span>
+            <h2>Thông tin khách</h2>
+          </div>
+          <dl>
+            <div>
+              <dt>Họ tên</dt>
+              <dd>{{ booking.guestInfo.fullName || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd>{{ booking.guestInfo.email || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Số điện thoại</dt>
+              <dd>{{ booking.guestInfo.phone || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Đặt lúc</dt>
+              <dd>{{ formatDateTime(booking.createdAt) }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="detail-panel">
+          <div class="panel-title">
+            <span nz-icon nzType="credit-card"></span>
+            <h2>Thanh toán</h2>
+          </div>
+          <dl>
+            <div>
+              <dt>Tiền phòng</dt>
+              <dd>{{ formatPrice(originalAmount) }}</dd>
+            </div>
+            <div *ngIf="discountAmount > 0">
+              <dt>{{ voucherLabel }}</dt>
+              <dd class="discount-amount">-{{ formatPrice(discountAmount) }}</dd>
+            </div>
+            <div>
+              <dt>Thuế/phí</dt>
+              <dd>{{ formatPrice(booking.taxAmount) }}</dd>
+            </div>
+            <div>
+              <dt>Phương thức</dt>
+              <dd>{{ paymentMethodText }}</dd>
+            </div>
+            <div class="total-row">
+              <dt>Tổng cộng</dt>
+              <dd>{{ formatPrice(booking.finalPrice) }}</dd>
+            </div>
+          </dl>
+        </article>
+      </section>
+
+      <section
+        class="note-panel"
+        *ngIf="booking.specialRequests || booking.cancellationReason || booking.refundAmount != null"
+      >
+        <div class="note-item" *ngIf="booking.specialRequests">
+          <span nz-icon nzType="message"></span>
+          <div>
+            <strong>Yêu cầu đặc biệt</strong>
+            <p>{{ booking.specialRequests }}</p>
+          </div>
+        </div>
+        <div class="note-item" *ngIf="booking.cancellationReason">
+          <span nz-icon nzType="info-circle"></span>
+          <div>
+            <strong>Lý do hủy</strong>
+            <p>{{ booking.cancellationReason }}</p>
+          </div>
+        </div>
+        <div class="note-item" *ngIf="booking.refundAmount != null">
+          <span nz-icon nzType="dollar"></span>
+          <div>
+            <strong>Hoàn tiền</strong>
+            <p>{{ formatPrice(booking.refundAmount) }}</p>
+          </div>
+        </div>
+      </section>
+    </ng-container>
+
+    <ng-template #emptyState>
+      <nz-empty nzNotFoundContent="Không tìm thấy đặt phòng"></nz-empty>
+    </ng-template>
+    </ng-container>
+  </nz-spin>
+</div>

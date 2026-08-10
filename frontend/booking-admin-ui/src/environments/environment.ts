@@ -10,6 +10,7 @@ export const environment = {
   // BE base URL (auth-service đang chạy port 8081, context-path /api)
   apiBaseUrl: '/api',
   apiKey: 'dev-api-key-abc123',
+  pendingPaymentMinutes: 30,
 
   // Keycloak (Form B SSO)
   // Phải khớp với BE application.properties:

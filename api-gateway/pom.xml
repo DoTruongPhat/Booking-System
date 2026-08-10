@@ -50,6 +50,12 @@
             <artifactId>commons-pool2</artifactId>
         </dependency>
 
+        <!-- Micrometer Prometheus -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>

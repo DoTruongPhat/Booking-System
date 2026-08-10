@@ -1,0 +1,102 @@
+.marketing-page {
+  padding: 0;
+}
+
+.page-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+
+  h1 {
+    margin: 0 0 4px;
+    color: #1f2328;
+    font-size: 24px;
+    font-weight: 600;
+  }
+}
+
+.title-icon {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #52c41a;
+  font-size: 22px;
+}
+
+.subtitle,
+.muted,
+.stats-row span {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+
+  ::ng-deep .ant-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px;
+  }
+
+  strong {
+    color: #1f2328;
+    font-size: 24px;
+  }
+}
+
+.table-card {
+  border-radius: 8px;
+}
+
+.empty-row {
+  padding: 40px 0;
+  text-align: center;
+}
+
+.marketing-form {
+  max-height: 72vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+
+  &:has(nz-form-item:nth-child(3)) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.checkbox-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #374151;
+}
+
+@media (max-width: 900px) {
+  .page-header,
+  .stats-row,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

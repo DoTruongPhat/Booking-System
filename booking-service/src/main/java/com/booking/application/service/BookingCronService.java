@@ -2,13 +2,11 @@ package com.booking.application.service;
 
 import com.booking.application.port.in.CancelBookingUseCase;
 import com.booking.application.port.out.BookingRepositoryPort;
-import com.booking.application.port.out.BookingEventPublisherPort;
-import com.booking.application.port.out.RoomAvailabilityRepositoryPort;
 import com.booking.domain.enums.CancelledBy;
-import com.booking.domain.event.CoreDomainEvent;
 import com.booking.domain.model.Booking;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,23 +21,26 @@ import java.util.List;
 @Slf4j
 public class BookingCronService {
 
-    private static final int PENDING_TIMEOUT_MINUTES = 15;
-    private static final int NO_SHOW_HOURS_AFTER_CHECKIN = 24;
-
     private final BookingRepositoryPort bookingRepository;
     private final CancelBookingUseCase cancelBookingUseCase;
-    private final BookingEventPublisherPort eventPublisher;
+    private final PaymentDeadlinePolicy paymentDeadlinePolicy;
+
+    @Value("${app.booking.pending-timeout-minutes:30}")
+    private int pendingTimeoutMinutes;
 
     /**
-     * BR-CRON-001, BR-BOOK-017, BR-STATE-010: PENDING bookings older than 15 minutes
-     * (payment never completed) are auto-cancelled, restoring availability.
+     * BR-CRON-001, BR-BOOK-017, BR-STATE-010: PENDING bookings older than the configured
+     * payment window are auto-cancelled, restoring availability.
      * Runs every 1 minute.
      */
     @Scheduled(fixedRate = 60_000)
-    @Transactional
     public void cancelExpiredPendingBookings() {
-        Instant cutoff = Instant.now().minus(PENDING_TIMEOUT_MINUTES, ChronoUnit.MINUTES);
-        List<Booking> expired = bookingRepository.findExpiredPending(cutoff);
+        Instant cutoff = Instant.now().minus(pendingTimeoutMinutes, ChronoUnit.MINUTES);
+        Instant now = Instant.now();
+        List<Booking> expired = bookingRepository.findExpiredPending(cutoff)
+                .stream()
+                .filter(booking -> !paymentDeadlinePolicy.expiresAt(booking).isAfter(now))
+                .toList();
 
         if (expired.isEmpty()) return;
 
@@ -49,7 +50,7 @@ public class BookingCronService {
             try {
                 cancelBookingUseCase.cancelBooking(
                         booking.getId(), null, CancelledBy.SYSTEM,
-                        "Auto-cancelled: payment not completed within " + PENDING_TIMEOUT_MINUTES + " minutes"
+                        "Auto-cancelled: payment not completed before " + paymentDeadlinePolicy.expiresAt(booking)
                 );
             } catch (Exception e) {
                 log.error("Failed to auto-cancel booking {}: {}", booking.getBookingCode(), e.getMessage());

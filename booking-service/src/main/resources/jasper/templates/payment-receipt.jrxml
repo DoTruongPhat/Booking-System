@@ -47,41 +47,41 @@
             <staticText>
                 <reportElement x="200" y="0" width="315" height="30" uuid="d0000001-0001-0001-0001-000000000003"/>
                 <textElement textAlignment="Right">
-                    <font size="18" isBold="true"/>
+                    <font fontName="DejaVu Sans" size="18" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/>
                 </textElement>
                 <text><![CDATA[PAYMENT RECEIPT]]></text>
             </staticText>
 
             <staticText>
                 <reportElement x="200" y="35" width="100" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000004"/>
-                <textElement textAlignment="Right"><font size="9"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Receipt No:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="305" y="35" width="210" height="15" uuid="d0000001-0001-0001-0001-000000000005"/>
-                <textElement textAlignment="Right"><font size="9" isBold="true"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$P{receiptNumber}]]></textFieldExpression>
             </textField>
 
             <staticText>
                 <reportElement x="200" y="52" width="100" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000006"/>
-                <textElement textAlignment="Right"><font size="9"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Booking Code:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="305" y="52" width="210" height="15" uuid="d0000001-0001-0001-0001-000000000007"/>
-                <textElement textAlignment="Right"><font size="9"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{bookingCode}]]></textFieldExpression>
             </textField>
 
             <staticText>
                 <reportElement x="200" y="69" width="100" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000008"/>
-                <textElement textAlignment="Right"><font size="9"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Date:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="305" y="69" width="210" height="15" uuid="d0000001-0001-0001-0001-000000000009"/>
-                <textElement textAlignment="Right"><font size="9"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{paidAt}]]></textFieldExpression>
             </textField>
 
@@ -99,37 +99,37 @@
             <!-- Guest Info -->
             <staticText>
                 <reportElement x="0" y="5" width="515" height="20" forecolor="#4CAF50" uuid="d0000001-0001-0001-0001-000000000020"/>
-                <textElement><font size="12" isBold="true"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="12" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[BILLED TO]]></text>
             </staticText>
             <staticText>
                 <reportElement x="0" y="30" width="120" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000021"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Name:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="120" y="30" width="395" height="15" uuid="d0000001-0001-0001-0001-000000000022"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{guestName}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="0" y="47" width="120" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000023"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Email:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="120" y="47" width="395" height="15" uuid="d0000001-0001-0001-0001-000000000024"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{guestEmail}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="0" y="64" width="120" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000025"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Phone:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="120" y="64" width="395" height="15" uuid="d0000001-0001-0001-0001-000000000026"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{guestPhone}]]></textFieldExpression>
             </textField>
 
@@ -139,67 +139,67 @@
             </line>
             <staticText>
                 <reportElement x="0" y="100" width="515" height="20" forecolor="#4CAF50" uuid="d0000001-0001-0001-0001-000000000031"/>
-                <textElement><font size="12" isBold="true"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="12" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[SERVICE DETAILS]]></text>
             </staticText>
             <staticText>
                 <reportElement x="0" y="125" width="120" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000032"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Hotel:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="120" y="125" width="395" height="15" uuid="d0000001-0001-0001-0001-000000000033"/>
-                <textElement><font size="9" isBold="true"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$P{hotelName}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="0" y="142" width="120" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000034"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Address:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="120" y="142" width="395" height="15" uuid="d0000001-0001-0001-0001-000000000035"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{hotelAddress}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="0" y="159" width="120" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000036"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Room:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="120" y="159" width="395" height="15" uuid="d0000001-0001-0001-0001-000000000037"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{roomType} + " - " + $P{roomName}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="0" y="180" width="120" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000038"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Check-in:]]></text>
             </staticText>
             <textField>
                 <reportElement x="120" y="180" width="140" height="15" uuid="d0000001-0001-0001-0001-000000000039"/>
-                <textElement><font size="9" isBold="true"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$P{checkIn}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="260" y="180" width="80" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000040"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Check-out:]]></text>
             </staticText>
             <textField>
                 <reportElement x="340" y="180" width="175" height="15" uuid="d0000001-0001-0001-0001-000000000041"/>
-                <textElement><font size="9" isBold="true"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$P{checkOut}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="0" y="200" width="120" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000042"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Duration:]]></text>
             </staticText>
             <textField>
                 <reportElement x="120" y="200" width="395" height="15" uuid="d0000001-0001-0001-0001-000000000043"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{nights} + " night(s), " + $P{numRooms} + " room(s)"]]></textFieldExpression>
             </textField>
 
@@ -209,70 +209,70 @@
             </line>
             <staticText>
                 <reportElement x="0" y="240" width="515" height="20" forecolor="#4CAF50" uuid="d0000001-0001-0001-0001-000000000051"/>
-                <textElement><font size="12" isBold="true"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="12" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[PAYMENT DETAILS]]></text>
             </staticText>
 
             <staticText>
                 <reportElement x="0" y="268" width="120" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000052"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Payment Method:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="120" y="268" width="200" height="15" uuid="d0000001-0001-0001-0001-000000000053"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{paymentMethod}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="320" y="268" width="80" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000054"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Status:]]></text>
             </staticText>
             <textField isBlankWhenNull="true">
                 <reportElement x="400" y="268" width="115" height="15" forecolor="#4CAF50" uuid="d0000001-0001-0001-0001-000000000055"/>
-                <textElement><font size="9" isBold="true"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$P{paymentStatus}]]></textFieldExpression>
             </textField>
 
             <!-- Price breakdown -->
             <staticText>
                 <reportElement x="0" y="295" width="350" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000060"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Unit Price / Night:]]></text>
             </staticText>
             <textField>
                 <reportElement x="350" y="295" width="165" height="15" uuid="d0000001-0001-0001-0001-000000000061"/>
-                <textElement textAlignment="Right"><font size="9"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{unitPrice}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="0" y="313" width="350" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000062"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Subtotal:]]></text>
             </staticText>
             <textField>
                 <reportElement x="350" y="313" width="165" height="15" uuid="d0000001-0001-0001-0001-000000000063"/>
-                <textElement textAlignment="Right"><font size="9"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{subtotal}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="0" y="331" width="350" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000064"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Discount:]]></text>
             </staticText>
             <textField>
                 <reportElement x="350" y="331" width="165" height="15" forecolor="#4CAF50" uuid="d0000001-0001-0001-0001-000000000065"/>
-                <textElement textAlignment="Right"><font size="9"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{discount}]]></textFieldExpression>
             </textField>
             <staticText>
                 <reportElement x="0" y="349" width="350" height="15" forecolor="#666666" uuid="d0000001-0001-0001-0001-000000000066"/>
-                <textElement><font size="9"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Tax (10%):]]></text>
             </staticText>
             <textField>
                 <reportElement x="350" y="349" width="165" height="15" uuid="d0000001-0001-0001-0001-000000000067"/>
-                <textElement textAlignment="Right"><font size="9"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$P{tax}]]></textFieldExpression>
             </textField>
 
@@ -282,12 +282,12 @@
             </line>
             <staticText>
                 <reportElement x="0" y="380" width="350" height="25" uuid="d0000001-0001-0001-0001-000000000069"/>
-                <textElement><font size="16" isBold="true"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="16" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <text><![CDATA[TOTAL PAID:]]></text>
             </staticText>
             <textField>
                 <reportElement x="350" y="380" width="165" height="25" forecolor="#4CAF50" uuid="d0000001-0001-0001-0001-000000000070"/>
-                <textElement textAlignment="Right"><font size="16" isBold="true"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="16" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
                 <textFieldExpression><![CDATA[$P{totalPaid}]]></textFieldExpression>
             </textField>
 
@@ -297,7 +297,7 @@
             </line>
             <staticText>
                 <reportElement x="0" y="430" width="515" height="30" forecolor="#999999" uuid="d0000001-0001-0001-0001-000000000081"/>
-                <textElement textAlignment="Center"><font size="8" isItalic="true"/></textElement>
+                <textElement textAlignment="Center"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isItalic="true"/></textElement>
                 <text><![CDATA[This is an electronic payment receipt. Not a VAT invoice.
 For VAT invoice, please contact the hotel front desk.]]></text>
             </staticText>
@@ -312,17 +312,17 @@ For VAT invoice, please contact the hotel front desk.]]></text>
             </line>
             <staticText>
                 <reportElement x="0" y="5" width="350" height="12" forecolor="#999999" uuid="d0000001-0001-0001-0001-000000000091"/>
-                <textElement><font size="7"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="7" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <text><![CDATA[Support: support@bookingsystem.vn | Hotline: 1900-xxxx]]></text>
             </staticText>
             <textField>
                 <reportElement x="400" y="5" width="80" height="12" forecolor="#999999" uuid="d0000001-0001-0001-0001-000000000092"/>
-                <textElement textAlignment="Right"><font size="7"/></textElement>
+                <textElement textAlignment="Right"><font fontName="DejaVu Sans" size="7" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER} + " / "]]></textFieldExpression>
             </textField>
             <textField evaluationTime="Report">
                 <reportElement x="480" y="5" width="35" height="12" forecolor="#999999" uuid="d0000001-0001-0001-0001-000000000093"/>
-                <textElement><font size="7"/></textElement>
+                <textElement><font fontName="DejaVu Sans" size="7" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
                 <textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
             </textField>
         </band>

@@ -1,6 +1,7 @@
 package com.booking.infrastructure.security.config;
 
 import com.booking.infrastructure.security.filter.CookieToBearerFilter;
+import com.booking.infrastructure.security.filter.InternalApiKeyFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,7 @@ public class SecurityConfig {
 
     private final JwtAuthConverter jwtAuthConverter;
     private final CookieToBearerFilter cookieToBearerFilter;
+    private final InternalApiKeyFilter internalApiKeyFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -27,10 +29,14 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/hotels").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/rooms/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/rooms/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/rooms/{id}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/vouchers/validate").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/internal/**").hasRole("INTERNAL_SERVICE")
 
                         // Host endpoints
                         .requestMatchers(HttpMethod.GET, "/api/host/**")
@@ -46,6 +52,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 // Cookie → Bearer header (before Spring reads token)
+                .addFilterBefore(internalApiKeyFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(cookieToBearerFilter, UsernamePasswordAuthenticationFilter.class)
                 // OAuth2 Resource Server with JWT
                 .oauth2ResourceServer(oauth2 -> oauth2

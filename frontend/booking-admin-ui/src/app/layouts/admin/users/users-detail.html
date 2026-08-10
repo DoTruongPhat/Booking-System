@@ -11,7 +11,7 @@
           <nz-avatar
             [nzSize]="80"
             [nzText]="user.username.charAt(0).toUpperCase()"
-            [style.background-color]="getStatus(user) === 'active' ? '#1890ff' : '#bfbfbf'"
+            [style.background-color]="getStatus(user) === 'active' ? '#6fbf73' : '#bfbfbf'"
           ></nz-avatar>
           <div class="profile-info">
             <h2>{{ user.username }}</h2>
@@ -109,7 +109,7 @@
           <div *ngFor="let role of user.roles" class="role-block">
             <div class="role-header">
               <nz-tag
-                [nzColor]="role.code === 'ADMIN_ALL' ? 'red' : 'blue'"
+                [nzColor]="role.code === 'ADMIN_ALL' ? 'red' : 'green'"
                 style="font-size: 14px; padding: 4px 12px"
               >
                 {{ role.code }}

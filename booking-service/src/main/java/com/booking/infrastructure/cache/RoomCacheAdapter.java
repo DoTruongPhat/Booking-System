@@ -45,7 +45,7 @@ public class RoomCacheAdapter {
     public void invalidateRoomAvailability(UUID roomId) {
         evictByPattern(CACHE_ROOM_AVAILABILITY + "::*roomId=" + roomId + "*");
         // Also evict room detail since availability changed
-        evictByPattern(CACHE_ROOM_DETAIL + "::" + roomId);
+        evictByPattern(CACHE_ROOM_DETAIL + "::detail:roomId=" + roomId);
         log.debug("[Cache] Invalidated availability for room {}", roomId);
     }
 
@@ -63,8 +63,8 @@ public class RoomCacheAdapter {
      * Invalidate room detail cache.
      * Called when room is updated.
      */
-    public void invalidateRoomDetail(Long roomId) {
-        evictByPattern(CACHE_ROOM_DETAIL + "::" + roomId);
+    public void invalidateRoomDetail(UUID roomId) {
+        evictByPattern(CACHE_ROOM_DETAIL + "::detail:roomId=" + roomId);
         log.debug("[Cache] Invalidated detail for room {}", roomId);
     }
 
@@ -72,8 +72,8 @@ public class RoomCacheAdapter {
      * Invalidate hotel detail cache.
      * Called when hotel is updated or approved.
      */
-    public void invalidateHotelDetail(Long hotelId) {
-        evictByPattern(CACHE_HOTEL_DETAIL + "::" + hotelId);
+    public void invalidateHotelDetail(UUID hotelId) {
+        evictByPattern(CACHE_HOTEL_DETAIL + "::detail:hotelId=" + hotelId);
         log.debug("[Cache] Invalidated detail for hotel {}", hotelId);
     }
 

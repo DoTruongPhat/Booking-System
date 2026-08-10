@@ -39,4 +39,6 @@ public class CreateBookingRequest {
     private String guestEmail;
 
     private String guestPhone;
+
+    private String voucherCode;
 }

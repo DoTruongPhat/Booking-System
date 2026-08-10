@@ -24,10 +24,17 @@
   </div>
 
   <!-- LOADING -->
-  <nz-spin [nzSpinning]="loading" nzTip="Đang tải...">
+  <nz-spin [nzSpinning]="loading && !loadTimedOut" nzTip="Dang tai...">
     <!-- BOOKING LIST -->
     <div *ngIf="bookings.length > 0" class="booking-list">
-      <div *ngFor="let b of bookings" class="booking-card">
+      <div *ngFor="let b of bookings; trackBy: trackBooking" class="booking-card">
+        <div class="booking-image">
+          <img [src]="b.imageUrl || '/images/Logo.jpg'" [alt]="b.roomName || b.hotelName" />
+          <nz-tag class="status-tag" [nzColor]="statusColors[b.status]">
+            {{ statusLabels[b.status] }}
+          </nz-tag>
+        </div>
+
         <!-- Status + Code header -->
         <div class="booking-header-row">
           <span class="booking-id">
@@ -54,6 +61,23 @@
         <div class="booking-info">
           <div class="booking-header">
             <h3>{{ b.roomName }}</h3>
+          </div>
+
+          <div class="booking-progress" aria-label="Quy trinh dat phong">
+            <div
+              *ngFor="let step of progressStepsByBookingId[b.id] || []; let last = last; trackBy: trackStep"
+              class="progress-step"
+              [class.done]="step.state === 'done'"
+              [class.current]="step.state === 'current'"
+              [class.todo]="step.state === 'todo'"
+              [class.danger]="step.state === 'danger'"
+            >
+              <div class="step-dot">
+                <span nz-icon [nzType]="step.icon"></span>
+              </div>
+              <span class="step-label">{{ step.label }}</span>
+              <div class="step-line" *ngIf="!last"></div>
+            </div>
           </div>
 
           <div class="booking-location">
@@ -107,7 +131,7 @@
               b.paymentStatus === 'PAID'
                 ? 'green'
                 : b.paymentStatus === 'REFUNDED'
-                  ? 'blue'
+                  ? 'green'
                   : 'orange'
             "
           >
@@ -115,8 +139,23 @@
           </nz-tag>
 
           <!-- Cancel button -->
-          <div class="action-buttons" *ngIf="canCancel(b)">
+          <div class="action-buttons">
+            <button nz-button nzSize="small" (click)="viewDetail(b.id)">
+              <span nz-icon nzType="eye"></span>
+              Chi tiết
+            </button>
             <button
+              nz-button
+              nzType="primary"
+              nzSize="small"
+              *ngIf="canPay(b)"
+              (click)="payBooking(b.id)"
+            >
+              <span nz-icon nzType="credit-card"></span>
+              Thanh toán
+            </button>
+            <button
+              *ngIf="canCancel(b)"
               nz-button
               nzDanger
               nzSize="small"
@@ -134,10 +173,12 @@
         <div class="booking-refund" *ngIf="b.status === 'CANCELLED'">
           <span nz-icon nzType="info-circle"></span>
           <span *ngIf="b.cancellationReason">Lý do: {{ b.cancellationReason }}</span>
-          <span *ngIf="b.refundAmount !== undefined && b.refundAmount > 0">
+          <span *ngIf="b.refundAmount != null && b.refundAmount > 0">
             · Hoàn tiền: {{ formatPrice(b.refundAmount) }}
           </span>
-          <span *ngIf="b.refundAmount === 0"> · Không hoàn tiền</span>
+          <span *ngIf="b.refundAmount == null || b.refundAmount <= 0">
+            · {{ getRefundStatusText(b) }}
+          </span>
         </div>
 
         <!-- Created date -->
@@ -146,7 +187,14 @@
     </div>
 
     <!-- EMPTY STATE -->
-    <div *ngIf="!loading && bookings.length === 0" class="empty-state">
+    <div *ngIf="loadTimedOut" class="empty-state">
+      <span nz-icon nzType="warning" class="empty-icon"></span>
+      <h3>Chua tai duoc danh sach dat phong</h3>
+      <p>API co the dang cham hoac phien dang nhap can duoc lam moi.</p>
+      <button nz-button nzType="primary" (click)="loadBookings()">Tai lai</button>
+    </div>
+
+    <div *ngIf="!loading && !loadTimedOut && bookings.length === 0" class="empty-state">
       <span nz-icon nzType="inbox" class="empty-icon"></span>
       <h3 *ngIf="activeTab === 'ALL'">Bạn chưa có đặt phòng nào</h3>
       <h3 *ngIf="activeTab !== 'ALL'">Không có đặt phòng ở trạng thái này</h3>

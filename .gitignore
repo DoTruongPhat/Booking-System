@@ -22,12 +22,15 @@
 **/target/
 **/build/
 **/out/
+**/dist/
+**/.angular/
 **/*.jar
 !**/keycloak-provider-*.jar
 
 # Logs
 logs/
 *.log
+auth-log.txt
 **/*.log
 **/logs/
 
@@ -39,6 +42,9 @@ Thumbs.db
 .mvn/wrapper/maven-wrapper.jar
 
 # Test output
+**/node_modules/
+**/.npm/
+**/.cache/
 **/test-output/
 **/reports/
 **/.pytest_cache/

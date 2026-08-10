@@ -1,0 +1,129 @@
+.audit-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  h1 {
+    margin: 0;
+    color: #1f2a1f;
+    font-size: 28px;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 6px 0 0;
+    color: #6b7468;
+  }
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr)) auto;
+  gap: 10px;
+  align-items: center;
+
+  nz-select,
+  nz-range-picker {
+    width: 100%;
+  }
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+}
+
+:host ::ng-deep {
+  .ant-btn-primary {
+    background: #6f8f3a;
+    border-color: #6f8f3a;
+  }
+
+  .ant-btn-primary:hover {
+    background: #5f7f2f;
+    border-color: #5f7f2f;
+  }
+
+  .ant-table-thead > tr > th {
+    background: #f7faf4;
+    color: #33402d;
+    font-weight: 700;
+  }
+
+  .ant-table-thead > tr > th.ip-column,
+  .ant-table-tbody > tr > td.ip-column {
+    min-width: 190px;
+    max-width: 190px;
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
+  }
+}
+
+.actor-name {
+  color: #1f2a1f;
+  font-weight: 700;
+}
+
+.mono {
+  color: #5d6759;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+}
+
+.ip-cell {
+  display: block;
+  max-width: 160px;
+  overflow: hidden;
+  color: #42513d;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.description-cell {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metadata {
+  display: block;
+  max-width: 240px;
+  overflow: hidden;
+  color: #53624b;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1200px) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .filters {
+    grid-template-columns: 1fr;
+  }
+}

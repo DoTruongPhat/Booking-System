@@ -1,0 +1,99 @@
+{
+  "id": null,
+  "uid": "logs-explorer",
+  "title": "Logs Explorer",
+  "tags": ["booking-system", "logs"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": "Loki",
+        "query": "label_values({container=~\"/booking-(auth|gateway|service|payment|camunda|keycloak|kafka|postgres|redis)\"}, container)",
+        "refresh": 1,
+        "includeAll": true,
+        "allValue": "/booking-(auth|gateway|service|payment|camunda|keycloak|kafka|postgres|redis)",
+        "multi": true,
+        "current": { "selected": true, "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 4,
+      "title": "Error Count by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({container=~\"$service\"} |~ \"(?i)\\\\b(error|exception|fail|500|timeout)\\\\b\"[1m])) by (container)",
+          "legendFormat": "{{container}}",
+          "refId": "A"
+        }
+      ],
+      "datasource": "Loki",
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "desc" }
+      }
+    },
+    {
+      "id": 1,
+      "title": "Log Volume by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 6 },
+      "targets": [
+        { "expr": "sum(count_over_time({container=~\"$service\"}[1m])) by (container)", "legendFormat": "{{container}}", "refId": "A" }
+      ],
+      "datasource": "Loki",
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "desc" }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Latest Error Logs by Service",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 12 },
+      "targets": [
+        { "expr": "{container=~\"$service\"} |~ \"(?i)\\\\b(error|exception|fail|500|timeout)\\\\b\"", "refId": "A" }
+      ],
+      "datasource": "Loki",
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    },
+    {
+      "id": 3,
+      "title": "All Logs by Service",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 24 },
+      "targets": [
+        { "expr": "{container=~\"$service\"}", "refId": "A" }
+      ],
+      "datasource": "Loki",
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      }
+    }
+  ]
+}

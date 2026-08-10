@@ -9,30 +9,18 @@
   font-family: t.$font-family-base;
   position: sticky;
   top: 0;
-  z-index: t.$z-sticky;
+  z-index: t.$z-popover;
   isolation: isolate; // Tạo stacking context riêng để button không bị blur
 }
 
 .navbar {
-  background: t.$color-white;
+  background: rgba(t.$color-white, 0.92);
   border-bottom: 1px solid transparent;
   transition: box-shadow 0.3s ease, border-color 0.3s ease;
-  animation: slideDownFade 0.4s ease-out both;
 
   &.is-scrolled {
     border-bottom-color: t.$color-border-light;
-    box-shadow: t.$shadow-md;
-  }
-}
-
-@keyframes slideDownFade {
-  from {
-    opacity: 0;
-    transform: translateY(-100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    box-shadow: t.$shadow-sm;
   }
 }
 
@@ -43,7 +31,7 @@
   height: t.$header-height;
   display: flex;
   align-items: center;
-  gap: t.$spacing-8;
+  gap: t.$spacing-7;
 
   @media (max-width: 768px) {
     gap: t.$spacing-4;
@@ -76,7 +64,7 @@
     font-weight: t.$font-weight-bold;
     font-family: t.$font-family-base;
     font-size: t.$font-size-lg;
-    letter-spacing: -0.02em;
+    letter-spacing: t.$letter-spacing-base;
     background: linear-gradient(135deg, t.$color-primary 0%, t.$color-primary-dark 100%);
     -webkit-background-clip: text;
     background-clip: text;
@@ -138,8 +126,8 @@
   }
 
   &:hover {
-    background: t.$color-primary-100;
-    color: t.$color-primary;
+    background: t.$color-primary-50;
+    color: t.$color-primary-dark;
 
     &::after {
       transform: translateX(-50%) scaleX(1);
@@ -147,9 +135,9 @@
   }
 
   &.active {
-    color: t.$color-primary;
+    color: t.$color-primary-dark;
     font-weight: t.$font-weight-semibold;
-    background: t.$color-primary-100;
+    background: t.$color-primary-50;
 
     &::after {
       transform: translateX(-50%) scaleX(1);
@@ -192,8 +180,8 @@
 
     &:hover,
     &.is-open {
-      background: t.$color-primary-100;
-      color: t.$color-primary;
+      background: t.$color-primary-50;
+      color: t.$color-primary-dark;
 
       &::after {
         transform: translateX(-50%) scaleX(1);
@@ -202,29 +190,36 @@
   }
 
   &.is-open .nav-item-trigger {
-    background: t.$color-primary-100;
-    color: t.$color-primary;
+    background: t.$color-primary-50;
+    color: t.$color-primary-dark;
   }
 }
 
 // === DROPDOWN PANEL ===
 .dropdown-panel {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%) translateY(-6px);
   background: t.$color-white;
-  border-radius: t.$radius-xl;
+  border-radius: t.$radius-2xl;
   box-shadow: t.$shadow-xl;
-  padding: t.$spacing-5;
+  padding: t.$spacing-4;
   min-width: 580px;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
-  z-index: t.$z-dropdown;
+  z-index: t.$z-popover;
   font-family: t.$font-family-base;
   border: 1px solid t.$color-border-light;
+}
+
+.more-panel {
+  left: auto;
+  right: 0;
+  min-width: min(640px, calc(100vw - 48px));
+  transform: translateY(-6px);
 }
 
 .nav-item-dropdown.is-open .dropdown-panel {
@@ -232,6 +227,10 @@
   visibility: visible;
   pointer-events: auto;
   transform: translateX(-50%) translateY(0);
+}
+
+.nav-item-dropdown.is-open .more-panel {
+  transform: translateY(0);
 }
 
 .dropdown-grid {
@@ -243,8 +242,7 @@
   }
 
   .more-panel & {
-    grid-template-columns: 1fr 1fr 1fr;
-    min-width: 700px;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -269,8 +267,8 @@
   display: flex;
   align-items: flex-start;
   gap: t.$spacing-3;
-  padding: 10px 12px;
-  border-radius: t.$radius-md;
+  padding: t.$spacing-3;
+  border-radius: t.$radius-lg;
   text-decoration: none;
   color: t.$color-text-primary;
   cursor: pointer;
@@ -293,7 +291,7 @@
   }
 
   &:hover {
-    background: t.$color-primary-100;
+    background: t.$color-primary-50;
 
     &::before {
       transform: scaleY(1);
@@ -371,13 +369,13 @@
 }
 
 .action-btn-ghost {
-  background: t.$color-gray-100;
+  background: t.$color-white;
   color: t.$color-text-primary;
   border: 1px solid t.$color-border-light;
 
   &:hover {
-    background: t.$color-primary-100;
-    color: t.$color-primary;
+    background: t.$color-primary-50;
+    color: t.$color-primary-dark;
     border-color: t.$color-primary-200;
     transform: translateY(-1px);
   }
@@ -388,7 +386,7 @@
 }
 
 .action-btn-primary {
-  background: linear-gradient(135deg, t.$color-primary 0%, t.$color-primary-hover 100%);
+  background: t.$gradient-primary;
   color: t.$color-white;
   box-shadow: t.$shadow-primary;
 
@@ -406,14 +404,14 @@
 .action-btn-icon {
   width: t.$button-height-md;
   padding: 0;
-  background: t.$color-gray-100;
+  background: t.$color-white;
   color: t.$color-text-primary;
   border: 1px solid t.$color-border-light;
   position: relative;
 
   &:hover {
-    background: t.$color-primary-100;
-    color: t.$color-primary;
+    background: t.$color-primary-50;
+    color: t.$color-primary-dark;
     border-color: t.$color-primary-200;
     transform: translateY(-1px);
   }
@@ -421,6 +419,37 @@
   span[nz-icon] {
     font-size: t.$font-size-xl;
   }
+}
+
+.user-avatar-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$spacing-2;
+  padding: t.$spacing-1 t.$spacing-2 t.$spacing-1 t.$spacing-1;
+  border-radius: t.$radius-full;
+  cursor: pointer;
+  transition: t.$transition-base;
+
+  &:hover {
+    background: t.$color-primary-50;
+  }
+}
+
+.avatar-circle {
+  background: t.$gradient-primary !important;
+  color: t.$color-white !important;
+  cursor: pointer;
+  box-shadow: t.$shadow-primary;
+}
+
+.avatar-username {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-semibold;
+  color: t.$color-text-primary;
 }
 
 .notification-dot {
@@ -468,5 +497,175 @@
   .notification-dot {
     animation: none !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+// Compact "Xem thêm" dropdown: only real actions, no empty route panel.
+.more-panel {
+  right: 50%;
+  left: auto;
+  width: min(430px, calc(100vw - 32px));
+  min-width: 0;
+  max-height: calc(100vh - #{t.$header-height} - 32px);
+  overflow-y: auto;
+  padding: t.$spacing-4;
+  transform: translateX(50%) translateY(-6px);
+}
+
+.nav-item-dropdown.is-open .more-panel {
+  transform: translateX(50%) translateY(0);
+}
+
+.dropdown-grid {
+  .more-panel & {
+    grid-template-columns: 1fr;
+    gap: t.$spacing-4;
+  }
+}
+
+.more-panel {
+  .dropdown-section {
+    gap: t.$spacing-1;
+  }
+
+  .dropdown-section-title {
+    padding: 0 t.$spacing-2;
+    margin-bottom: t.$spacing-1;
+  }
+
+  .dropdown-item {
+    align-items: center;
+    padding: t.$spacing-3;
+    border-radius: t.$radius-md;
+  }
+
+  .dropdown-item-icon {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0;
+    border-radius: t.$radius-md;
+    background: t.$color-primary-50;
+    color: t.$color-primary-dark;
+  }
+}
+
+// Desktop-only home overlay navbar.
+:host-context(.home-page) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+
+  .navbar {
+    background: transparent;
+    border-bottom-color: transparent;
+    box-shadow: none;
+  }
+
+  .navbar-container {
+    max-width: none;
+    padding: 16px 120px;
+    height: auto;
+  }
+
+  .logo {
+    color: #fff;
+
+    .logo-text {
+      background: none;
+      background-clip: initial;
+      -webkit-background-clip: initial;
+      -webkit-text-fill-color: #fff;
+      color: #fff;
+      font-family: 'Manrope', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+  }
+
+  .main-nav {
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .nav-item,
+  .nav-item-trigger {
+    color: #fff;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0;
+
+    &::after {
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    &:hover,
+    &.active {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      opacity: 0.86;
+    }
+  }
+
+  .nav-item-dropdown.is-open .nav-item-trigger {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .action-btn {
+    min-height: 40px;
+    border-radius: 8px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .action-btn-ghost {
+    background: #fff;
+    color: #171717;
+    border: 1px solid #d4d4d4;
+
+    &:hover {
+      background: #f6f7f9;
+      color: #171717;
+      border-color: #d4d4d4;
+    }
+  }
+
+  .action-btn-primary {
+    background: #6fbf73;
+    color: #fafafa;
+    box-shadow: 0 12px 28px rgba(111, 191, 115, 0.28);
+
+    &:hover {
+      background: #8c52ff;
+      box-shadow: 0 16px 34px rgba(111, 191, 115, 0.34);
+    }
+  }
+
+  .action-btn-icon {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.24);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.22);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.36);
+    }
+  }
+
+  .avatar-username {
+    color: #fff;
+  }
+
+  .user-avatar-menu:hover {
+    background: rgba(255, 255, 255, 0.12);
   }
 }

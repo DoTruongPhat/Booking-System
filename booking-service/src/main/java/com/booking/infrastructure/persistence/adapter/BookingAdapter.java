@@ -72,6 +72,12 @@ public class BookingAdapter implements BookingRepositoryPort {
     }
 
     @Override
+    public Page<Booking> findByOwnerUserId(UUID ownerUserId, String status, Pageable pageable) {
+        return bookingJpaRepository.findByOwnerUserIdAndStatus(ownerUserId, status, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public Page<Booking> findAll(String status, Pageable pageable) {
         return bookingJpaRepository.findAllByStatus(status, pageable).map(mapper::toDomain);
     }
@@ -123,7 +129,11 @@ public class BookingAdapter implements BookingRepositoryPort {
         }
         if (filter.hotelId() != null) {
             spec = spec.and((root, q, cb) ->
-                    cb.equal(root.get("room").get("hotel").get("id"), filter.hotelId()));
+                    cb.equal(root.get("hotel").get("id"), filter.hotelId()));
+        }
+        if (filter.ownerUserId() != null) {
+            spec = spec.and((root, q, cb) ->
+                    cb.equal(root.get("hotel").get("ownerUserId"), filter.ownerUserId()));
         }
         if (filter.status() != null && !filter.status().isBlank()) {
             spec = spec.and((root, q, cb) ->

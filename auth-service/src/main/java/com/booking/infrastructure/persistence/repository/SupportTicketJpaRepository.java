@@ -17,6 +17,8 @@ public interface SupportTicketJpaRepository
     // Admin xem tickets assigned cho staff
     Page<SupportTicketEntity> findByAssignedTo(UUID assignedTo, Pageable pageable);
 
+    Page<SupportTicketEntity> findByAssignedToAndStatus(UUID assignedTo, String status, Pageable pageable);
+
     // Admin xem theo status
     Page<SupportTicketEntity> findByStatus(String status, Pageable pageable);
 }

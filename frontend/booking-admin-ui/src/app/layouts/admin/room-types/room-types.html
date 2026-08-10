@@ -1,0 +1,226 @@
+<div class="room-types-page" *ngIf="!isModalOpen; else roomTypeFormPage">
+  <div class="page-header">
+    <div>
+      <h1>Quản lý loại phòng</h1>
+      <p class="subtitle">CRUD loại phòng dùng cho form tạo/sửa phòng</p>
+    </div>
+    <div class="actions">
+      <button nz-button nzType="default" (click)="loadRoomTypes()">
+        <span nz-icon nzType="reload"></span>
+        Tải lại
+      </button>
+      <button nz-button nzType="primary" (click)="openCreateModal()">
+        <span nz-icon nzType="plus"></span>
+        Thêm loại phòng
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <nz-card>
+      <span class="stat-label">Tổng loại phòng</span>
+      <strong>{{ totalRoomTypes }}</strong>
+    </nz-card>
+    <nz-card>
+      <span class="stat-label">Đang dùng</span>
+      <strong>{{ activeRoomTypes }}</strong>
+    </nz-card>
+    <nz-card>
+      <span class="stat-label">Global</span>
+      <strong>{{ globalRoomTypes }}</strong>
+    </nz-card>
+  </div>
+
+  <nz-card class="table-card">
+    <nz-table [nzData]="roomTypes" [nzLoading]="isLoading" [nzShowPagination]="false" nzSize="middle">
+      <thead>
+        <tr>
+          <th>Mã</th>
+          <th>Tên loại</th>
+          <th>Khách sạn</th>
+          <th>Sức chứa mặc định</th>
+          <th>Tiện ích</th>
+          <th>Status</th>
+          <th nzWidth="160px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of roomTypes">
+          <td>
+            <nz-tag [nzColor]="getRoomTypeColor(item.code)">{{ item.code }}</nz-tag>
+          </td>
+          <td>
+            <strong>{{ item.name }}</strong>
+            <div class="type-code">{{ item.description }}</div>
+          </td>
+          <td>{{ item.hotelName || 'Global' }}</td>
+          <td>{{ item.defaultCapacity || '—' }}</td>
+          <td>{{ (item.defaultAmenities || []).join(', ') || '—' }}</td>
+          <td>
+            <nz-tag [nzColor]="item.active ? 'green' : 'default'">
+              {{ item.active ? 'Active' : 'Inactive' }}
+            </nz-tag>
+          </td>
+          <td>
+            <button nz-button nzSize="small" (click)="openEditModal(item)">
+              <span nz-icon nzType="edit"></span>
+            </button>
+            <button
+              nz-button
+              nzSize="small"
+              nzDanger
+              nz-popconfirm
+              nzPopconfirmTitle="Xóa loại phòng này?"
+              (nzOnConfirm)="delete(item)"
+            >
+              <span nz-icon nzType="delete"></span>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="!isLoading && !roomTypes.length">
+          <td colspan="7" class="empty-row">
+            <nz-empty nzNotFoundContent="Chưa có loại phòng"></nz-empty>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+
+  <nz-modal
+    [(nzVisible)]="isModalOpen"
+    [nzTitle]="form.id ? 'Sửa loại phòng' : 'Thêm loại phòng'"
+    [nzOkLoading]="isSubmitting"
+    nzOkText="Lưu"
+    (nzOnCancel)="isModalOpen = false"
+    (nzOnOk)="submit()"
+    nzWidth="620px"
+  >
+    <form *nzModalContent nz-form nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label>Mã loại phòng</nz-form-label>
+        <nz-form-control>
+          <input nz-input [(ngModel)]="form.code" name="code" placeholder="DELUXE, FAMILY, VILLA..." />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Tên loại phòng</nz-form-label>
+        <nz-form-control>
+          <input nz-input [(ngModel)]="form.name" name="name" placeholder="Deluxe hướng biển" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Khách sạn</nz-form-label>
+        <nz-form-control>
+          <nz-select [(ngModel)]="form.hotelId" name="hotelId" [nzAllowClear]="!isHost" nzPlaceHolder="Global">
+            <nz-option *ngIf="!isHost" [nzValue]="null" nzLabel="Global"></nz-option>
+            <nz-option *ngFor="let hotel of hotels" [nzValue]="hotel.id" [nzLabel]="hotel.name"></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Mô tả</nz-form-label>
+        <nz-form-control>
+          <textarea nz-input [(ngModel)]="form.description" name="description" rows="2"></textarea>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Sức chứa mặc định</nz-form-label>
+        <nz-form-control>
+          <input nz-input type="number" min="1" [(ngModel)]="form.defaultCapacity" name="defaultCapacity" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Tiện ích mặc định</nz-form-label>
+        <nz-form-control>
+          <input nz-input [(ngModel)]="form.defaultAmenitiesText" name="defaultAmenitiesText" placeholder="wifi, breakfast, pool" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <label class="checkbox-line">
+        <input type="checkbox" [(ngModel)]="form.active" name="active" />
+        Đang hoạt động
+      </label>
+    </form>
+  </nz-modal>
+</div>
+
+<ng-template #roomTypeFormPage>
+  <div class="room-types-page room-type-form-page">
+    <div class="page-header">
+      <div>
+        <h1>{{ form.id ? 'Sửa loại phòng' : 'Thêm loại phòng' }}</h1>
+        <p class="subtitle">Quản lý mã loại phòng, sức chứa và tiện ích mặc định</p>
+      </div>
+      <button nz-button type="button" (click)="isModalOpen = false">
+        <span nz-icon nzType="arrow-left"></span>
+        Quay lại
+      </button>
+    </div>
+
+    <nz-card class="form-page-card">
+      <form nz-form nzLayout="vertical" class="room-type-form">
+        <nz-form-item>
+          <nz-form-label>Mã loại phòng</nz-form-label>
+          <nz-form-control>
+            <input nz-input [(ngModel)]="form.code" name="pageCode" placeholder="DELUXE, FAMILY, VILLA..." />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Tên loại phòng</nz-form-label>
+          <nz-form-control>
+            <input nz-input [(ngModel)]="form.name" name="pageName" placeholder="Deluxe hướng biển" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Khách sạn</nz-form-label>
+          <nz-form-control>
+            <nz-select [(ngModel)]="form.hotelId" name="pageHotelId" [nzAllowClear]="!isHost" nzPlaceHolder="Global">
+              <nz-option *ngIf="!isHost" [nzValue]="null" nzLabel="Global"></nz-option>
+              <nz-option *ngFor="let hotel of hotels" [nzValue]="hotel.id" [nzLabel]="hotel.name"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Mô tả</nz-form-label>
+          <nz-form-control>
+            <textarea nz-input [(ngModel)]="form.description" name="pageDescription" rows="3"></textarea>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Sức chứa mặc định</nz-form-label>
+          <nz-form-control>
+            <input nz-input type="number" min="1" [(ngModel)]="form.defaultCapacity" name="pageDefaultCapacity" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Tiện ích mặc định</nz-form-label>
+          <nz-form-control>
+            <input nz-input [(ngModel)]="form.defaultAmenitiesText" name="pageDefaultAmenitiesText" placeholder="wifi, breakfast, pool" />
+          </nz-form-control>
+        </nz-form-item>
+
+        <label class="checkbox-line">
+          <input type="checkbox" [(ngModel)]="form.active" name="pageActive" />
+          Đang hoạt động
+        </label>
+
+        <div class="form-actions">
+          <button nz-button type="button" (click)="isModalOpen = false">Hủy</button>
+          <button nz-button nzType="primary" type="button" [nzLoading]="isSubmitting" (click)="submit()">
+            Lưu
+          </button>
+        </div>
+      </form>
+    </nz-card>
+  </div>
+</ng-template>

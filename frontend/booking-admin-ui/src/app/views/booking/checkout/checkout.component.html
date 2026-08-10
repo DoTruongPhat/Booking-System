@@ -1,0 +1,113 @@
+<div class="checkout-page">
+  <app-navbar></app-navbar>
+
+  <div class="checkout-loading" *ngIf="loading">
+    <nz-spin nzSimple [nzSize]="'large'"></nz-spin>
+  </div>
+
+  <div class="checkout-container" *ngIf="!loading && booking">
+    <!-- Timer -->
+    <div class="timer-bar" [class.urgent]="remainingSeconds < 120">
+      <span nz-icon nzType="clock-circle"></span>
+      Thời gian còn lại: <strong>{{ countdownText }}</strong>
+    </div>
+
+    <div class="checkout-grid">
+      <!-- LEFT: Booking summary -->
+      <div class="checkout-summary">
+        <div class="summary-card">
+          <h2>Thông tin đặt phòng</h2>
+
+          <div class="summary-row">
+            <span class="label">Khách sạn</span>
+            <span class="value">{{ booking.hotelName }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Phòng</span>
+            <span class="value">{{ booking.roomName }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Nhận phòng</span>
+            <span class="value">{{ formatDate(booking.checkIn) }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Trả phòng</span>
+            <span class="value">{{ formatDate(booking.checkOut) }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Số đêm</span>
+            <span class="value">{{ booking.nights }} đêm</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Khách</span>
+            <span class="value">
+              {{ booking.guests.adults }} người lớn
+              <span *ngIf="booking.guests.children > 0"
+                >, {{ booking.guests.children }} trẻ em</span
+              >
+            </span>
+          </div>
+
+          <div class="summary-divider"></div>
+
+          <div class="summary-row">
+            <span class="label">Giá phòng</span>
+            <span class="value">{{ formatVND(getOriginalAmount()) }}</span>
+          </div>
+          <div class="summary-row discount" *ngIf="getDiscountAmount() > 0">
+            <span class="label">{{ getVoucherLabel() }}</span>
+            <span class="value">-{{ formatVND(getDiscountAmount()) }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Thuế &amp; phí</span>
+            <span class="value">{{ formatVND(booking.taxAmount) }}</span>
+          </div>
+          <div class="summary-row total">
+            <span class="label">Tổng thanh toán</span>
+            <span class="value">{{ formatVND(getPayableAmount()) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Payment method -->
+      <div class="checkout-payment">
+        <div class="payment-card">
+          <h2>Phương thức thanh toán</h2>
+
+          <nz-radio-group [(ngModel)]="selectedMethod" class="payment-methods">
+            <label nz-radio nzValue="VIETQR" class="method-option">
+              <div class="method-content">
+                <div class="method-icon vietqr-icon">QR</div>
+                <div class="method-info">
+                  <strong>PayOS VietQR</strong>
+                  <span>Quét mã QR chuyển khoản ngân hàng</span>
+                </div>
+              </div>
+            </label>
+          </nz-radio-group>
+
+          <nz-alert
+            nzType="info"
+            nzShowIcon
+            nzMessage="Bạn sẽ được chuyển sang trang thanh toán của đối tác"
+            style="margin: 16px 0"
+          ></nz-alert>
+
+          <button
+            class="pay-btn"
+            [disabled]="submitting || remainingSeconds <= 0"
+            (click)="onSubmitPayment()"
+          >
+            <span nz-icon [nzType]="submitting ? 'loading' : 'lock'"></span>
+            {{ submitting ? 'Đang xử lý...' : 'Thanh toán ' + formatVND(getPayableAmount()) }}
+          </button>
+
+          <p class="secure-note">
+            <span nz-icon nzType="safety-certificate"></span>
+            Giao dịch được bảo mật bởi SSL 256-bit
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

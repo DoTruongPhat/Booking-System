@@ -16,6 +16,7 @@ public sealed interface CoreDomainEvent {
             UUID ownerUserId,
             String name,
             String city,
+            String hostEmail,
             Instant occurredAt
     ) implements CoreDomainEvent {}
 
@@ -28,6 +29,17 @@ public sealed interface CoreDomainEvent {
     record HotelDeactivated(
             UUID hotelId,
             String name,
+            Instant occurredAt
+    ) implements CoreDomainEvent {}
+
+    record HotelChangeRequested(
+            UUID changeRequestId,
+            UUID hotelId,
+            UUID ownerUserId,
+            String hotelName,
+            String city,
+            String hostEmail,
+            Object proposedChanges,
             Instant occurredAt
     ) implements CoreDomainEvent {}
 
@@ -60,6 +72,7 @@ public sealed interface CoreDomainEvent {
             LocalDate checkInDate,
             LocalDate checkOutDate,
             int numRooms,
+            BigDecimal refundAmount,
             String cancelledBy,
             Instant occurredAt
     ) implements CoreDomainEvent {}

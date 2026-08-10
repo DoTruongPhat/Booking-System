@@ -1,5 +1,7 @@
 package com.booking.gateway.idempotency;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +23,10 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -31,34 +35,35 @@ import java.util.UUID;
 public class IdempotencyFilter implements GlobalFilter, Ordered {
 
     private static final Logger log = LoggerFactory.getLogger(IdempotencyFilter.class);
-
-    /**
-     * Order = 1: chạy sau AuthFilter (order=0 thường),
-     * nhưng trước các filter downstream khác.
-     */
     private static final int FILTER_ORDER = 1;
-
-    /**
-     * Hop-by-hop headers không nên cache lại.
-     */
-    private static final Set<String> EXCLUDED_HEADERS = Set.of(
-            "transfer-encoding", "connection", "keep-alive",
-            "proxy-authenticate", "proxy-authorization",
-            "te", "trailers", "upgrade"
-    );
-
-    /**
-     * Header gateway đặt sau khi Auth filter decode JWT.
-     * Adjust tên này cho đúng với AuthFilter của bạn.
-     */
+    private static final int RETRY_AFTER_SECONDS = 5;
     private static final String USER_ID_HEADER = "X-User-Id";
+    private static final String REPLAY_HEADER = "X-Idempotent-Replay";
+    private static final String ORIGINAL_TRACE_HEADER = "X-Original-Trace-Id";
+
+    private static final Set<String> EXCLUDED_HEADERS = Set.of(
+            "transfer-encoding",
+            "connection",
+            "keep-alive",
+            "proxy-authenticate",
+            "proxy-authorization",
+            "te",
+            "trailers",
+            "upgrade",
+            "content-length"
+    );
 
     private final IdempotencyRedisService redisService;
     private final IdempotencyProperties props;
+    private final MeterRegistry meterRegistry;
 
-    public IdempotencyFilter(IdempotencyRedisService redisService, IdempotencyProperties props) {
+    public IdempotencyFilter(
+            IdempotencyRedisService redisService,
+            IdempotencyProperties props,
+            MeterRegistry meterRegistry) {
         this.redisService = redisService;
         this.props = props;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
@@ -68,139 +73,172 @@ public class IdempotencyFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        Timer.Sample sample = Timer.start(meterRegistry);
         ServerHttpRequest request = exchange.getRequest();
+        String method = request.getMethod().name();
+        String path = request.getPath().value();
+        String endpoint = props.matchingEndpoint(method, path);
 
-        // 1. Skip nếu method hoặc path không applicable
-        if (!shouldApply(request)) {
+        if (endpoint == null) {
             return chain.filter(exchange);
         }
 
-        // 2. Validate Idempotency-Key header
         String idempotencyKey = request.getHeaders().getFirst(props.getHeaderName());
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
-            return respondError(exchange, HttpStatus.BAD_REQUEST,
-                    "Missing required header: " + props.getHeaderName());
+            return respondError(
+                    exchange,
+                    HttpStatus.BAD_REQUEST,
+                    "IDEMPOTENCY_001",
+                    "Missing required header: " + props.getHeaderName(),
+                    null
+            );
         }
 
         if (!isValidUUID(idempotencyKey)) {
-            return respondError(exchange, HttpStatus.BAD_REQUEST,
-                    "Idempotency-Key must be a valid UUID");
+            return respondError(
+                    exchange,
+                    HttpStatus.BAD_REQUEST,
+                    "IDEMPOTENCY_001",
+                    "Idempotency-Key must be a valid UUID",
+                    null
+            );
         }
 
-        // 3. Extract userId từ JWT (đã được AuthFilter decode và đặt vào header)
         String userId = request.getHeaders().getFirst(USER_ID_HEADER);
         if (userId == null || userId.isBlank()) {
-            log.warn("Missing {} header — idempotency cache will be skipped", USER_ID_HEADER);
-            // Fail-open: vẫn forward request, chỉ không cache
-            return chain.filter(exchange);
+            return respondError(
+                    exchange,
+                    HttpStatus.UNAUTHORIZED,
+                    "AUTH_001",
+                    "Authenticated user is required for idempotent requests",
+                    null
+            );
         }
 
-        // 4. Check cache trước (fast-path: đã có response cached)
         return redisService.getCachedResponse(userId, idempotencyKey)
                 .flatMap(cached -> {
-                    log.info("Idempotency cache hit — returning cached response. key={}, userId={}",
-                            idempotencyKey, userId);
+                    counter("idempotency.cache.hit", endpoint);
+                    counter("idempotency_cache_hit_total", endpoint);
+                    log.info("Idempotency cache hit. key={}, userId={}, endpoint={}", idempotencyKey, userId, endpoint);
                     return writeCachedResponse(exchange, cached);
                 })
-                .switchIfEmpty(
-                        // 5. Chưa có cache → thử acquire lock
-                        processNewRequest(exchange, chain, userId, idempotencyKey)
-                );
+                .switchIfEmpty(Mono.defer(() -> {
+                    counter("idempotency.cache.miss", endpoint);
+                    counter("idempotency_cache_miss_total", endpoint);
+                    return processNewRequest(exchange, chain, userId, idempotencyKey, endpoint);
+                }))
+                .doFinally(signalType -> recordDuration(sample, endpoint, signalType.name()));
     }
 
-    /**
-     * Xử lý request lần đầu (chưa có cache):
-     * - SETNX lock
-     * - Forward request với response decorator để capture body
-     * - Cache response nếu 2xx
-     */
     private Mono<Void> processNewRequest(
             ServerWebExchange exchange,
             GatewayFilterChain chain,
             String userId,
-            String idempotencyKey) {
+            String idempotencyKey,
+            String endpoint) {
 
-        return redisService.acquireLock(idempotencyKey)
+        return redisService.acquireLock(idempotencyKey, userId)
                 .flatMap(acquired -> {
                     if (!acquired) {
-                        // Lock đang bị hold → request đang được xử lý
-                        log.info("Idempotency lock conflict. key={}, userId={}", idempotencyKey, userId);
-                        return respondError(exchange, HttpStatus.CONFLICT,
-                                "Request in progress. Please retry after a moment.");
+                        counter("idempotency.lock.conflict", endpoint);
+                        counter("idempotency_lock_conflict_total", endpoint);
+                        log.info("Idempotency lock conflict. key={}, userId={}, endpoint={}", idempotencyKey, userId, endpoint);
+                        return respondError(
+                                exchange,
+                                HttpStatus.CONFLICT,
+                                "IDEMPOTENCY_002",
+                                "Request in progress, please retry",
+                                RETRY_AFTER_SECONDS
+                        );
                     }
 
-                    // Lock acquired → decorate response để capture body
                     CapturingResponseDecorator decorator =
-                            new CapturingResponseDecorator(exchange.getResponse());
-                    ServerWebExchange mutatedExchange = exchange.mutate()
-                            .response(decorator)
-                            .build();
+                            new CapturingResponseDecorator(exchange.getResponse(), props.getMaxBodySizeBytes());
+                    ServerWebExchange mutatedExchange = exchange.mutate().response(decorator).build();
+                    String originalTraceId = resolveTraceId(exchange.getRequest());
 
-                    return chain.filter(mutatedExchange)
-                            .then(Mono.defer(() -> cacheIfSuccessful(
-                                    decorator, userId, idempotencyKey)))
-                            .then(Mono.defer(() ->
-                                    redisService.releaseLock(idempotencyKey)))
-                            .then();
+                    Mono<Void> downstream = chain.filter(mutatedExchange)
+                            .then(Mono.defer(() -> cacheIfCacheable(
+                                    decorator,
+                                    userId,
+                                    idempotencyKey,
+                                    endpoint,
+                                    originalTraceId
+                            )));
+
+                    return downstream
+                            .then(redisService.releaseLock(idempotencyKey).then())
+                            .onErrorResume(error -> redisService.releaseLock(idempotencyKey)
+                                    .then(Mono.error(error)));
                 });
     }
 
-    /**
-     * Cache response nếu status 2xx.
-     */
-    private Mono<Void> cacheIfSuccessful(
+    private Mono<Void> cacheIfCacheable(
             CapturingResponseDecorator decorator,
             String userId,
-            String idempotencyKey) {
+            String idempotencyKey,
+            String endpoint,
+            String originalTraceId) {
 
-        int statusCode = decorator.getStatusCode() != null
-                ? decorator.getStatusCode().value()
-                : 200;
+        int status = decorator.getStatusCode() != null ? decorator.getStatusCode().value() : 200;
 
-        if (statusCode >= 200 && statusCode < 300) {
-            String body = decorator.getCapturedBody();
-            Map<String, String> headers = extractSafeHeaders(decorator.getHeaders());
-
-            CachedResponse cached = CachedResponse.of(statusCode, headers, body);
-            return redisService.cacheResponse(userId, idempotencyKey, cached);
+        if (isStreamingResponse(decorator.getHeaders())) {
+            counter("idempotency.cache.skipped", endpoint, "reason", "streaming");
+            counter("idempotency_cache_skipped_total", endpoint, "reason", "streaming");
+            log.debug("Skipping idempotency cache for streaming response. key={}, status={}", idempotencyKey, status);
+            return Mono.empty();
         }
 
-        log.debug("Non-2xx response ({}), skipping cache. key={}", statusCode, idempotencyKey);
-        return Mono.empty();
+        if (decorator.isBodyTooLarge()) {
+            counter("idempotency.cache.skipped", endpoint, "reason", "body_too_large");
+            counter("idempotency_cache_skipped_total", endpoint, "reason", "body_too_large");
+            log.debug("Skipping idempotency cache because body is too large. key={}, status={}", idempotencyKey, status);
+            return Mono.empty();
+        }
+
+        if (!isCacheableStatus(status)) {
+            counter("idempotency.cache.skipped", endpoint, "reason", "status");
+            counter("idempotency_cache_skipped_total", endpoint, "reason", "status");
+            log.debug("Skipping idempotency cache for status={}. key={}", status, idempotencyKey);
+            return Mono.empty();
+        }
+
+        Map<String, String> headers = extractSafeHeaders(decorator.getHeaders());
+        CachedResponse cached = CachedResponse.of(status, headers, decorator.getCapturedBody(), originalTraceId);
+        return redisService.cacheResponse(userId, idempotencyKey, cached);
     }
 
-    /**
-     * Trả về cached response về cho client.
-     */
     private Mono<Void> writeCachedResponse(ServerWebExchange exchange, CachedResponse cached) {
         ServerHttpResponse response = exchange.getResponse();
+        HttpStatus status = HttpStatus.resolve(cached.getStatus());
+        response.setStatusCode(status != null ? status : HttpStatus.OK);
 
-        // Set status
-        response.setStatusCode(HttpStatus.resolve(cached.getStatusCode()));
-
-        // Set headers từ cache (bỏ qua nếu response đã committed)
         if (!response.isCommitted()) {
-            cached.getHeaders().forEach((k, v) -> response.getHeaders().set(k, v));
-            // Đánh dấu đây là cached response để client/debug biết
-            response.getHeaders().set("X-Idempotency-Replayed", "true");
+            cached.getHeaders().forEach((name, value) -> response.getHeaders().set(name, value));
+            response.getHeaders().set(REPLAY_HEADER, "true");
+            if (cached.getOriginalTraceId() != null && !cached.getOriginalTraceId().isBlank()) {
+                response.getHeaders().set(ORIGINAL_TRACE_HEADER, cached.getOriginalTraceId());
+            }
         }
 
-        // Write body
-        String body = cached.getBody() != null ? cached.getBody() : "";
-        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-        DataBuffer buffer = response.bufferFactory().wrap(bytes);
-
+        DataBuffer buffer = response.bufferFactory().wrap(cached.bodyBytes());
         return response.writeWith(Mono.just(buffer));
     }
 
-    // ──────────────────────────────────────────────
-    // Helpers
-    // ──────────────────────────────────────────────
+    private boolean isCacheableStatus(int status) {
+        return (status >= 200 && status < 300) || (status >= 400 && status < 500 && status != 409);
+    }
 
-    private boolean shouldApply(ServerHttpRequest request) {
-        String method = request.getMethod().name();
-        String path = request.getPath().value();
-        return props.isMethodApplicable(method) && props.isPathApplicable(path);
+    private boolean isStreamingResponse(HttpHeaders headers) {
+        MediaType contentType = headers.getContentType();
+        if (contentType != null) {
+            String value = contentType.toString().toLowerCase(Locale.ROOT);
+            if (value.contains("text/event-stream") || value.contains("application/stream+json")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private boolean isValidUUID(String value) {
@@ -215,56 +253,90 @@ public class IdempotencyFilter implements GlobalFilter, Ordered {
     private Map<String, String> extractSafeHeaders(HttpHeaders headers) {
         Map<String, String> safe = new HashMap<>();
         headers.forEach((name, values) -> {
-            if (!EXCLUDED_HEADERS.contains(name.toLowerCase()) && !values.isEmpty()) {
+            String lowerName = name.toLowerCase(Locale.ROOT);
+            if (!EXCLUDED_HEADERS.contains(lowerName) && !values.isEmpty()) {
                 safe.put(name, values.get(0));
             }
         });
         return safe;
     }
 
-    private Mono<Void> respondError(ServerWebExchange exchange, HttpStatus status, String message) {
+    private String resolveTraceId(ServerHttpRequest request) {
+        String traceId = request.getHeaders().getFirst("X-Trace-Id");
+        if (traceId == null || traceId.isBlank()) {
+            traceId = request.getHeaders().getFirst("X-Request-Id");
+        }
+        return traceId == null || traceId.isBlank() ? request.getId() : traceId;
+    }
+
+    private Mono<Void> respondError(
+            ServerWebExchange exchange,
+            HttpStatus status,
+            String errorCode,
+            String message,
+            Integer retryAfter) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(status);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        if (retryAfter != null) {
+            response.getHeaders().set(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfter));
+        }
 
+        String retryAfterField = retryAfter == null ? "" : ",\"retryAfter\":" + retryAfter;
         String body = """
-                {"error":"%s","message":"%s"}
-                """.formatted(status.getReasonPhrase(), message).strip();
+                {"success":false,"errorCode":"%s","message":"%s"%s}
+                """.formatted(errorCode, escapeJson(message), retryAfterField).strip();
 
-        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-        DataBuffer buffer = response.bufferFactory().wrap(bytes);
+        DataBuffer buffer = response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8));
         return response.writeWith(Mono.just(buffer));
     }
 
-    // ──────────────────────────────────────────────
-    // Response Decorator: capture body từ downstream
-    // ──────────────────────────────────────────────
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
 
-    /**
-     * Decorator để intercept và capture response body.
-     * Vừa capture vừa forward body về client như bình thường.
-     */
+    private void counter(String name, String endpoint, String... tags) {
+        String[] meterTags = new String[tags.length + 2];
+        meterTags[0] = "endpoint";
+        meterTags[1] = endpoint;
+        System.arraycopy(tags, 0, meterTags, 2, tags.length);
+        meterRegistry.counter(name, meterTags).increment();
+    }
+
+    private void recordDuration(Timer.Sample sample, String endpoint, String signal) {
+        long nanos = sample.stop(meterRegistry.timer(
+                "idempotency.filter.duration",
+                "endpoint", endpoint,
+                "signal", signal
+        ));
+        meterRegistry.timer(
+                "idempotency_filter_duration_seconds",
+                "endpoint", endpoint,
+                "signal", signal
+        ).record(nanos, java.util.concurrent.TimeUnit.NANOSECONDS);
+    }
+
     private static class CapturingResponseDecorator extends ServerHttpResponseDecorator {
 
         private final DataBufferFactory bufferFactory = new DefaultDataBufferFactory();
-        private final StringBuilder capturedBody = new StringBuilder();
+        private final ByteArrayOutputStream capturedBody = new ByteArrayOutputStream();
+        private final long maxBodySizeBytes;
+        private boolean bodyTooLarge;
 
-        public CapturingResponseDecorator(ServerHttpResponse delegate) {
+        CapturingResponseDecorator(ServerHttpResponse delegate, long maxBodySizeBytes) {
             super(delegate);
+            this.maxBodySizeBytes = maxBodySizeBytes;
         }
 
         @Override
         public Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
             Flux<DataBuffer> bufferedBody = Flux.from(body)
                     .map(buffer -> {
-                        // Đọc bytes để capture
                         byte[] bytes = new byte[buffer.readableByteCount()];
                         buffer.read(bytes);
                         DataBufferUtils.release(buffer);
 
-                        capturedBody.append(new String(bytes, StandardCharsets.UTF_8));
-
-                        // Tạo lại buffer mới để forward về client
+                        capture(bytes);
                         return bufferFactory.wrap(bytes);
                     });
 
@@ -273,11 +345,30 @@ public class IdempotencyFilter implements GlobalFilter, Ordered {
 
         @Override
         public Mono<Void> writeAndFlushWith(Publisher<? extends Publisher<? extends DataBuffer>> body) {
-            return writeWith(Flux.from(body).flatMapSequential(p -> p));
+            return writeWith(Flux.from(body).flatMapSequential(publisher -> publisher));
         }
 
-        public String getCapturedBody() {
-            return capturedBody.toString();
+        byte[] getCapturedBody() {
+            return capturedBody.toByteArray();
+        }
+
+        boolean isBodyTooLarge() {
+            return bodyTooLarge;
+        }
+
+        private void capture(byte[] bytes) {
+            if (bodyTooLarge) {
+                return;
+            }
+
+            long nextSize = (long) capturedBody.size() + bytes.length;
+            if (nextSize > maxBodySizeBytes) {
+                bodyTooLarge = true;
+                capturedBody.reset();
+                return;
+            }
+
+            capturedBody.writeBytes(bytes);
         }
     }
 }

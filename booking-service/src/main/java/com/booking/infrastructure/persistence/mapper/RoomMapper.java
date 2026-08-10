@@ -1,7 +1,6 @@
 package com.booking.infrastructure.persistence.mapper;
 
 import com.booking.domain.enums.RoomStatus;
-import com.booking.domain.enums.RoomType;
 import com.booking.domain.model.Room;
 import com.booking.infrastructure.persistence.entity.HotelEntity;
 import com.booking.infrastructure.persistence.entity.RoomEntity;
@@ -16,7 +15,7 @@ public class RoomMapper {
         Room room = new Room();
         room.setId(entity.getId());
         room.setHotelId(entity.getHotel() != null ? entity.getHotel().getId() : null);
-        room.setRoomType(RoomType.valueOf(entity.getRoomType()));
+        room.setRoomType(entity.getRoomType());
         room.setName(entity.getName());
         room.setDescription(entity.getDescription());
         room.setCapacity(entity.getCapacity());
@@ -36,7 +35,7 @@ public class RoomMapper {
         return RoomEntity.builder()
                 .id(domain.getId())
                 .hotel(hotelEntity)
-                .roomType(domain.getRoomType().name())
+                .roomType(domain.getRoomType())
                 .name(domain.getName())
                 .description(domain.getDescription())
                 .capacity(domain.getCapacity())
@@ -49,7 +48,7 @@ public class RoomMapper {
     }
 
     public void updateEntity(RoomEntity entity, Room domain) {
-        entity.setRoomType(domain.getRoomType().name());
+        entity.setRoomType(domain.getRoomType());
         entity.setName(domain.getName());
         entity.setDescription(domain.getDescription());
         entity.setCapacity(domain.getCapacity());

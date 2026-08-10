@@ -104,7 +104,7 @@ public class ReportRenderService {
         Room room = roomRepository.findById(booking.getRoomId()).orElse(null);
         Hotel hotel = hotelRepository.findById(booking.getHotelId()).orElse(null);
 
-        p.put("roomType", room != null && room.getRoomType() != null ? room.getRoomType().name() : "");
+        p.put("roomType", room != null && room.getRoomType() != null ? room.getRoomType() : "");
         p.put("roomName", room != null ? room.getName() : "");
         p.put("hotelName", hotel != null ? hotel.getName() : "");
         p.put("hotelAddress", hotel != null ? hotel.getAddress() : "");
@@ -328,12 +328,17 @@ public class ReportRenderService {
     }
 
     private InputStream loadLogo() {
-        try {
-            ClassPathResource res = new ClassPathResource("jasper/images/logo.png");
-            if (res.exists()) return res.getInputStream();
-        } catch (IOException e) {
-            log.warn("Logo not found");
+        for (String path : List.of("jasper/images/logo.png", "jasper/images/Logo.jpg")) {
+            try {
+                ClassPathResource res = new ClassPathResource(path);
+                if (res.exists()) {
+                    return res.getInputStream();
+                }
+            } catch (IOException e) {
+                log.warn("Logo load failed for {}", path);
+            }
         }
+        log.warn("Logo not found in Jasper resources");
         return null;
     }
 
@@ -361,12 +366,103 @@ public class ReportRenderService {
     }
 
     public byte[] renderRevenueReport(LocalDate from, LocalDate to, ExportFormat format) {
-        JasperReport report = getCompiledReport(ReportTemplate.REVENUE_REPORT);
+        return renderRevenueReport(from, to, format, null, null, "REVENUE REPORT");
+    }
 
-        Map<String, Object> params = new HashMap<>();
+    public byte[] renderRevenueReport(LocalDate from, LocalDate to, ExportFormat format, UUID hotelId) {
+        return renderRevenueReport(from, to, format, null, hotelId, "REVENUE REPORT");
+    }
+
+    public byte[] renderHostRevenueReport(LocalDate from, LocalDate to, ExportFormat format, UUID ownerUserId) {
+        return renderRevenueReport(from, to, format, ownerUserId, null, "HOST REVENUE REPORT");
+    }
+
+    public byte[] renderHostRevenueReport(
+            LocalDate from,
+            LocalDate to,
+            ExportFormat format,
+            UUID ownerUserId,
+            UUID hotelId) {
+        return renderRevenueReport(from, to, format, ownerUserId, hotelId, "HOST REVENUE REPORT");
+    }
+
+    public byte[] renderMonthlyRevenueReport(
+            int year,
+            int month,
+            ExportFormat format,
+            UUID ownerUserId,
+            UUID hotelId) {
+        LocalDate from = LocalDate.of(year, month, 1);
+        LocalDate to = from.withDayOfMonth(from.lengthOfMonth());
+        String title = ownerUserId == null ? "MONTHLY REVENUE REPORT" : "HOST MONTHLY REVENUE REPORT";
+        return renderSqlReport(
+                ReportTemplate.MONTHLY_REVENUE,
+                from,
+                to,
+                format,
+                ownerUserId,
+                hotelId,
+                title,
+                Collections.emptyMap()
+        );
+    }
+
+    public byte[] renderCommissionReport(
+            LocalDate from,
+            LocalDate to,
+            ExportFormat format,
+            UUID ownerUserId,
+            UUID hotelId,
+            BigDecimal commissionRate) {
+        String title = ownerUserId == null ? "COMMISSION REPORT" : "HOST COMMISSION REPORT";
+        return renderSqlReport(
+                ReportTemplate.COMMISSION_REPORT,
+                from,
+                to,
+                format,
+                ownerUserId,
+                hotelId,
+                title,
+                Map.of("commissionRate", normalizeCommissionRate(commissionRate))
+        );
+    }
+
+    private byte[] renderRevenueReport(
+            LocalDate from,
+            LocalDate to,
+            ExportFormat format,
+            UUID ownerUserId,
+            UUID hotelId,
+            String reportTitle) {
+        return renderSqlReport(
+                ReportTemplate.REVENUE_REPORT,
+                from,
+                to,
+                format,
+                ownerUserId,
+                hotelId,
+                reportTitle,
+                Collections.emptyMap()
+        );
+    }
+
+    private byte[] renderSqlReport(
+            ReportTemplate template,
+            LocalDate from,
+            LocalDate to,
+            ExportFormat format,
+            UUID ownerUserId,
+            UUID hotelId,
+            String reportTitle,
+            Map<String, Object> extraParams) {
+        JasperReport report = getCompiledReport(template);
+
+        Map<String, Object> params = new HashMap<>(extraParams);
         params.put("fromDate", java.sql.Date.valueOf(from));
         params.put("toDate", java.sql.Date.valueOf(to));
-        params.put("reportTitle", "REVENUE REPORT");
+        params.put("ownerUserId", ownerUserId != null ? ownerUserId.toString() : null);
+        params.put("hotelId", hotelId != null ? hotelId.toString() : null);
+        params.put("reportTitle", reportTitle);
 
         try (Connection connection = dataSource.getConnection()) {
             // Key difference: pass JDBC Connection, NOT Java data
@@ -379,9 +475,19 @@ public class ReportRenderService {
                 case CSV -> exportToCsv(print);
             };
         } catch (Exception e) {
-            log.error("Revenue report failed: from={}, to={}", from, to, e);
-            throw new RuntimeException("Revenue report generation failed", e);
+            log.error("{} failed: from={}, to={}, owner={}, hotel={}", template, from, to, ownerUserId, hotelId, e);
+            throw new RuntimeException(template.getTemplateName() + " generation failed", e);
         }
+    }
+
+    private BigDecimal normalizeCommissionRate(BigDecimal commissionRate) {
+        if (commissionRate == null) {
+            return new BigDecimal("0.10");
+        }
+        if (commissionRate.compareTo(BigDecimal.ZERO) < 0 || commissionRate.compareTo(BigDecimal.ONE) > 0) {
+            throw new IllegalArgumentException("Commission rate must be between 0 and 1");
+        }
+        return commissionRate;
     }
 
     public byte[] renderPaymentReceipt(UUID bookingId, Locale locale) {
@@ -428,7 +534,7 @@ public class ReportRenderService {
 
         p.put("hotelName", hotel != null ? hotel.getName() : "");
         p.put("hotelAddress", hotel != null ? hotel.getAddress() : "");
-        p.put("roomType", room != null && room.getRoomType() != null ? room.getRoomType().name() : "");
+        p.put("roomType", room != null && room.getRoomType() != null ? room.getRoomType() : "");
         p.put("roomName", room != null ? room.getName() : "");
 
         // Stay info

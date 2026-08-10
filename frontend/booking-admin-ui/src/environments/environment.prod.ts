@@ -10,6 +10,7 @@ export const environment = {
   // TODO: đổi thành domain thật khi deploy
   apiBaseUrl: '/api',
   apiKey: 'dev-api-key-abc123',
+  pendingPaymentMinutes: 30,
 
   keycloak: {
     url: 'https://keycloak.smartbooking.vn', // TODO: đổi

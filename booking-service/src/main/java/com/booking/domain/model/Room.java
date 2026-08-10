@@ -1,7 +1,7 @@
 package com.booking.domain.model;
 
 import com.booking.domain.enums.RoomStatus;
-import com.booking.domain.enums.RoomType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -13,7 +13,7 @@ public class Room {
 
     private UUID id;
     private UUID hotelId;
-    private RoomType roomType;
+    private String roomType;
     private String name;
     private String description;
     private Integer capacity;
@@ -33,6 +33,7 @@ public class Room {
 
     // ─── Domain logic ────────────────────────
 
+    @JsonIgnore
     public boolean isAvailable() {
         return this.status == RoomStatus.AVAILABLE;
     }
@@ -49,8 +50,8 @@ public class Room {
     public UUID getHotelId() { return hotelId; }
     public void setHotelId(UUID hotelId) { this.hotelId = hotelId; }
 
-    public RoomType getRoomType() { return roomType; }
-    public void setRoomType(RoomType roomType) { this.roomType = roomType; }
+    public String getRoomType() { return roomType; }
+    public void setRoomType(String roomType) { this.roomType = roomType; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

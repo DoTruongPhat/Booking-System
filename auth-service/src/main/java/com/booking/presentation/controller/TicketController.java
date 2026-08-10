@@ -3,7 +3,7 @@ package com.booking.presentation.controller;
 import com.booking.application.port.in.CreateTicketUseCase;
 import com.booking.application.port.in.GetProfileUseCase;
 import com.booking.application.port.in.GetTicketsUseCase;
-import com.booking.application.service.SupportTicketService;
+import com.booking.application.port.in.ManageTicketUseCase;
 import com.booking.domain.model.SupportTicket;
 import com.booking.presentation.request.CreateTicketRequest;
 import jakarta.validation.Valid;
@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -31,6 +30,7 @@ import java.util.UUID;
 public class TicketController {
     private final CreateTicketUseCase createTicketUseCase;
     private final GetTicketsUseCase getTicketsUseCase;
+    private final ManageTicketUseCase manageTicketUseCase;
     private final GetProfileUseCase getProfileUseCase;
 
     @PostMapping
@@ -51,6 +51,31 @@ public class TicketController {
         return ResponseEntity.ok(
                 getTicketsUseCase.getMyTickets(
                         getUserId(), PageRequest.of(page, size)));
+    }
+
+    @GetMapping("/assigned")
+    public ResponseEntity<Page<SupportTicket>> getAssignedTickets(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(
+                getTicketsUseCase.getAssignedTickets(
+                        getUserId(), status, PageRequest.of(page, size)));
+    }
+
+    @GetMapping("/assigned/{id}")
+    public ResponseEntity<SupportTicket> getAssignedTicketById(
+            @PathVariable UUID id) {
+        return ResponseEntity.ok(
+                getTicketsUseCase.getAssignedTicketById(id, getUserId()));
+    }
+
+    @PutMapping("/assigned/{id}/status")
+    public ResponseEntity<SupportTicket> updateAssignedTicketStatus(
+            @PathVariable UUID id,
+            @RequestParam String status) {
+        return ResponseEntity.ok(
+                manageTicketUseCase.updateAssignedTicketStatus(id, getUserId(), status));
     }
 
     @GetMapping("/{id}")

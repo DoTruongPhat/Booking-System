@@ -75,7 +75,7 @@
           <td>
             <nz-avatar
               [nzText]="user.username.charAt(0).toUpperCase()"
-              [style.background-color]="getStatus(user) === 'active' ? '#1890ff' : '#bfbfbf'"
+              [style.background-color]="getStatus(user) === 'active' ? '#6fbf73' : '#bfbfbf'"
             ></nz-avatar>
           </td>
           <td>
@@ -98,7 +98,7 @@
           <td>
             <nz-tag
               *ngFor="let role of user.roles"
-              [nzColor]="role.code === 'ADMIN_ALL' || role.code === 'ADMIN' ? 'red' : 'blue'"
+              [nzColor]="role.code === 'ADMIN_ALL' || role.code === 'ADMIN' ? 'red' : 'green'"
             >
               {{ role.code }}
             </nz-tag>
@@ -390,7 +390,7 @@
   <ng-container *nzModalContent>
     <div class="perm-summary">
       <nz-tag nzColor="purple"> Tổng: {{ selectedPermissions.length }} quyền </nz-tag>
-      <nz-tag *ngFor="let role of selectedUser?.roles" nzColor="blue">
+      <nz-tag *ngFor="let role of selectedUser?.roles" nzColor="green">
         {{ role.code }}
       </nz-tag>
     </div>

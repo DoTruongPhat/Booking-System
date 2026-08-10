@@ -12,6 +12,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { Hotel } from '../models/hotel.model';
 import { ApiResponse, PaginatedData } from '../models/api-response.model';
+import { withIdempotencyHeader } from '../http/idempotency';
 
 /** Status của hotel trên admin (dùng cho approve flow) */
 export type HotelStatus = 'PENDING_APPROVAL' | 'ACTIVE' | 'INACTIVE';
@@ -36,9 +37,13 @@ export class HotelService {
   // ══════════════════════════════════════════════════════════
 
   /** POST /api/host/hotels — tạo hotel mới */
-  createHotel(body: Partial<Hotel>): Observable<Hotel> {
+  createHotel(body: Partial<Hotel>, idempotencyKey?: string): Observable<Hotel> {
     return this.http
-      .post<ApiResponse<Hotel>>('/api/host/hotels', body, { withCredentials: true })
+      .post<ApiResponse<Hotel>>(
+        '/api/host/hotels',
+        body,
+        withIdempotencyHeader({ withCredentials: true }, idempotencyKey),
+      )
       .pipe(map((res) => this.normalizeHotel(res.data)));
   }
 
@@ -107,6 +112,30 @@ export class HotelService {
     return this.http
       .post<ApiResponse<Hotel>>(`/api/admin/hotels/${id}/approve`, {}, { withCredentials: true })
       .pipe(map((res) => this.normalizeHotel(res.data)));
+  }
+
+  deactivateAdminHotel(id: string): Observable<Hotel> {
+    return this.http
+      .post<ApiResponse<Hotel>>(`/api/admin/hotels/${id}/deactivate`, {}, { withCredentials: true })
+      .pipe(map((res) => this.normalizeHotel(res.data)));
+  }
+
+  deactivateMyHotel(id: string): Observable<Hotel> {
+    return this.http
+      .post<ApiResponse<Hotel>>(`/api/host/hotels/${id}/deactivate`, {}, { withCredentials: true })
+      .pipe(map((res) => this.normalizeHotel(res.data)));
+  }
+
+  deleteAdminHotel(id: string): Observable<void> {
+    return this.http
+      .delete<ApiResponse<void>>(`/api/admin/hotels/${id}`, { withCredentials: true })
+      .pipe(map(() => undefined));
+  }
+
+  deleteMyHotel(id: string): Observable<void> {
+    return this.http
+      .delete<ApiResponse<void>>(`/api/host/hotels/${id}`, { withCredentials: true })
+      .pipe(map(() => undefined));
   }
 
   private normalizeHotel(raw: any): Hotel {

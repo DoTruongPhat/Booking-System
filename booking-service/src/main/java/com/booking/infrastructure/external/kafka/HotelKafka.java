@@ -33,6 +33,11 @@ public class HotelKafka implements HotelEventPublisherPort {
         publish("HotelDeactivated", event.hotelId().toString(), event);
     }
 
+    @Override
+    public void publishHotelChangeRequested(CoreDomainEvent.HotelChangeRequested event) {
+        publish("HotelChangeRequested", event.changeRequestId().toString(), event);
+    }
+
     private void publish(String eventType, String key, Object event) {
         try {
             String payload = objectMapper.writeValueAsString(event);

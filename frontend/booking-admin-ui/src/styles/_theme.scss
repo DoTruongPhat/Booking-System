@@ -5,10 +5,10 @@
 
 :root {
   // === BRAND COLORS ===
-  --color-primary: #0064D2;        // Mytour blue
-  --color-primary-hover: #0052AB;
-  --color-primary-light: #E3F0FF;
-  --color-primary-soft: #F0F7FF;
+  --color-primary: #6FBF73;
+  --color-primary-hover: #5BAA60;
+  --color-primary-light: #E3F4E5;
+  --color-primary-soft: #F2FAF3;
 
   --color-accent: #FF6B00;          // Sale/Khuyến mãi
   --color-accent-hover: #E55E00;
@@ -20,12 +20,12 @@
   --color-warning-light: #FFF6E5;
   --color-danger: #E53935;
   --color-danger-light: #FDECEC;
-  --color-info: #2196F3;
-  --color-info-light: #E8F4FE;
+  --color-info: #6FBF73;
+  --color-info-light: #F2FAF3;
 
   // === GRADIENTS (subtle) ===
-  --gradient-primary: linear-gradient(135deg, #0064D2 0%, #0052AB 100%);
-  --gradient-hero: linear-gradient(135deg, #F0F7FF 0%, #E3F0FF 100%);
+  --gradient-primary: linear-gradient(135deg, #6FBF73 0%, #5BAA60 100%);
+  --gradient-hero: linear-gradient(135deg, #F2FAF3 0%, #E3F4E5 100%);
   --gradient-cta: linear-gradient(135deg, #FF6B00 0%, #FF8C2E 100%);
 
   // === NEUTRAL ===

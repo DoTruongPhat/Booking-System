@@ -16,5 +16,7 @@ public interface QueryBookingUseCase {
 
     Page<Booking> getByHotelId(UUID hotelId, String status, Pageable pageable);
 
+    Page<Booking> getByOwnerUserId(UUID ownerUserId, String status, Pageable pageable);
+
     Page<Booking> getAll(String status, Pageable pageable);
 }

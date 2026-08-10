@@ -1,0 +1,119 @@
+{
+  "id": null,
+  "uid": "business-metrics",
+  "title": "Business Metrics - Booking System",
+  "tags": ["booking-system", "business"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Bookings Created",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "sum(booking_total) or vector(0)", "legendFormat": "Total", "refId": "A" }],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } } }
+    },
+    {
+      "id": 2,
+      "title": "Bookings Confirmed",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "targets": [{ "expr": "sum(booking_confirmed_total) or vector(0)", "legendFormat": "Total", "refId": "A" }],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } } }
+    },
+    {
+      "id": 3,
+      "title": "Payments Success",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "targets": [{ "expr": "sum(payment_success_total) or vector(0)", "legendFormat": "Total", "refId": "A" }],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" } } }
+    },
+    {
+      "id": 4,
+      "title": "Payments Failed",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "sum(payment_failed_total) or vector(0)", "legendFormat": "Total", "refId": "A" }],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" } } }
+    },
+    {
+      "id": 5,
+      "title": "Booking Creation Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "targets": [{ "expr": "sum(rate(booking_total[5m])) or vector(0)", "legendFormat": "bookings/sec", "refId": "A" }],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 6,
+      "title": "Payment Success vs Failed Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        { "expr": "sum(rate(payment_success_total[5m])) or vector(0)", "legendFormat": "success/sec", "refId": "A" },
+        { "expr": "sum(rate(payment_failed_total[5m])) or vector(0)", "legendFormat": "failed/sec", "refId": "B" }
+      ],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 7,
+      "title": "Booking Creation Duration (P95 / P50)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(booking_creation_duration_seconds_bucket[5m])) by (le)) or vector(0)", "legendFormat": "p95", "refId": "A" },
+        { "expr": "histogram_quantile(0.5, sum(rate(booking_creation_duration_seconds_bucket[5m])) by (le)) or vector(0)", "legendFormat": "p50", "refId": "B" }
+      ],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 8,
+      "title": "Auth Login Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "targets": [
+        { "expr": "sum(rate(http_server_requests_seconds_count{job=\"auth-service\", uri=\"/auth/login\", status=~\"2..\"}[5m])) or vector(0)", "legendFormat": "success", "refId": "A" },
+        { "expr": "sum(rate(http_server_requests_seconds_count{job=\"auth-service\", uri=\"/auth/login\", status!~\"2..\"}[5m])) or vector(0)", "legendFormat": "failed", "refId": "B" }
+      ],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 9,
+      "title": "Bookings Cancelled",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 22 },
+      "targets": [{ "expr": "sum(booking_cancelled_total) or vector(0)", "legendFormat": "Total", "refId": "A" }],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "orange" } } }
+    },
+    {
+      "id": 10,
+      "title": "Payments Expired",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 22 },
+      "targets": [{ "expr": "sum(payment_expired_total) or vector(0)", "legendFormat": "Total", "refId": "A" }],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "orange" } } }
+    },
+    {
+      "id": 11,
+      "title": "Refunds Processed",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 22 },
+      "targets": [{ "expr": "sum(refund_processed_total) or vector(0)", "legendFormat": "Total", "refId": "A" }],
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "purple" } } }
+    }
+  ]
+}

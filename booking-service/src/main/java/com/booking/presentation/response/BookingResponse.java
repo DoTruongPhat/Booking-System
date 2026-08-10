@@ -19,6 +19,11 @@ public class BookingResponse {
     private UUID userId;
     private UUID roomId;
     private UUID hotelId;
+    private String roomName;
+    private String hotelName;
+    private String hotelAddress;
+    private java.util.List<String> roomImages;
+    private java.util.List<String> hotelImages;
 
     // Dates
     private LocalDate checkInDate;
@@ -32,6 +37,7 @@ public class BookingResponse {
     // Price
     private BigDecimal unitPrice;
     private BigDecimal discountAmount;
+    private String voucherCode;
     private BigDecimal totalPrice;
 
     // Status
@@ -39,6 +45,7 @@ public class BookingResponse {
     private String paymentStatus;
     private String paymentMethod;
     private Instant paidAt;
+    private Instant paymentExpiresAt;
     private BigDecimal refundAmount;
 
     // Cancellation
@@ -48,6 +55,9 @@ public class BookingResponse {
 
     // Extra
     private String specialRequest;
+    private String guestName;
+    private String guestEmail;
+    private String guestPhone;
 
     // Timestamps
     private Instant createdAt;

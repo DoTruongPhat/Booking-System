@@ -17,14 +17,29 @@ import java.util.UUID;
 public interface BookingJpaRepository extends JpaRepository<BookingEntity, UUID>,
                                         JpaSpecificationExecutor<BookingEntity> {
 
-    Page<BookingEntity> findByUserId(UUID userId, Pageable pageable);
+    @Query("SELECT b FROM BookingEntity b WHERE b.userId = :userId ORDER BY b.createdAt DESC")
+    Page<BookingEntity> findByUserId(@Param("userId") UUID userId, Pageable pageable);
 
-    Page<BookingEntity> findByHotelId(UUID hotelId, Pageable pageable);
+    @Query("SELECT b FROM BookingEntity b WHERE b.hotel.id = :hotelId ORDER BY b.createdAt DESC")
+    Page<BookingEntity> findByHotelId(@Param("hotelId") UUID hotelId, Pageable pageable);
 
-    @Query("SELECT b FROM BookingEntity b WHERE b.hotel.id = :hotelId AND (:status IS NULL OR b.status = :status)")
+    boolean existsByHotelId(UUID hotelId);
+
+    @Query("SELECT b FROM BookingEntity b " +
+            "WHERE b.hotel.id = :hotelId " +
+            "AND (:status IS NULL OR b.status = :status) " +
+            "ORDER BY b.createdAt DESC")
     Page<BookingEntity> findByHotelIdAndStatus(@Param("hotelId") UUID hotelId,
                                                @Param("status") String status,
                                                Pageable pageable);
+
+    @Query("SELECT b FROM BookingEntity b " +
+            "WHERE b.hotel.ownerUserId = :ownerUserId " +
+            "AND (:status IS NULL OR b.status = :status) " +
+            "ORDER BY b.createdAt DESC")
+    Page<BookingEntity> findByOwnerUserIdAndStatus(@Param("ownerUserId") UUID ownerUserId,
+                                                   @Param("status") String status,
+                                                   Pageable pageable);
 
     @Query("SELECT COUNT(b) FROM BookingEntity b WHERE b.hotel.ownerUserId = :ownerUserId")
     long countByOwnerUserId(@Param("ownerUserId") UUID ownerUserId);
@@ -40,12 +55,14 @@ public interface BookingJpaRepository extends JpaRepository<BookingEntity, UUID>
     @Query("SELECT COUNT(b) FROM BookingEntity b " +
             "WHERE b.hotel.ownerUserId = :ownerUserId " +
             "AND b.checkInDate BETWEEN :startDate AND :endDate " +
-            "AND b.status IN ('PENDING', 'CONFIRMED')")
+            "AND b.status IN ('PENDING', 'CONFIRMED', 'CHECKED_IN')")
     long countUpcomingCheckIns(@Param("ownerUserId") UUID ownerUserId,
                                @Param("startDate") LocalDate startDate,
                                @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT b FROM BookingEntity b WHERE (:status IS NULL OR b.status = :status)")
+    @Query("SELECT b FROM BookingEntity b " +
+            "WHERE (:status IS NULL OR b.status = :status) " +
+            "ORDER BY b.createdAt DESC")
     Page<BookingEntity> findAllByStatus(@Param("status") String status, Pageable pageable);
 
     /**
@@ -81,8 +98,13 @@ public interface BookingJpaRepository extends JpaRepository<BookingEntity, UUID>
     @Query("SELECT COUNT(DISTINCT b.id) " +
             "FROM BookingEntity b " +
             "WHERE b.room.id = :roomId " +
-            "AND b.status IN ('PENDING', 'CONFIRMED') " +
+            "AND b.status IN ('PENDING', 'CONFIRMED', 'CHECKED_IN') " +
             "AND b.checkOutDate >= :today")
     long countActiveBookingsForRoom(@Param("roomId") UUID roomId,
                                     @Param("today") LocalDate today);
+
+    @Query("SELECT b FROM BookingEntity b WHERE b.status = 'PENDING' " +
+            "AND b.paymentStatus = 'UNPAID' " +
+            "AND b.checkInDate <= :cutoffDate")
+    List<BookingEntity> findPendingBeforeDate(@Param("cutoffDate") LocalDate cutoffDate);
 }

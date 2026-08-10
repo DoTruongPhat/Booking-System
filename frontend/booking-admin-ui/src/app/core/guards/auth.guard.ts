@@ -13,19 +13,8 @@ export const authGuard: CanActivateFn = (_route, state) => {
   const auth = inject(Auth);
   const router = inject(Router);
 
-  if (auth.isLoggedIn()) return true;
-
-  return auth.getProfile().pipe(
-    map((user: any) => {
-      auth.saveUser({
-        username: user.username,
-        email: user.email,
-        roles: user.roles?.map((r: any) => (typeof r === 'string' ? r : r.code)) || [],
-        timezone: user.timezone,
-        phone: user.phone,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      });
+  return auth.hydrateUserFromProfile().pipe(
+    map(() => {
       return true;
     }),
     catchError(() => {

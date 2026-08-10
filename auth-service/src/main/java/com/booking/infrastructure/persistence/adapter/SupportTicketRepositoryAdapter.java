@@ -60,6 +60,12 @@ public class SupportTicketRepositoryAdapter implements SupportTicketRepositoryPo
     }
 
     @Override
+    public Page<SupportTicket> findByAssignedToAndStatus(UUID assignedTo, String status, Pageable pageable) {
+        return jpaRepository.findByAssignedToAndStatus(assignedTo, status, pageable)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public Page<SupportTicket> findByStatus(String status, Pageable pageable) {
         return jpaRepository.findByStatus(status, pageable)
                 .map(mapper::toDomain);

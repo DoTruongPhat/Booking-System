@@ -60,13 +60,13 @@ export class AdminTicketDetail implements OnInit {
   readonly allStatuses: TicketStatus[] = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
   readonly statusConfig: Record<TicketStatus, { label: string; color: string }> = {
     OPEN: { label: 'Mở', color: 'orange' },
-    IN_PROGRESS: { label: 'Đang xử lý', color: 'blue' },
+    IN_PROGRESS: { label: 'Đang xử lý', color: 'green' },
     RESOLVED: { label: 'Đã giải quyết', color: 'green' },
     CLOSED: { label: 'Đã đóng', color: 'default' },
   };
   readonly priorityConfig: Record<string, { label: string; color: string }> = {
     LOW: { label: 'Thấp', color: 'default' },
-    MEDIUM: { label: 'Trung bình', color: 'blue' },
+    MEDIUM: { label: 'Trung bình', color: 'green' },
     HIGH: { label: 'Cao', color: 'orange' },
     URGENT: { label: 'Khẩn cấp', color: 'red' },
   };

@@ -2,7 +2,6 @@ package com.booking.application.port.in;
 
 import com.booking.domain.model.Booking;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -19,7 +18,8 @@ public interface CreateBookingUseCase {
             String specialRequest,
             String guestName,
             String guestEmail,
-            String guestPhone
+            String guestPhone,
+            String voucherCode
     ) {}
 
 }

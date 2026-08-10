@@ -23,8 +23,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import static com.booking.infrastructure.cache.config.RedisCacheConfig.CACHE_ROOM_AVAILABILITY;
-import static com.booking.infrastructure.cache.config.RedisCacheConfig.CACHE_SEARCH_RESULTS;
+import static com.booking.infrastructure.cache.config.RedisCacheConfig.CACHE_ROOM_DETAIL;
 
 @Service
 @RequiredArgsConstructor
@@ -43,11 +42,6 @@ public class SearchRoomService implements SearchRoomUseCase {
     // ─── Search ──────────────────────────────────────────
 
     @Override
-    @Cacheable(
-            value = CACHE_SEARCH_RESULTS,
-            key = "'search:' + #criteria.city() + ':' + #criteria.checkIn() + ':' + #criteria.checkOut() + ':' + #criteria.guests() + ':' + #criteria.minPrice() + ':' + #criteria.maxPrice() + ':' + #pageable.pageNumber + ':' + #pageable.pageSize",
-            unless = "#result == null || #result.content.isEmpty()"
-    )
     public Page<RoomSearchResult> searchRooms(SearchCriteria criteria, Pageable pageable) {
         if (!criteria.checkOut().isAfter(criteria.checkIn())) {
             throw new CoreException(CoreErrorCode.BOOKING_INVALID_DATES);
@@ -64,7 +58,7 @@ public class SearchRoomService implements SearchRoomUseCase {
 
     @Override
     @Cacheable(
-            value = CACHE_ROOM_AVAILABILITY,
+            value = CACHE_ROOM_DETAIL,
             key = "'detail:roomId=' + #roomId",
             unless = "#result == null"
     )

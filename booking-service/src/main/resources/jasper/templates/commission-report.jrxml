@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports
+                  http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="commission-report"
+              pageWidth="842" pageHeight="595"
+              orientation="Landscape"
+              columnWidth="802"
+              leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20"
+              uuid="e1000001-0001-0001-0001-000000000001">
+
+    <parameter name="fromDate" class="java.sql.Date"/>
+    <parameter name="toDate" class="java.sql.Date"/>
+    <parameter name="ownerUserId" class="java.lang.String"/>
+    <parameter name="hotelId" class="java.lang.String"/>
+    <parameter name="commissionRate" class="java.math.BigDecimal"/>
+    <parameter name="reportTitle" class="java.lang.String">
+        <defaultValueExpression><![CDATA["COMMISSION REPORT"]]></defaultValueExpression>
+    </parameter>
+
+    <queryString>
+        <![CDATA[
+            SELECT
+                h.name AS hotel_name,
+                h.city AS hotel_city,
+                h.owner_user_id::text AS owner_user_id,
+                COUNT(b.id) AS paid_bookings,
+                SUM(b.total_price) AS gross_revenue,
+                SUM(COALESCE(b.refund_amount, 0)) AS refund_amount,
+                SUM(b.total_price - COALESCE(b.refund_amount, 0)) AS net_revenue,
+                SUM((b.total_price - COALESCE(b.refund_amount, 0)) * $P{commissionRate}) AS commission_amount,
+                SUM((b.total_price - COALESCE(b.refund_amount, 0)) * (1 - $P{commissionRate})) AS host_payout
+            FROM booking.bookings b
+            JOIN booking.hotels h ON b.hotel_id = h.id
+            WHERE b.paid_at >= CAST($P{fromDate} AS timestamp)
+              AND CAST($P{toDate} AS timestamp) + INTERVAL '1 day' > b.paid_at
+              AND b.payment_status IN ('PAID', 'PARTIALLY_REFUNDED', 'REFUNDED')
+              AND b.status IN ('CONFIRMED', 'COMPLETED')
+              AND ($P{ownerUserId} IS NULL OR h.owner_user_id = CAST($P{ownerUserId} AS uuid))
+              AND ($P{hotelId} IS NULL OR h.id = CAST($P{hotelId} AS uuid))
+            GROUP BY h.name, h.city, h.owner_user_id
+            ORDER BY commission_amount DESC
+        ]]>
+    </queryString>
+
+    <field name="hotel_name" class="java.lang.String"/>
+    <field name="hotel_city" class="java.lang.String"/>
+    <field name="owner_user_id" class="java.lang.String"/>
+    <field name="paid_bookings" class="java.lang.Long"/>
+    <field name="gross_revenue" class="java.math.BigDecimal"/>
+    <field name="refund_amount" class="java.math.BigDecimal"/>
+    <field name="net_revenue" class="java.math.BigDecimal"/>
+    <field name="commission_amount" class="java.math.BigDecimal"/>
+    <field name="host_payout" class="java.math.BigDecimal"/>
+
+    <variable name="grandNetRevenue" class="java.math.BigDecimal" calculation="Sum">
+        <variableExpression><![CDATA[$F{net_revenue}]]></variableExpression>
+    </variable>
+    <variable name="grandCommission" class="java.math.BigDecimal" calculation="Sum">
+        <variableExpression><![CDATA[$F{commission_amount}]]></variableExpression>
+    </variable>
+    <variable name="grandPayout" class="java.math.BigDecimal" calculation="Sum">
+        <variableExpression><![CDATA[$F{host_payout}]]></variableExpression>
+    </variable>
+
+    <title>
+        <band height="70">
+            <textField>
+                <reportElement x="0" y="0" width="802" height="30" uuid="e1000001-0001-0001-0001-000000000002"/>
+                <textElement textAlignment="Center"><font fontName="DejaVu Sans" size="20" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{reportTitle}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="0" y="35" width="802" height="20" forecolor="#666666" uuid="e1000001-0001-0001-0001-000000000003"/>
+                <textElement textAlignment="Center"><font fontName="DejaVu Sans" size="11" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement>
+                <textFieldExpression><![CDATA["Period: " + new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{fromDate}) + " - " + new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{toDate}) + " | Rate: " + $P{commissionRate}.multiply(new java.math.BigDecimal("100")) + "%"]]></textFieldExpression>
+            </textField>
+            <line>
+                <reportElement x="0" y="60" width="802" height="1" forecolor="#7C3AED" uuid="e1000001-0001-0001-0001-000000000004"/>
+                <graphicElement><pen lineWidth="2.0"/></graphicElement>
+            </line>
+        </band>
+    </title>
+
+    <columnHeader>
+        <band height="25">
+            <staticText><reportElement x="0" y="0" width="155" height="25" backcolor="#7C3AED" mode="Opaque" forecolor="#FFFFFF" uuid="e1000001-0001-0001-0001-000000000010"/><textElement verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><text><![CDATA[  Hotel]]></text></staticText>
+            <staticText><reportElement x="155" y="0" width="80" height="25" backcolor="#7C3AED" mode="Opaque" forecolor="#FFFFFF" uuid="e1000001-0001-0001-0001-000000000011"/><textElement verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><text><![CDATA[  City]]></text></staticText>
+            <staticText><reportElement x="235" y="0" width="75" height="25" backcolor="#7C3AED" mode="Opaque" forecolor="#FFFFFF" uuid="e1000001-0001-0001-0001-000000000012"/><textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><text><![CDATA[Bookings]]></text></staticText>
+            <staticText><reportElement x="310" y="0" width="100" height="25" backcolor="#7C3AED" mode="Opaque" forecolor="#FFFFFF" uuid="e1000001-0001-0001-0001-000000000013"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><text><![CDATA[Gross  ]]></text></staticText>
+            <staticText><reportElement x="410" y="0" width="95" height="25" backcolor="#7C3AED" mode="Opaque" forecolor="#FFFFFF" uuid="e1000001-0001-0001-0001-000000000014"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><text><![CDATA[Refund  ]]></text></staticText>
+            <staticText><reportElement x="505" y="0" width="100" height="25" backcolor="#7C3AED" mode="Opaque" forecolor="#FFFFFF" uuid="e1000001-0001-0001-0001-000000000015"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><text><![CDATA[Net  ]]></text></staticText>
+            <staticText><reportElement x="605" y="0" width="100" height="25" backcolor="#7C3AED" mode="Opaque" forecolor="#FFFFFF" uuid="e1000001-0001-0001-0001-000000000016"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><text><![CDATA[Commission  ]]></text></staticText>
+            <staticText><reportElement x="705" y="0" width="97" height="25" backcolor="#7C3AED" mode="Opaque" forecolor="#FFFFFF" uuid="e1000001-0001-0001-0001-000000000017"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="9" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><text><![CDATA[Host Payout  ]]></text></staticText>
+        </band>
+    </columnHeader>
+
+    <detail>
+        <band height="20">
+            <textField isBlankWhenNull="true"><reportElement x="0" y="0" width="155" height="20" uuid="e1000001-0001-0001-0001-000000000020"/><textElement verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement><textFieldExpression><![CDATA["  " + $F{hotel_name}]]></textFieldExpression></textField>
+            <textField isBlankWhenNull="true"><reportElement x="155" y="0" width="80" height="20" uuid="e1000001-0001-0001-0001-000000000021"/><textElement verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement><textFieldExpression><![CDATA["  " + $F{hotel_city}]]></textFieldExpression></textField>
+            <textField><reportElement x="235" y="0" width="75" height="20" uuid="e1000001-0001-0001-0001-000000000022"/><textElement textAlignment="Center" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement><textFieldExpression><![CDATA[$F{paid_bookings}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="310" y="0" width="100" height="20" uuid="e1000001-0001-0001-0001-000000000023"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement><textFieldExpression><![CDATA[$F{gross_revenue}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="410" y="0" width="95" height="20" uuid="e1000001-0001-0001-0001-000000000024"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement><textFieldExpression><![CDATA[$F{refund_amount}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="505" y="0" width="100" height="20" uuid="e1000001-0001-0001-0001-000000000025"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement><textFieldExpression><![CDATA[$F{net_revenue}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="605" y="0" width="100" height="20" forecolor="#7C3AED" uuid="e1000001-0001-0001-0001-000000000026"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><textFieldExpression><![CDATA[$F{commission_amount}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="705" y="0" width="97" height="20" uuid="e1000001-0001-0001-0001-000000000027"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="8" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement><textFieldExpression><![CDATA[$F{host_payout}]]></textFieldExpression></textField>
+            <line><reportElement x="0" y="19" width="802" height="1" forecolor="#EEEEEE" uuid="e1000001-0001-0001-0001-000000000028"/></line>
+        </band>
+    </detail>
+    <pageFooter>
+        <band height="25">
+            <staticText><reportElement x="0" y="5" width="400" height="15" forecolor="#999999" uuid="e1000001-0001-0001-0001-000000000040"/><textElement><font fontName="DejaVu Sans" size="7" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement><text><![CDATA[Generated by Booking System | Commission report]]></text></staticText>
+            <textField><reportElement x="650" y="5" width="100" height="15" forecolor="#999999" uuid="e1000001-0001-0001-0001-000000000041"/><textElement textAlignment="Right"><font fontName="DejaVu Sans" size="7" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement><textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER} + " / "]]></textFieldExpression></textField>
+            <textField evaluationTime="Report"><reportElement x="750" y="5" width="52" height="15" forecolor="#999999" uuid="e1000001-0001-0001-0001-000000000042"/><textElement><font fontName="DejaVu Sans" size="7" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H"/></textElement><textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression></textField>
+        </band>
+    </pageFooter>
+    <summary>
+        <band height="40">
+            <line><reportElement x="0" y="0" width="802" height="1" uuid="e1000001-0001-0001-0001-000000000030"/><graphicElement><pen lineWidth="2.0"/></graphicElement></line>
+            <staticText><reportElement x="0" y="5" width="250" height="25" uuid="e1000001-0001-0001-0001-000000000031"/><textElement verticalAlignment="Middle"><font fontName="DejaVu Sans" size="12" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><text><![CDATA[  TOTAL]]></text></staticText>
+            <textField pattern="#,##0.00"><reportElement x="505" y="5" width="100" height="25" uuid="e1000001-0001-0001-0001-000000000032"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="11" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><textFieldExpression><![CDATA[$V{grandNetRevenue}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="605" y="5" width="100" height="25" forecolor="#7C3AED" uuid="e1000001-0001-0001-0001-000000000033"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="11" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><textFieldExpression><![CDATA[$V{grandCommission}]]></textFieldExpression></textField>
+            <textField pattern="#,##0.00"><reportElement x="705" y="5" width="97" height="25" uuid="e1000001-0001-0001-0001-000000000034"/><textElement textAlignment="Right" verticalAlignment="Middle"><font fontName="DejaVu Sans" size="11" pdfFontName="DejaVu Sans" pdfEncoding="Identity-H" isBold="true"/></textElement><textFieldExpression><![CDATA[$V{grandPayout}]]></textFieldExpression></textField>
+        </band>
+    </summary>
+
+
+</jasperReport>

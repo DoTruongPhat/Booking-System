@@ -1,7 +1,9 @@
-<div class="dashboard">
-  <div class="dashboard-header">
-    <h1>{{ isHost ? 'Host Dashboard' : 'Dashboard' }}</h1>
-    <p>{{ dashboardSubtitle }}</p>
+<div class="dashboard-page">
+  <div class="dashboard-head">
+    <h1>Dashboard</h1>
+    <button nz-button class="reload-btn" (click)="reload()">
+      <span nz-icon nzType="reload"></span>
+    </button>
   </div>
 
   <nz-alert
@@ -20,109 +22,209 @@
     </button>
   </ng-template>
 
-  <div nz-row [nzGutter]="16" class="stats-row">
-    <div nz-col [nzSpan]="6">
-      <nz-card class="stat-card">
-        <nz-skeleton
-          *ngIf="loading; else userStat"
-          [nzActive]="true"
-          [nzParagraph]="{ rows: 1 }"
-        ></nz-skeleton>
-        <ng-template #userStat>
-          <nz-statistic
-            [nzValue]="stats?.totalUsers ?? 0"
-            [nzTitle]="firstCardTitle"
-            [nzPrefix]="userPrefix"
-          ></nz-statistic>
-        </ng-template>
-        <ng-template #userPrefix>
-          <span nz-icon nzType="user"></span>
-        </ng-template>
-      </nz-card>
-    </div>
+  <section class="top-grid">
+    <article class="metric-card" *ngFor="let card of metricCards; trackBy: trackByTitle">
+      <nz-skeleton
+        *ngIf="loading; else metricContent"
+        [nzActive]="true"
+        [nzParagraph]="{ rows: 1 }"
+      ></nz-skeleton>
+      <ng-template #metricContent>
+        <strong>{{ card.value }}</strong>
+        <span>{{ card.title }}</span>
+        <small [class.down]="card.trendType === 'down'">
+          <span nz-icon [nzType]="card.trendType === 'down' ? 'arrow-down' : 'arrow-up'"></span>
+          {{ card.trend }}
+        </small>
+      </ng-template>
+    </article>
 
-    <div nz-col [nzSpan]="6">
-      <nz-card class="stat-card">
-        <nz-skeleton
-          *ngIf="loading; else bookingStat"
-          [nzActive]="true"
-          [nzParagraph]="{ rows: 1 }"
-        ></nz-skeleton>
-        <ng-template #bookingStat>
-          <nz-statistic
-            [nzValue]="stats?.totalBookings ?? 0"
-            [nzTitle]="bookingCardTitle"
-            [nzPrefix]="bookingPrefix"
-          ></nz-statistic>
-        </ng-template>
-        <ng-template #bookingPrefix>
-          <span nz-icon nzType="calendar"></span>
-        </ng-template>
-      </nz-card>
-    </div>
+    <article class="panel booking-heatmap-card">
+      <div class="panel-title">
+        <h2>Bookings</h2>
+        <button nz-button nzSize="small">By Week</button>
+      </div>
 
-    <div nz-col [nzSpan]="6">
-      <nz-card class="stat-card">
-        <nz-skeleton
-          *ngIf="loading; else roomStat"
-          [nzActive]="true"
-          [nzParagraph]="{ rows: 1 }"
-        ></nz-skeleton>
-        <ng-template #roomStat>
-          <nz-statistic
-            [nzValue]="stats?.totalRooms ?? 0"
-            [nzTitle]="roomCardTitle"
-            [nzPrefix]="roomPrefix"
-          ></nz-statistic>
-        </ng-template>
-        <ng-template #roomPrefix>
-          <span nz-icon nzType="home"></span>
-        </ng-template>
-      </nz-card>
-    </div>
+      <nz-skeleton
+        *ngIf="bookingsLoading; else heatmap"
+        [nzActive]="true"
+        [nzParagraph]="{ rows: 6 }"
+      ></nz-skeleton>
+      <ng-template #heatmap>
+        <div class="booking-heatmap">
+          <div class="time-labels">
+            <span *ngFor="let time of heatTimes">{{ time }}</span>
+          </div>
+          <div class="heatmap-board">
+            <ng-container *ngFor="let time of heatTimes; let row = index">
+              <button
+                type="button"
+                class="heatmap-cell"
+                *ngFor="let day of heatDays; let col = index"
+                [class.level-1]="getHeatCell(row, col).level === 1"
+                [class.level-2]="getHeatCell(row, col).level === 2"
+                [class.level-3]="getHeatCell(row, col).level === 3"
+                [title]="day + ' ' + time + ': ' + getHeatCell(row, col).value + ' booking'"
+              ></button>
+            </ng-container>
+          </div>
+          <div class="day-labels">
+            <span *ngFor="let day of heatDays">{{ day }}</span>
+          </div>
+        </div>
+        <div class="heatmap-legend">
+          <span><i class="level-1"></i>1 - 10</span>
+          <span><i class="level-2"></i>10 - 50</span>
+          <span><i class="level-3"></i>Above 50</span>
+        </div>
+      </ng-template>
+    </article>
 
-    <div nz-col [nzSpan]="6">
-      <nz-card class="stat-card">
-        <nz-skeleton
-          *ngIf="loading; else revenueStat"
-          [nzActive]="true"
-          [nzParagraph]="{ rows: 1 }"
-        ></nz-skeleton>
-        <ng-template #revenueStat>
-          <nz-statistic
-            [nzValue]="stats?.totalRevenue ?? 0"
-            [nzTitle]="revenueCardTitle"
-            [nzPrefix]="revenuePrefix"
-          ></nz-statistic>
-        </ng-template>
-        <ng-template #revenuePrefix>
-          <span nz-icon nzType="dollar"></span>
-        </ng-template>
-      </nz-card>
-    </div>
-  </div>
+    <article class="panel calendar-card">
+      <div class="panel-title">
+        <h2>Calendar Heatmap</h2>
+        <strong>{{ calendarTotal }}</strong>
+      </div>
 
-  <div nz-row [nzGutter]="16" class="content-row">
-    <div nz-col [nzSpan]="16">
-      <nz-card [nzTitle]="isHost ? 'Thong tin van hanh' : 'Recent Bookings'" class="content-card">
-        <p *ngIf="isHost">
-          Active bookings: {{ stats?.activeBookings ?? 0 }} |
-          Pending bookings: {{ stats?.pendingBookings ?? 0 }} |
-          Check-in 7 ngay toi: {{ stats?.upcomingCheckIns ?? 0 }}
-        </p>
-        <p *ngIf="!isHost">Chart or table se hien thi o day</p>
-      </nz-card>
-    </div>
+      <nz-skeleton
+        *ngIf="bookingsLoading; else calendarChart"
+        [nzActive]="true"
+        [nzParagraph]="{ rows: 5 }"
+      ></nz-skeleton>
+      <ng-template #calendarChart>
+        <div class="calendar-weekdays">
+          <span *ngFor="let day of heatDays">{{ day }}</span>
+        </div>
+        <div class="calendar-grid">
+          <ng-container *ngFor="let week of calendarWeeks">
+            <button
+              type="button"
+              class="calendar-day"
+              *ngFor="let day of week; trackBy: trackByDate"
+              [class.level-1]="day.level === 1"
+              [class.level-2]="day.level === 2"
+              [class.level-3]="day.level === 3"
+              [class.today]="day.isToday"
+              [title]="day.date + ': ' + day.count + ' booking'"
+            >
+              <span>{{ day.label }}</span>
+              <strong *ngIf="day.count">{{ day.count }}</strong>
+            </button>
+          </ng-container>
+        </div>
+      </ng-template>
+    </article>
+  </section>
 
-    <div nz-col [nzSpan]="8">
-      <nz-card [nzTitle]="isHost ? 'Trang thai tai san' : 'Quick Actions'" class="content-card">
-        <p *ngIf="isHost">
-          Active hotels: {{ stats?.activeHotels ?? 0 }} |
-          Pending hotels: {{ stats?.pendingHotels ?? 0 }} |
-          Room types: {{ stats?.totalRoomTypes ?? 0 }}
-        </p>
-        <p *ngIf="!isHost">Quick actions se hien thi o day</p>
-      </nz-card>
-    </div>
-  </div>
+  <section class="middle-grid">
+    <article class="panel visitor-card">
+      <div class="panel-title">
+        <h2>Visitor Statistics</h2>
+        <button nz-button nzSize="small">Monthly</button>
+      </div>
+
+      <nz-skeleton
+        *ngIf="bookingsLoading; else visitorChart"
+        [nzActive]="true"
+        [nzParagraph]="{ rows: 7 }"
+      ></nz-skeleton>
+      <ng-template #visitorChart>
+        <div class="chart-wrap">
+          <svg viewBox="0 0 560 220" role="img" aria-label="Visitor statistics">
+            <defs>
+              <linearGradient id="visitorFill" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#6fbf73" stop-opacity="0.24" />
+                <stop offset="100%" stop-color="#6fbf73" stop-opacity="0.03" />
+              </linearGradient>
+            </defs>
+            <g class="chart-grid">
+              <line x1="20" x2="540" y1="45" y2="45"></line>
+              <line x1="20" x2="540" y1="80" y2="80"></line>
+              <line x1="20" x2="540" y1="115" y2="115"></line>
+              <line x1="20" x2="540" y1="150" y2="150"></line>
+              <line x1="20" x2="540" y1="180" y2="180"></line>
+            </g>
+            <path class="area-path" [attr.d]="visitorAreaPath"></path>
+            <path class="line-path" [attr.d]="visitorLinePath"></path>
+            <g *ngIf="highlightedVisitor">
+              <line class="focus-line" [attr.x1]="highlightedVisitor.x" [attr.x2]="highlightedVisitor.x" y1="42" y2="180"></line>
+              <circle class="focus-dot" [attr.cx]="highlightedVisitor.x" [attr.cy]="highlightedVisitor.y" r="4"></circle>
+              <rect class="focus-badge" [attr.x]="highlightedVisitor.x - 20" [attr.y]="highlightedVisitor.y - 34" width="40" height="24" rx="5"></rect>
+              <text class="focus-text" [attr.x]="highlightedVisitor.x" [attr.y]="highlightedVisitor.y - 18">{{ highlightedVisitor.value }}</text>
+            </g>
+          </svg>
+          <div class="month-labels">
+            <span *ngFor="let point of visitorPoints" [class.active]="point === highlightedVisitor">{{ point.label }}</span>
+          </div>
+        </div>
+      </ng-template>
+    </article>
+  </section>
+
+  <section class="bottom-grid">
+    <article class="panel progress-card">
+      <h2>Booked Room Today</h2>
+      <nz-skeleton
+        *ngIf="bookingsLoading; else progressContent"
+        [nzActive]="true"
+        [nzParagraph]="{ rows: 4 }"
+      ></nz-skeleton>
+      <ng-template #progressContent>
+        <div class="progress-list">
+          <div class="progress-line" *ngFor="let item of progressItems; trackBy: trackByLabel">
+            <span [style.width.%]="item.percent" [class]="item.color"></span>
+          </div>
+        </div>
+        <div class="progress-summary">
+          <div *ngFor="let item of progressItems; trackBy: trackByLabel">
+            <span [class]="item.color"></span>
+            <small>{{ item.label }}</small>
+            <strong>{{ item.value }}</strong>
+          </div>
+        </div>
+      </ng-template>
+    </article>
+
+    <article class="panel gauges-card">
+      <div class="gauge-item" *ngFor="let item of gauges; trackBy: trackByLabel">
+        <div class="gauge-ring" [ngStyle]="gaugeStyle(item)" [class.cyan]="item.color === 'cyan'">
+          <div>
+            <span nz-icon [nzType]="item.icon"></span>
+            <strong>{{ item.value }}%</strong>
+            <small>{{ item.label }}</small>
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel current-card">
+    <h2>Current Booking</h2>
+    <nz-skeleton
+      *ngIf="bookingsLoading; else currentContent"
+      [nzActive]="true"
+      [nzParagraph]="{ rows: 4 }"
+    ></nz-skeleton>
+    <ng-template #currentContent>
+      <div class="booking-table" *ngIf="currentBookings.length; else emptyBookings">
+        <div class="table-row table-head">
+          <span>Guest</span>
+          <span>Room</span>
+          <span>Check In</span>
+          <span>Status</span>
+          <span>Total</span>
+        </div>
+        <div class="table-row" *ngFor="let booking of currentBookings">
+          <strong>{{ booking.guestInfo.fullName }}</strong>
+          <span>{{ booking.roomName }}</span>
+          <span>{{ formatDate(booking.checkIn) }}</span>
+          <span class="status-pill">{{ booking.status }}</span>
+          <span>{{ formatPrice(booking.finalPrice) }}</span>
+        </div>
+      </div>
+      <ng-template #emptyBookings>
+        <div class="empty-line">No booking data</div>
+      </ng-template>
+    </ng-template>
+  </section>
 </div>

@@ -1,0 +1,186 @@
+<div class="payments-page">
+  <div class="page-header">
+    <div>
+      <h1>Quản lý thanh toán</h1>
+      <p>Theo dõi giao dịch, trạng thái thanh toán và hoàn tiền trong hệ thống</p>
+    </div>
+
+    <button nz-button nzType="default" (click)="loadPayments()">
+      <span nz-icon nzType="reload"></span>
+      Tải lại
+    </button>
+  </div>
+
+  <div class="toolbar">
+    <nz-select
+      class="status-filter"
+      nzAllowClear
+      nzPlaceHolder="Tất cả trạng thái"
+      [(ngModel)]="status"
+      (ngModelChange)="onStatusChange()"
+    >
+      <nz-option *ngFor="let item of statuses" [nzValue]="item" [nzLabel]="statusLabel(item)"></nz-option>
+    </nz-select>
+
+    <button nz-button nzType="default" (click)="resetFilter()">
+      <span nz-icon nzType="rollback"></span>
+      Reset
+    </button>
+  </div>
+
+  <nz-table
+    [nzData]="payments"
+    [nzLoading]="loading"
+    [nzShowPagination]="false"
+    nzSize="middle"
+    class="payments-table"
+  >
+    <thead>
+      <tr>
+        <th>Mã thanh toán</th>
+        <th>Booking</th>
+        <th>Số tiền</th>
+        <th>Phương thức</th>
+        <th>Trạng thái</th>
+        <th>Thời gian tạo</th>
+        <th nzWidth="160px">Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let payment of payments">
+        <td>
+          <div class="code">{{ payment.paymentCode || payment.id }}</div>
+          <span class="muted">{{ payment.gatewayTxnId || '-' }}</span>
+        </td>
+        <td>
+          <span class="mono">{{ payment.bookingId }}</span>
+        </td>
+        <td class="amount">{{ formatVND(payment.amount) }}</td>
+        <td>{{ methodLabel(payment.method) }}</td>
+        <td>
+          <nz-tag [nzColor]="statusColor(payment.status)">
+            {{ statusLabel(payment.status) }}
+          </nz-tag>
+        </td>
+        <td>{{ formatDateTime(payment.createdAt || payment.initiatedAt) }}</td>
+        <td>
+          <button nz-button nzType="link" nzSize="small" (click)="openDetail(payment)">
+            <span nz-icon nzType="eye"></span>
+          </button>
+          <button
+            nz-button
+            nzType="link"
+            nzSize="small"
+            nz-tooltip="Đồng bộ PayOS"
+            [disabled]="!canSync(payment)"
+            [nzLoading]="isSyncing(payment)"
+            (click)="syncPayment(payment)"
+          >
+            <span nz-icon nzType="sync"></span>
+          </button>
+          <button
+            nz-button
+            nzType="link"
+            nzSize="small"
+            nz-tooltip="Hoàn tiền"
+            [disabled]="!canRefund(payment)"
+            (click)="openRefund(payment)"
+          >
+            <span nz-icon nzType="rollback"></span>
+          </button>
+        </td>
+      </tr>
+      <tr *ngIf="!loading && payments.length === 0">
+        <td colspan="7">
+          <div class="empty-state">Chưa có thanh toán phù hợp</div>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+
+  <div class="pagination">
+    <span>{{ total }} giao dịch</span>
+    <button nz-button nzSize="small" [disabled]="pageIndex <= 1" (click)="onPageChange(pageIndex - 1)">
+      <span nz-icon nzType="left"></span>
+    </button>
+    <span>Trang {{ pageIndex }}</span>
+    <button
+      nz-button
+      nzSize="small"
+      [disabled]="pageIndex * pageSize >= total"
+      (click)="onPageChange(pageIndex + 1)"
+    >
+      <span nz-icon nzType="right"></span>
+    </button>
+  </div>
+
+  <nz-modal
+    [(nzVisible)]="detailModalOpen"
+    nzTitle="Chi tiết thanh toán"
+    [nzFooter]="null"
+    (nzOnCancel)="detailModalOpen = false"
+  >
+    <ng-container *nzModalContent>
+      <div class="detail-grid" *ngIf="selectedPayment">
+        <label>Mã thanh toán</label>
+        <span>{{ selectedPayment.paymentCode || selectedPayment.id }}</span>
+        <label>Booking</label>
+        <span>{{ selectedPayment.bookingId }}</span>
+        <label>Số tiền</label>
+        <span>{{ formatVND(selectedPayment.amount) }}</span>
+        <label>Trạng thái</label>
+        <span>{{ statusLabel(selectedPayment.status) }}</span>
+        <label>Gateway URL</label>
+        <span class="break-text">{{ selectedPayment.gatewayUrl || '-' }}</span>
+      </div>
+
+      <div class="refunds">
+        <h3>Lịch sử hoàn tiền</h3>
+        <div class="refund-row" *ngFor="let refund of refunds">
+          <span>{{ formatVND(refund.amount) }}</span>
+          <nz-tag>{{ refund.status }}</nz-tag>
+          <span>{{ refund.reason || '-' }}</span>
+        </div>
+        <div class="empty-state small" *ngIf="refunds.length === 0">Chưa có hoàn tiền</div>
+      </div>
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal
+    [(nzVisible)]="refundModalOpen"
+    nzTitle="Hoàn tiền"
+    [nzOkLoading]="refundLoading"
+    nzOkText="Xác nhận"
+    nzCancelText="Hủy"
+    (nzOnOk)="submitRefund()"
+    (nzOnCancel)="refundModalOpen = false"
+  >
+    <form *nzModalContent nz-form nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label>Số tiền</nz-form-label>
+        <nz-form-control>
+          <nz-input-number
+            class="full-width"
+            [(ngModel)]="refundAmount"
+            name="refundAmount"
+            [nzMin]="1"
+            [nzStep]="1000"
+          ></nz-input-number>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Lý do</nz-form-label>
+        <nz-form-control>
+          <textarea
+            nz-input
+            rows="3"
+            name="refundReason"
+            [(ngModel)]="refundReason"
+            placeholder="Nhập lý do hoàn tiền"
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </nz-modal>
+</div>

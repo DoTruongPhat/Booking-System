@@ -1,71 +1,110 @@
-import { HttpInterceptorFn, HttpRequest } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpEvent,
+  HttpHandlerFn,
+  HttpInterceptorFn,
+  HttpRequest,
+} from '@angular/common/http';
+import { generateIdempotencyKey, IDEMPOTENCY_HEADER } from '../http/idempotency';
+import { catchError, Observable, switchMap, throwError, timer } from 'rxjs';
 
-/**
- * Idempotency Interceptor
- *
- * Tự động sinh header `Idempotency-Key` (UUID v4) cho các request có nguy cơ
- * duplicate (POST/PUT/PATCH/DELETE) vào các endpoint nhạy cảm về tiền/đặt chỗ.
- *
- * Gateway sẽ:
- * - Lần 1: forward → cache response 24h
- * - Lần 2 (cùng key): trả cached response (không gọi lại downstream)
- * - Lần 2 (đang xử lý): trả 409 Conflict
- *
- * → Tránh trừ tiền 2 lần khi user double-click "Thanh toán"
- */
+const TARGET_METHOD = 'POST';
+const MAX_CONFLICT_RETRIES = 3;
+const DEFAULT_RETRY_AFTER_SECONDS = 5;
 
-// HTTP methods cần idempotency
-const TARGET_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
-
-// URL patterns cần áp dụng (match với gateway config)
-const TARGET_PATHS = ['/api/bookings', '/api/payments'];
-
-const HEADER_NAME = 'Idempotency-Key';
+const TARGET_ENDPOINTS = [
+  '/api/user/bookings',
+  '/api/user/bookings/*/cancel',
+  '/api/user/payments/init',
+  '/api/user/payments/*/cancel',
+  '/api/admin/payments/*/refund',
+  '/api/host/hotels',
+  '/api/host/hotels/*/rooms',
+  '/api/host/rooms/*/availability/block',
+];
 
 export const idempotencyInterceptor: HttpInterceptorFn = (req, next) => {
   if (!shouldApply(req)) {
     return next(req);
   }
 
-  // Nếu request đã có header (vd: developer override) → giữ nguyên
-  if (req.headers.has(HEADER_NAME)) {
-    return next(req);
-  }
+  const requestWithKey = req.headers.has(IDEMPOTENCY_HEADER)
+    ? req
+    : req.clone({
+        setHeaders: { [IDEMPOTENCY_HEADER]: generateIdempotencyKey() },
+      });
 
-  const key = generateUUID();
-  const cloned = req.clone({
-    setHeaders: { [HEADER_NAME]: key },
-  });
-
-  return next(cloned);
+  return sendWithConflictRetry(requestWithKey, next, MAX_CONFLICT_RETRIES);
 };
 
-// ──────────────────────────────────────────────
-// Helpers
-// ──────────────────────────────────────────────
+function sendWithConflictRetry(
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+  retriesLeft: number,
+): Observable<HttpEvent<unknown>> {
+  return next(req).pipe(
+    catchError((error: unknown) => {
+      if (retriesLeft <= 0 || !isIdempotencyConflict(error)) {
+        return throwError(() => error);
+      }
 
-function shouldApply(req: HttpRequest<unknown>): boolean {
-  const method = req.method.toUpperCase();
-  if (!TARGET_METHODS.includes(method)) return false;
-
-  // req.url có thể là full URL hoặc relative path
-  return TARGET_PATHS.some((path) => req.url.includes(path));
+      const retryAfterSeconds = resolveRetryAfter(error as HttpErrorResponse);
+      return timer(retryAfterSeconds * 1000).pipe(
+        switchMap(() => sendWithConflictRetry(req, next, retriesLeft - 1)),
+      );
+    }),
+  );
 }
 
-/**
- * UUID v4 generator.
- * Ưu tiên crypto.randomUUID() (modern browsers, secure context).
- * Fallback cho môi trường cũ hoặc test/SSR.
- */
-function generateUUID(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
+function isIdempotencyConflict(error: unknown): boolean {
+  if (!(error instanceof HttpErrorResponse) || error.status !== 409) {
+    return false;
   }
 
-  // Fallback: RFC 4122 v4
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  const body = error.error;
+  return body?.errorCode === 'IDEMPOTENCY_002' || String(body?.message || '').includes('Request in progress');
+}
+
+function resolveRetryAfter(error: HttpErrorResponse): number {
+  const headerValue = error.headers.get('Retry-After');
+  const bodyValue = Number(error.error?.retryAfter);
+  const parsedHeader = Number(headerValue);
+  const seconds = Number.isFinite(parsedHeader) && parsedHeader > 0
+    ? parsedHeader
+    : Number.isFinite(bodyValue) && bodyValue > 0
+      ? bodyValue
+      : DEFAULT_RETRY_AFTER_SECONDS;
+
+  return Math.min(seconds, 10);
+}
+
+function shouldApply(req: HttpRequest<unknown>): boolean {
+  if (req.method.toUpperCase() !== TARGET_METHOD) {
+    return false;
+  }
+
+  const path = extractPath(req.url);
+  return TARGET_ENDPOINTS.some((pattern) => matchesPath(pattern, path));
+}
+
+function extractPath(url: string): string {
+  try {
+    return new URL(url, window.location.origin).pathname;
+  } catch {
+    return url.split('?')[0] ?? url;
+  }
+}
+
+function matchesPath(pattern: string, path: string): boolean {
+  const patternSegments = trimSlashes(pattern).split('/');
+  const pathSegments = trimSlashes(path).split('/');
+  if (patternSegments.length !== pathSegments.length) {
+    return false;
+  }
+
+  return patternSegments.every((segment, index) => segment === '*' || segment === pathSegments[index]);
+}
+
+function trimSlashes(value: string): string {
+  return value.replace(/^\/+|\/+$/g, '');
 }

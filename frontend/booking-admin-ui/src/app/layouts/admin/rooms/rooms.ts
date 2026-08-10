@@ -4,7 +4,7 @@
 // Admin: read-only view
 // ═══════════════════════════════════════════════════════════
 
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -39,11 +39,15 @@ import { HotelService } from '../../../core/services/hotel.service';
 import { Auth } from '../../../core/services/auth';
 import { Hotel } from '../../../core/models/hotel.model';
 import {
+  CatalogManagementService,
+  RoomTypeItem,
+} from '../../../core/services/catalog-management.service';
+import {
   AMENITY_OPTIONS,
   BED_TYPE_OPTIONS,
-  RoomType,
   ROOM_TYPE_LABELS,
 } from '../../../core/models/room-admin.model';
+import { generateIdempotencyKey } from '../../../core/http/idempotency';
 
 @Component({
   selector: 'app-rooms',
@@ -78,23 +82,29 @@ import {
   ],
   templateUrl: './rooms.html',
   styleUrl: './rooms.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Rooms implements OnInit {
   private roomService = inject(RoomService);
   private hotelService = inject(HotelService);
+  private catalog = inject(CatalogManagementService);
   private auth = inject(Auth);
   private message = inject(NzMessageService);
   private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
 
   // ── Data ────────────────────────────────────────────────
   rooms: RoomDetail[] = [];
   hotels: Hotel[] = [];
+  hotelOptions: Array<{ id: string; name: string }> = [];
+  private hotelNameById = new Map<string, string>();
+  roomTypes: RoomTypeItem[] = [];
   isLoading = false;
   isHost = false;
 
   // ── Filter ──────────────────────────────────────────────
   filterHotel: string | 'all' = 'all';
-  filterRoomType: RoomType | 'all' = 'all';
+  filterRoomType: string | 'all' = 'all';
   filterActive: 'all' | 'active' | 'inactive' = 'all';
   keyword = '';
   selectedHotelId = '';
@@ -111,23 +121,23 @@ export class Rooms implements OnInit {
   blockRoomId: string | null = null;
   blockDates: [Date, Date] | null = null;
   blocking = false;
+  private createRoomIdempotencyKey: string | null = null;
+  private blockRoomIdempotencyKey: string | null = null;
 
   // ── Options ─────────────────────────────────────────────
-  readonly allRoomTypes: RoomType[] = ['SINGLE', 'DOUBLE', 'SUITE', 'FAMILY'];
-  readonly roomTypeLabels: Record<string, string> = ROOM_TYPE_LABELS;
+  allRoomTypes: string[] = ['SINGLE', 'DOUBLE', 'SUITE', 'FAMILY'];
+  roomTypeLabels: Record<string, string> = { ...ROOM_TYPE_LABELS };
   readonly amenityOptions = AMENITY_OPTIONS;
   readonly bedTypeOptions = BED_TYPE_OPTIONS;
-
-  get hotelOptions(): Array<{ id: string; name: string }> {
-    return this.hotels.map((h) => ({ id: h.id, name: h.name }));
-  }
+  selectedAmenities = new Set<string>();
+  roomStats = { available: 0, total: 0, active: 0 };
 
   // ── Form ────────────────────────────────────────────────
   form = this.fb.nonNullable.group({
     hotelId: ['', Validators.required],
     name: ['', [Validators.required, Validators.minLength(3)]],
     description: ['', [Validators.required, Validators.minLength(10)]],
-    roomType: ['SINGLE' as RoomType, Validators.required],
+    roomType: ['SINGLE', Validators.required],
     bedType: ['1 King Bed', Validators.required],
     size: [30, [Validators.required, Validators.min(1)]],
     maxAdults: [2, [Validators.required, Validators.min(1)]],
@@ -145,15 +155,35 @@ export class Rooms implements OnInit {
 
   ngOnInit() {
     this.isHost = this.auth.getPrimaryRole() === 'HOST';
+    this.loadRoomTypes();
     this.loadHotels();
   }
 
   // ── Load hotels → then rooms ────────────────────────────
+  loadRoomTypes() {
+    this.catalog.list<RoomTypeItem>('room-types', { active: true, page: 0, size: 100 }).subscribe({
+      next: (data) => {
+        this.roomTypes = data.content;
+        const codes = data.content.map((item) => item.code);
+        this.allRoomTypes = codes.length ? codes : this.allRoomTypes;
+        for (const item of data.content) {
+          this.roomTypeLabels[item.code] = item.name;
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.roomTypes = [];
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   loadHotels() {
     if (this.isHost) {
       this.hotelService.getMyHotels().subscribe({
         next: (data) => {
           this.hotels = data;
+          this.syncHotelLookups();
           if (data.length > 0) {
             this.selectedHotelId = data[0].id;
           }
@@ -165,6 +195,7 @@ export class Rooms implements OnInit {
       this.hotelService.getAdminHotels({ page: 0, size: 100 }).subscribe({
         next: (data) => {
           this.hotels = data.content;
+          this.syncHotelLookups();
           if (data.content.length > 0) {
             this.selectedHotelId = data.content[0].id;
           }
@@ -178,6 +209,8 @@ export class Rooms implements OnInit {
   loadRooms() {
     if (!this.hotels.length) {
       this.rooms = [];
+      this.updateRoomStats();
+      this.cdr.markForCheck();
       return;
     }
 
@@ -190,14 +223,24 @@ export class Rooms implements OnInit {
     if (!this.selectedHotelId) return;
 
     this.isLoading = true;
-    forkJoin(hotelIds.map((hotelId) => this.roomService.getHostRooms(hotelId, { page: 0, size: 100 }))).subscribe({
+    this.cdr.markForCheck();
+    const roomRequests = hotelIds.map((hotelId) =>
+      this.isHost
+        ? this.roomService.getHostRooms(hotelId, { page: 0, size: 100 })
+        : this.roomService.getAdminRooms(hotelId, { page: 0, size: 100 }),
+    );
+
+    forkJoin(roomRequests).subscribe({
       next: (roomGroups) => {
         this.rooms = this.applyLocalFilters(roomGroups.flat());
+        this.updateRoomStats();
         this.isLoading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.message.error('Không thể tải phòng');
         this.isLoading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -219,7 +262,9 @@ export class Rooms implements OnInit {
   // ── CRUD ────────────────────────────────────────────────
   openCreateModal() {
     this.editingRoom = null;
+    this.createRoomIdempotencyKey = null;
     this.imagePreviews = [];
+    this.selectedAmenities = new Set<string>();
     this.form.reset({
       hotelId: this.selectedHotelId,
       name: '',
@@ -240,16 +285,18 @@ export class Rooms implements OnInit {
       active: true,
     });
     this.isFormModalOpen = true;
+    this.cdr.markForCheck();
   }
 
   openEditModal(room: RoomDetail) {
     this.editingRoom = room;
     this.imagePreviews = [...(room.images ?? [])];
+    this.selectedAmenities = new Set(room.amenities ?? []);
     this.form.patchValue({
       hotelId: room.hotelId,
       name: room.name,
       description: room.description,
-      roomType: room.roomType as RoomType,
+      roomType: room.roomType,
       bedType: room.bedType,
       size: room.size,
       maxAdults: room.maxAdults,
@@ -259,6 +306,7 @@ export class Rooms implements OnInit {
       amenities: [...(room.amenities ?? [])],
     });
     this.isFormModalOpen = true;
+    this.cdr.markForCheck();
   }
 
   submitForm() {
@@ -293,24 +341,33 @@ export class Rooms implements OnInit {
           this.message.success(`Đã cập nhật phòng "${raw.name}"`);
           this.isFormModalOpen = false;
           this.isSubmitting = false;
+          this.cdr.markForCheck();
           this.loadRooms();
         },
         error: (err) => {
           this.message.error(err?.error?.message || 'Lỗi cập nhật');
           this.isSubmitting = false;
+          this.cdr.markForCheck();
         },
       });
     } else {
-      this.roomService.createRoom(raw.hotelId, payload).subscribe({
+      this.createRoomIdempotencyKey = this.createRoomIdempotencyKey ?? generateIdempotencyKey();
+      this.roomService.createRoom(raw.hotelId, payload, this.createRoomIdempotencyKey).subscribe({
         next: () => {
           this.message.success(`Đã tạo phòng "${raw.name}"`);
+          this.createRoomIdempotencyKey = null;
           this.isFormModalOpen = false;
           this.isSubmitting = false;
+          this.cdr.markForCheck();
           this.loadRooms();
         },
         error: (err) => {
           this.message.error(err?.error?.message || 'Lỗi tạo phòng');
+          if (err?.status !== 409) {
+            this.createRoomIdempotencyKey = null;
+          }
           this.isSubmitting = false;
+          this.cdr.markForCheck();
         },
       });
     }
@@ -323,6 +380,7 @@ export class Rooms implements OnInit {
   // ── Block dates ─────────────────────────────────────────
   openBlockForm(room: RoomDetail) {
     this.blockRoomId = room.id;
+    this.blockRoomIdempotencyKey = null;
     this.blockDates = null;
   }
 
@@ -337,20 +395,23 @@ export class Rooms implements OnInit {
       return;
     }
     this.blocking = true;
+    this.blockRoomIdempotencyKey = this.blockRoomIdempotencyKey ?? generateIdempotencyKey();
     this.roomService
       .blockDates(this.blockRoomId, {
         startDate: this.toISO(this.blockDates[0]),
         endDate: this.toISO(this.blockDates[1]),
-      })
+      }, this.blockRoomIdempotencyKey)
       .subscribe({
         next: () => {
           this.message.success('Đã chặn ngày');
+          this.blockRoomIdempotencyKey = null;
           this.blocking = false;
           this.blockRoomId = null;
           this.loadRooms();
         },
         error: () => {
           this.message.error('Không thể chặn ngày');
+          this.blockRoomIdempotencyKey = null;
           this.blocking = false;
         },
       });
@@ -384,6 +445,7 @@ export class Rooms implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       this.imagePreviews.push(reader.result as string);
+      this.cdr.markForCheck();
     };
     reader.readAsDataURL(file);
     input.value = '';
@@ -391,17 +453,18 @@ export class Rooms implements OnInit {
 
   removeImage(index: number) {
     this.imagePreviews.splice(index, 1);
+    this.cdr.markForCheck();
   }
 
   // ── Helpers ─────────────────────────────────────────────
   getHotelName(hotelId: string): string {
-    return this.hotels.find((h) => h.id === hotelId)?.name ?? hotelId;
+    return this.hotelNameById.get(hotelId) ?? hotelId;
   }
 
   getRoomTypeColor(type: string): string {
     const map: Record<string, string> = {
       SINGLE: 'default',
-      DOUBLE: 'blue',
+      DOUBLE: 'green',
       SUITE: 'purple',
       FAMILY: 'cyan',
     };
@@ -423,22 +486,37 @@ export class Rooms implements OnInit {
   }
 
   toggleAmenity(value: string, checked: boolean) {
-    const current = this.form.value.amenities ?? [];
-    if (checked && !current.includes(value)) {
-      this.form.patchValue({ amenities: [...current, value] });
-    } else if (!checked) {
-      this.form.patchValue({ amenities: current.filter((a: string) => a !== value) });
+    const next = new Set(this.selectedAmenities);
+    if (checked) {
+      next.add(value);
+    } else {
+      next.delete(value);
     }
+    this.selectedAmenities = next;
+    this.form.controls.amenities.setValue([...next], { emitEvent: false });
+    this.cdr.markForCheck();
   }
 
-  totalAvailable(): number {
-    return this.rooms.reduce((s, r) => s + (r as any).available || 0, 0);
+  trackByRoom = (_: number, room: RoomDetail) => room.id;
+  trackByHotel = (_: number, hotel: { id: string }) => hotel.id;
+  trackByRoomType = (_: number, roomType: string) => roomType;
+  trackByAmenity = (_: number, amenity: { value: string }) => amenity.value;
+  trackByImage = (_: number, image: string) => image;
+
+  private syncHotelLookups() {
+    this.hotelOptions = this.hotels.map((h) => ({ id: h.id, name: h.name }));
+    this.hotelNameById = new Map(this.hotelOptions.map((hotel) => [hotel.id, hotel.name]));
   }
-  totalRooms(): number {
-    return this.rooms.reduce((s, r) => s + (r.totalRooms || 0), 0);
-  }
-  countActive(): number {
-    return this.rooms.filter((r) => r.active).length;
+
+  private updateRoomStats() {
+    this.roomStats = this.rooms.reduce(
+      (stats, room) => ({
+        available: stats.available + ((room as any).available || 0),
+        total: stats.total + (room.totalRooms || 0),
+        active: stats.active + (room.active ? 1 : 0),
+      }),
+      { available: 0, total: 0, active: 0 },
+    );
   }
 
   private toISO(date: Date): string {

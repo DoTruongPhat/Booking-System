@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -7,7 +7,11 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzMessageService } from 'ng-zorro-antd/message';
 import { NavbarComponent } from '../../../shared/components/navbar/navbar.component';
+import { SupportTicket, TicketPriority, TicketStatus } from '../../../core/models/auth.model';
+import { TicketService } from '../../../core/services/ticket';
+import { extractErrorMessage } from '../../../core/utils/error.util';
 
 @Component({
   selector: 'app-my-tickets',
@@ -26,11 +30,15 @@ import { NavbarComponent } from '../../../shared/components/navbar/navbar.compon
   templateUrl: './tickets.component.html',
   styleUrl: './tickets.component.scss',
 })
-export class MyTicketsComponent {
+export class MyTicketsComponent implements OnInit {
   private fb = inject(FormBuilder);
+  private ticketService = inject(TicketService);
+  private message = inject(NzMessageService);
 
   showForm = false;
+  isLoading = false;
   isSubmitting = false;
+  tickets: SupportTicket[] = [];
 
   ticketForm = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(5)]],
@@ -38,35 +46,23 @@ export class MyTicketsComponent {
     priority: ['MEDIUM'],
   });
 
-  tickets = [
-    {
-      id: 'TK001',
-      title: 'Không thể check-in online',
-      description: 'Tôi đã thanh toán nhưng hệ thống không cho phép check-in online trước 24h.',
-      status: 'OPEN' as const,
-      priority: 'HIGH' as const,
-      createdAt: '2026-06-10',
-      updatedAt: '2026-06-11',
-    },
-    {
-      id: 'TK002',
-      title: 'Yêu cầu hủy phòng',
-      description: 'Tôi cần hủy đặt phòng BK003 do thay đổi lịch trình công tác.',
-      status: 'IN_PROGRESS' as const,
-      priority: 'MEDIUM' as const,
-      createdAt: '2026-06-08',
-      updatedAt: '2026-06-12',
-    },
-    {
-      id: 'TK003',
-      title: 'Cảm ơn SmartBooking',
-      description: 'Dịch vụ rất tốt, nhân viên hỗ trợ nhiệt tình!',
-      status: 'RESOLVED' as const,
-      priority: 'LOW' as const,
-      createdAt: '2026-05-20',
-      updatedAt: '2026-05-25',
-    },
-  ];
+  ngOnInit(): void {
+    this.loadTickets();
+  }
+
+  loadTickets(): void {
+    this.isLoading = true;
+    this.ticketService.getMyTickets(0, 50).subscribe({
+      next: (res) => {
+        this.tickets = res.content;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.message.error(extractErrorMessage(err, 'Không thể tải phiếu hỗ trợ'));
+      },
+    });
+  }
 
   toggleForm(): void {
     this.showForm = !this.showForm;
@@ -79,36 +75,40 @@ export class MyTicketsComponent {
     if (this.ticketForm.invalid) return;
     this.isSubmitting = true;
 
-    setTimeout(() => {
-      const formValue = this.ticketForm.value;
-      const newTicket = {
-        id: 'TK' + String(this.tickets.length + 1).padStart(3, '0'),
+    const formValue = this.ticketForm.getRawValue();
+    this.ticketService
+      .createTicket({
         title: formValue.title!,
         description: formValue.description!,
-        status: 'OPEN' as const,
-        priority: formValue.priority as any,
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
-      };
-      this.tickets.unshift(newTicket);
-      this.isSubmitting = false;
-      this.showForm = false;
-      this.ticketForm.reset({ priority: 'MEDIUM' });
-    }, 1000);
+        priority: formValue.priority ?? 'MEDIUM',
+      })
+      .subscribe({
+        next: (ticket) => {
+          this.tickets = [ticket, ...this.tickets];
+          this.isSubmitting = false;
+          this.showForm = false;
+          this.ticketForm.reset({ priority: 'MEDIUM' });
+          this.message.success('Đã gửi phiếu hỗ trợ');
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          this.message.error(extractErrorMessage(err, 'Không thể gửi phiếu hỗ trợ'));
+        },
+      });
   }
 
-  getStatusColor(status: string): string {
-    const map: Record<string, string> = {
+  getStatusColor(status: TicketStatus): string {
+    const map: Record<TicketStatus, string> = {
       OPEN: 'orange',
-      IN_PROGRESS: 'blue',
+      IN_PROGRESS: 'green',
       RESOLVED: 'green',
       CLOSED: 'default',
     };
     return map[status] || 'default';
   }
 
-  getStatusLabel(status: string): string {
-    const map: Record<string, string> = {
+  getStatusLabel(status: TicketStatus): string {
+    const map: Record<TicketStatus, string> = {
       OPEN: 'Đang mở',
       IN_PROGRESS: 'Đang xử lý',
       RESOLVED: 'Đã giải quyết',
@@ -117,18 +117,18 @@ export class MyTicketsComponent {
     return map[status] || status;
   }
 
-  getPriorityColor(priority: string): string {
-    const map: Record<string, string> = {
+  getPriorityColor(priority: TicketPriority): string {
+    const map: Record<TicketPriority, string> = {
       LOW: 'default',
-      MEDIUM: 'blue',
+      MEDIUM: 'green',
       HIGH: 'orange',
       URGENT: 'red',
     };
     return map[priority] || 'default';
   }
 
-  getPriorityLabel(priority: string): string {
-    const map: Record<string, string> = {
+  getPriorityLabel(priority: TicketPriority): string {
+    const map: Record<TicketPriority, string> = {
       LOW: 'Thấp',
       MEDIUM: 'Trung bình',
       HIGH: 'Cao',

@@ -1,7 +1,9 @@
 package com.booking.infrastructure.report.consumer;
 
 import com.booking.application.port.out.BookingRepositoryPort;
+import com.booking.domain.enums.PaymentStatus;
 import com.booking.domain.event.BookingConfirmedEvent;
+import com.booking.domain.model.Booking;
 import com.booking.infrastructure.mail.MailService;
 import com.booking.infrastructure.report.ReportRenderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +14,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 @Component
@@ -54,37 +58,54 @@ public class ReportGenerationConsumer {
             return;
         }
 
-        // Idempotency check
         String key = PROCESSED_PREFIX + event.eventId();
         Boolean isNew = redisTemplate.opsForValue().setIfAbsent(key, "1", PROCESSED_TTL);
         if (Boolean.FALSE.equals(isNew)) {
-            log.info("Event {} already processed — skip", event.eventId());
+            log.info("Report event {} already processed - skip", event.eventId());
             return;
         }
 
-        log.info("Processing: bookingId={}, code={}", event.bookingId(), event.bookingCode());
+        log.info("Processing report event: bookingId={}, code={}", event.bookingId(), event.bookingCode());
 
         try {
-            // 1. Gen PDF
-            byte[] pdf = reportRenderService.renderBookingConfirmation(
+            Booking booking = bookingRepository.findById(event.bookingId()).orElse(null);
+            String guestName = booking != null && booking.getGuestName() != null
+                    ? booking.getGuestName()
+                    : "Quy khach";
+
+            byte[] confirmationPdf = reportRenderService.renderBookingConfirmation(
                     event.bookingId(), Locale.forLanguageTag("vi-VN"));
-            log.info("PDF generated: {} bytes", pdf.length);
 
-            // 2. Guest name từ snapshot
-            String guestName = bookingRepository.findById(event.bookingId())
-                    .map(b -> b.getGuestName() != null ? b.getGuestName() : "Quý khách")
-                    .orElse("Quý khách");
+            List<MailService.MailAttachment> attachments = new ArrayList<>();
+            attachments.add(new MailService.MailAttachment(
+                    "booking-" + event.bookingCode() + ".pdf",
+                    confirmationPdf,
+                    "application/pdf"
+            ));
+            log.info("Confirmation PDF generated: {} bytes", confirmationPdf.length);
 
-            // 3. Send email
-            String subject = "Xác nhận đặt phòng — " + event.bookingCode();
-            String body = MailService.buildConfirmationEmailBody(event.bookingCode(), guestName);
-            String filename = "booking-" + event.bookingCode() + ".pdf";
+            boolean includeReceipt = booking != null && booking.getPaymentStatus() == PaymentStatus.PAID;
+            if (includeReceipt) {
+                byte[] receiptPdf = reportRenderService.renderPaymentReceipt(
+                        event.bookingId(), Locale.forLanguageTag("vi-VN"));
+                attachments.add(new MailService.MailAttachment(
+                        "receipt-" + event.bookingCode() + ".pdf",
+                        receiptPdf,
+                        "application/pdf"
+                ));
+                log.info("Payment receipt PDF generated: {} bytes", receiptPdf.length);
+            }
 
-            mailService.sendWithAttachment(event.guestEmail(), subject, body, pdf, filename);
+            String subject = includeReceipt
+                    ? "Xac nhan dat phong va bien nhan thanh toan - " + event.bookingCode()
+                    : "Xac nhan dat phong - " + event.bookingCode();
+            String body = MailService.buildConfirmationEmailBody(
+                    event.bookingCode(), guestName, includeReceipt);
+
+            mailService.sendWithAttachments(event.guestEmail(), subject, body, attachments);
             log.info("Email queued for {}", event.guestEmail());
-
         } catch (Exception e) {
-            log.error("Failed to process event {}", event.eventId(), e);
+            log.error("Failed to process report event {}", event.eventId(), e);
             redisTemplate.delete(key);
             throw e;
         }

@@ -63,8 +63,8 @@ public class JasperReportConfig {
             log.info("JasperReports: {} template(s) compiled", cache.size());
 
         } catch (IOException | JRException e) {
-            throw new IllegalStateException(
-                    "JasperReports compile failed - app cannot start", e);
+            log.error("JasperReports compile failed - some reports may not work");
+            return cache;
         }
 
         return cache;

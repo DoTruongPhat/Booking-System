@@ -4,19 +4,18 @@
   <div class="tickets-container">
     <div class="page-header">
       <div>
-        <h1>Hỗ trợ &amp; Phiếu ticket</h1>
+        <h1>Hỗ trợ</h1>
         <p>Gửi yêu cầu hỗ trợ và theo dõi tiến độ xử lý</p>
       </div>
       <button class="btn-primary" (click)="toggleForm()">
         <span nz-icon [nzType]="showForm ? 'close' : 'plus'"></span>
-        {{ showForm ? 'Đóng' : 'Tạo ticket mới' }}
+        {{ showForm ? 'Đóng' : 'Tạo phiếu mới' }}
       </button>
     </div>
 
-    <!-- === CREATE FORM === -->
     <div class="form-card" *ngIf="showForm">
       <h2>Tạo phiếu hỗ trợ mới</h2>
-      <p class="form-desc">Mô tả chi tiết vấn đề của bạn để chúng tôi hỗ trợ nhanh nhất</p>
+      <p class="form-desc">Mô tả chi tiết vấn đề để đội hỗ trợ xử lý nhanh hơn.</p>
 
       <form [formGroup]="ticketForm" (ngSubmit)="submitTicket()" nz-form nzLayout="vertical">
         <nz-form-item>
@@ -52,20 +51,21 @@
 
         <div class="form-actions">
           <button type="button" class="btn-text" (click)="toggleForm()">Hủy</button>
-          <button
-            type="submit"
-            class="btn-primary"
-            [disabled]="ticketForm.invalid || isSubmitting"
-          >
+          <button type="submit" class="btn-primary" [disabled]="ticketForm.invalid || isSubmitting">
             <span nz-icon nzType="send"></span>
-            {{ isSubmitting ? 'Đang gửi...' : 'Gửi ticket' }}
+            {{ isSubmitting ? 'Đang gửi...' : 'Gửi phiếu' }}
           </button>
         </div>
       </form>
     </div>
 
-    <!-- === TICKETS LIST === -->
     <div class="tickets-list">
+      <div *ngIf="isLoading" class="empty-state">
+        <span nz-icon nzType="loading" class="empty-icon"></span>
+        <h3>Đang tải phiếu hỗ trợ</h3>
+        <p>Vui lòng chờ trong giây lát.</p>
+      </div>
+
       <div *ngFor="let ticket of tickets" class="ticket-card">
         <div class="ticket-header">
           <div class="ticket-id-row">
@@ -79,10 +79,10 @@
         <p class="ticket-description">{{ ticket.description }}</p>
       </div>
 
-      <div *ngIf="tickets.length === 0" class="empty-state">
+      <div *ngIf="!isLoading && tickets.length === 0" class="empty-state">
         <span nz-icon nzType="file-text" class="empty-icon"></span>
-        <h3>Chưa có ticket nào</h3>
-        <p>Tạo ticket mới nếu bạn cần hỗ trợ</p>
+        <h3>Chưa có phiếu hỗ trợ</h3>
+        <p>Tạo phiếu mới nếu bạn cần hỗ trợ.</p>
       </div>
     </div>
   </div>

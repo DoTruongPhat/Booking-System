@@ -2,6 +2,7 @@ package com.booking.application.service.serviceimpl;
 
 import com.booking.application.port.in.*;
 import com.booking.application.port.out.*;
+import com.booking.application.port.out.KeycloakAdminPort.KcUserInfo;
 import com.booking.application.service.*;
 import com.booking.application.validator.UserValidator;
 import com.booking.domain.enums.DeactivationReason;
@@ -100,6 +101,8 @@ public class AuthServiceImpl implements
             throw new AuthException(ErrorCode.AUTH_001, ErrorCode.AUTH_001_MSG);
         }
 
+        syncLocalUserToKeycloak(user, request.getPassword());
+
         user.resetFailedAttempts();
         userRepositoryPort.save(user);
 
@@ -190,16 +193,6 @@ public class AuthServiceImpl implements
             throw new UserException(ErrorCode.USR_003, ErrorCode.USR_003_MSG);
         }
 
-        if (kcAdminClient.findUserByUsername(username) != null) {
-            log.warn("[Auth] Username exists in KC: {}", MaskUtil.maskUsername(username));
-            throw new UserException(ErrorCode.USR_002, ErrorCode.USR_002_MSG);
-        }
-
-        if (kcAdminClient.findUserByEmail(email) != null) {
-            log.warn("[Auth] Email exists in KC: {}", MaskUtil.maskEmail(email));
-            throw new UserException(ErrorCode.USR_003, ErrorCode.USR_003_MSG);
-        }
-
         UUID userId = UUID.randomUUID();
         PasswordService.HashedPassword hashed =
                 passwordService.hash(request.getPassword(), username, userId.toString());
@@ -218,25 +211,10 @@ public class AuthServiceImpl implements
         user.setRoles(Set.of(userRole));
 
         User savedUser = userRepositoryPort.save(user);
-        String kcUserId = kcAdminClient.createUser(
-                username, email, request.getPassword(), true);
+        String kcUserId = syncLocalUserToKeycloak(savedUser, request.getPassword());
 
-        // ═══ MỚI — Sync KC Admin API (non-blocking) ═══
-            // Tạo user_kc_links
-            UserKcLink link = new UserKcLink();
-            link.setUserId(savedUser.getId());
-            link.setKcUserId(kcUserId);
-            link.setKcProvider(null);
-            link.setAuthSource("LINKED");
-            link.setKcSyncedAt(ZonedDateTime.now());
-            link.setSyncStatus("SYNCED");
-            link.setSyncVersion(1L);
-            kcLinkRepo.save(link);
-
-        log.info("[Auth] Register successful and KC synced: username={}, kcUserId={}",
-                MaskUtil.maskUsername(username), kcUserId);
-            // Không throw — user đã tạo local thành công
-            // KC sync sẽ retry khi user login qua KC lần đầu (Case B)
+        log.info("[Auth] Register successful: username={}, kcUserId={}, sync={}",
+                MaskUtil.maskUsername(username), kcUserId, kcUserId != null ? "SYNCED" : "FAILED");
         eventPublisher.publish(new UserRegisteredEvent(
                 savedUser.getId().toString(),
                 savedUser.getUsername(),
@@ -244,5 +222,65 @@ public class AuthServiceImpl implements
         ));
 
         return mapper.toResponse(savedUser);
+    }
+
+    private String syncLocalUserToKeycloak(User user, String rawPassword) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            return null;
+        }
+
+        try {
+            KcUserInfo kcUser = kcAdminClient.findUserByUsername(user.getUsername());
+            if (kcUser == null) {
+                kcUser = kcAdminClient.findUserByEmail(user.getEmail());
+            }
+
+            String kcUserId;
+            if (kcUser == null) {
+                kcUserId = kcAdminClient.createUser(user.getUsername(), user.getEmail(), rawPassword, true);
+            } else {
+                kcUserId = kcUser.id();
+                kcAdminClient.updateUserProfile(
+                        kcUserId,
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.getFirstName(),
+                        user.getLastName()
+                );
+                kcAdminClient.resetPassword(kcUserId, rawPassword);
+            }
+
+            saveKcLink(user.getId(), kcUserId, "SYNCED");
+            return kcUserId;
+        } catch (Exception e) {
+            log.warn("[Auth] KC sync failed for local user {}: {}",
+                    MaskUtil.maskUsername(user.getUsername()), e.getMessage());
+            markKcSyncFailed(user.getId());
+            return null;
+        }
+    }
+
+    private void markKcSyncFailed(UUID userId) {
+        UserKcLink link = kcLinkRepo.findByUserId(userId).orElseGet(UserKcLink::new);
+        link.setUserId(userId);
+        if (link.getKcUserId() == null) {
+            link.setAuthSource("LOCAL");
+            link.setKcSyncedAt(null);
+        }
+        link.setSyncStatus("FAILED");
+        link.setSyncVersion(link.getSyncVersion() + 1);
+        kcLinkRepo.save(link);
+    }
+
+    private void saveKcLink(UUID userId, String kcUserId, String syncStatus) {
+        UserKcLink link = kcLinkRepo.findByUserId(userId).orElseGet(UserKcLink::new);
+        link.setUserId(userId);
+        link.setKcUserId(kcUserId);
+        link.setKcProvider(null);
+        link.setAuthSource(kcUserId != null ? "LINKED" : "LOCAL");
+        link.setKcSyncedAt(kcUserId != null ? ZonedDateTime.now() : null);
+        link.setSyncStatus(syncStatus);
+        link.setSyncVersion(link.getSyncVersion() + 1);
+        kcLinkRepo.save(link);
     }
 }

@@ -4,7 +4,9 @@ import com.booking.application.port.out.HotelRepositoryPort;
 import com.booking.domain.model.Hotel;
 import com.booking.infrastructure.persistence.entity.HotelEntity;
 import com.booking.infrastructure.persistence.mapper.HotelMapper;
+import com.booking.infrastructure.persistence.repository.BookingJpaRepository;
 import com.booking.infrastructure.persistence.repository.HotelJpaRepository;
+import com.booking.infrastructure.persistence.repository.RoomJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +20,8 @@ import java.util.UUID;
 public class HotelAdapter implements HotelRepositoryPort {
 
     private final HotelJpaRepository jpaRepository;
+    private final RoomJpaRepository roomJpaRepository;
+    private final BookingJpaRepository bookingJpaRepository;
     private final HotelMapper mapper;
 
     @Override
@@ -59,5 +63,20 @@ public class HotelAdapter implements HotelRepositoryPort {
     @Override
     public boolean existsByNameAndCity(String name, String city) {
         return jpaRepository.existsByNameAndCity(name, city);
+    }
+
+    @Override
+    public boolean existsRoomByHotelId(UUID hotelId) {
+        return roomJpaRepository.existsByHotelId(hotelId);
+    }
+
+    @Override
+    public boolean existsBookingByHotelId(UUID hotelId) {
+        return bookingJpaRepository.existsByHotelId(hotelId);
+    }
+
+    @Override
+    public void deleteById(UUID hotelId) {
+        jpaRepository.deleteById(hotelId);
     }
 }

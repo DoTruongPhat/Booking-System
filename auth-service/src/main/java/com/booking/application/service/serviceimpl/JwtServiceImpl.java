@@ -81,6 +81,7 @@ public class JwtServiceImpl implements JwtService {
                 .claim("roles", roles)
                 .claim("permissions", permissions)
                 .claim("userId", user.getId())
+                .claim("email", user.getEmail())
                 .claim("firstName", user.getFirstName())
                 .claim("lastName", user.getLastName())
                 .claim("type", "access")

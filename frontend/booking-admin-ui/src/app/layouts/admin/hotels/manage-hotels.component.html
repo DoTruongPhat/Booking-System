@@ -51,11 +51,11 @@
           <th nzWidth="80px">Sao</th>
           <th>Giá thấp nhất</th>
           <th nzWidth="120px" *ngIf="isAdmin">Trạng thái</th>
-          <th nzWidth="140px">Thao tác</th>
+          <th nzWidth="260px">Thao tác</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let h of hotelTable.data">
+        <tr *ngFor="let h of hotelTable.data" [class.focused-hotel]="isFocusedHotel(h)">
           <td>
             <div class="hotel-cell">
               <img
@@ -96,7 +96,27 @@
             <button *ngIf="isHost" nz-button nzType="default" nzSize="small" (click)="openEditHotelModal(h)">
               <span nz-icon nzType="edit"></span> Sửa
             </button>
-            <span *ngIf="isAdmin && $any(h).status !== 'PENDING_APPROVAL'" class="text-muted">—</span>
+            <button
+              *ngIf="canDeactivateHotel(h)"
+              nz-button
+              nzDanger
+              nzSize="small"
+              (click)="deactivateHotel(h)"
+              style="margin-left: 8px"
+            >
+              <span nz-icon nzType="stop"></span> Tắt
+            </button>
+            <button
+              *ngIf="canDeleteHotel(h)"
+              nz-button
+              nzDanger
+              nzSize="small"
+              (click)="deleteHotel(h)"
+              style="margin-left: 8px"
+            >
+              <span nz-icon nzType="delete"></span> Xóa
+            </button>
+            <span *ngIf="isAdmin && $any(h).status === 'INACTIVE'" class="text-muted">—</span>
           </td>
         </tr>
       </tbody>
@@ -108,7 +128,8 @@
     [nzTitle]="editingHotel ? 'Sua khach san' : 'Them khach san'"
     [nzOkText]="editingHotel ? 'Cap nhat' : 'Tao'"
     [nzOkLoading]="isSubmitting"
-    nzWidth="760"
+    nzWidth="640"
+    [nzBodyStyle]="{ 'max-height': '72vh', 'overflow-y': 'auto', padding: '16px 20px' }"
     (nzOnCancel)="isFormModalOpen = false"
     (nzOnOk)="submitHotelForm()"
   >
@@ -188,14 +209,53 @@
           </nz-form-item>
 
           <nz-form-item>
-            <nz-form-label>URL hinh anh</nz-form-label>
+            <nz-form-label>Hinh anh</nz-form-label>
             <nz-form-control>
-              <textarea
-                nz-input
-                formControlName="imagesText"
-                rows="4"
-                placeholder="https://example.com/hotel.jpg"
-              ></textarea>
+              <div class="hotel-image-options">
+                <div class="image-option">
+                  <span class="option-label">Nhap URL</span>
+                  <textarea
+                    nz-input
+                    formControlName="imagesText"
+                    rows="4"
+                    placeholder="https://example.com/hotel.jpg"
+                  ></textarea>
+                </div>
+
+                <div class="image-option">
+                  <span class="option-label">Tai anh tu may</span>
+                  <div class="image-list" *ngIf="uploadedHotelImages.length">
+                    <div
+                      *ngFor="let img of uploadedHotelImages; let i = index; trackBy: trackByImage"
+                      class="image-item"
+                    >
+                      <img [src]="img" alt="hotel preview" />
+                      <button
+                        type="button"
+                        nz-button
+                        nzSize="small"
+                        nzDanger
+                        nzType="primary"
+                        class="remove-btn"
+                        (click)="removeUploadedHotelImage(i)"
+                      >
+                        <span nz-icon nzType="close"></span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <label class="upload-btn">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      (change)="onHotelImageSelected($event)"
+                      style="display: none"
+                    />
+                    <span nz-icon nzType="upload"></span> Chon anh (max 2MB/anh)
+                  </label>
+                </div>
+              </div>
             </nz-form-control>
           </nz-form-item>
         </div>

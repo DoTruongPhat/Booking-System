@@ -18,6 +18,14 @@ public final class SecurityUtils {
         throw new IllegalStateException("No authenticated user found");
     }
 
+    public static String getCurrentUserEmail() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof JwtAuthenticationToken jwtAuth) {
+            return jwtAuth.getToken().getClaimAsString("email");
+        }
+        return null;
+    }
+
     public static boolean hasRole(String role) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null) return false;

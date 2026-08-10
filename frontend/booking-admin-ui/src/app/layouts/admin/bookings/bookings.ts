@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════
 // ADMIN BOOKINGS PAGE — Phase E (API Integration)
 // Admin: GET /api/admin/bookings — tất cả bookings
 // Host:  GET /api/host/bookings — bookings hotels của mình
@@ -75,6 +75,7 @@ export class AdminBookings implements OnInit {
   bookings: Booking[] = [];
   isLoading = false;
   isHost = false;
+  refundEnabled = false;
 
   // ── Host: hotel list ────────────────────────────────────
   hotels: Hotel[] = [];
@@ -112,6 +113,7 @@ export class AdminBookings implements OnInit {
   readonly allStatuses: BookingStatus[] = [
     'PENDING',
     'CONFIRMED',
+    'CHECKED_IN',
     'COMPLETED',
     'CANCELLED',
     'NO_SHOW',
@@ -126,7 +128,8 @@ export class AdminBookings implements OnInit {
   readonly statusConfig: Record<BookingStatus, { label: string; color: string }> = {
     PENDING: { label: 'Chờ xác nhận', color: 'orange' },
     CONFIRMED: { label: 'Đã xác nhận', color: 'green' },
-    COMPLETED: { label: 'Hoàn thành', color: 'blue' },
+    CHECKED_IN: { label: 'Đã nhận phòng', color: 'blue' },
+    COMPLETED: { label: 'Hoàn thành', color: 'green' },
     CANCELLED: { label: 'Đã hủy', color: 'red' },
     NO_SHOW: { label: 'Không đến', color: 'red' },
   };
@@ -135,19 +138,32 @@ export class AdminBookings implements OnInit {
     UNPAID: { label: 'Chưa thanh toán', color: 'orange' },
     PAID: { label: 'Đã thanh toán', color: 'green' },
     REFUNDED: { label: 'Đã hoàn tiền', color: 'default' },
-    PARTIALLY_REFUNDED: { label: 'Hoàn 1 phần', color: 'blue' },
+    PARTIALLY_REFUNDED: { label: 'Hoàn 1 phần', color: 'green' },
   };
 
   ngOnInit() {
     const role = this.auth.getPrimaryRole();
     this.isHost = role === 'HOST';
+    this.isLoading = true;
 
     if (this.isHost) {
       this.hotelService.getMyHotels().subscribe({
         next: (data) => {
           this.hotels = data;
-          if (data.length > 0) this.selectedHotelId = data[0].id;
+          if (data.length === 0) {
+            this.bookings = [];
+            this.total = 0;
+            this.selectedHotelId = '';
+            this.isLoading = false;
+            return;
+          }
+
+          this.selectedHotelId = '';
           this.loadBookings();
+        },
+        error: () => {
+          this.message.error('Không thể tải khách sạn');
+          this.isLoading = false;
         },
       });
     } else {
@@ -163,7 +179,7 @@ export class AdminBookings implements OnInit {
     if (this.isHost) {
       this.adminBookingService
         .getHostBookings({
-          hotelId: this.selectedHotelId || undefined,
+          hotelId: this.filterHotel !== 'all' ? this.filterHotel : undefined,
           page: this.pageIndex - 1,
           size: this.pageSize,
           status,
@@ -206,7 +222,7 @@ export class AdminBookings implements OnInit {
   get totalRevenue(): number {
     return this.bookings
       .filter((b) => b.paymentStatus === 'PAID')
-      .reduce((sum, b) => sum + b.finalPrice, 0);
+      .reduce((sum, b) => sum + this.getBookingAmount(b), 0);
   }
 
   countByStatus(status: BookingStatus): number {
@@ -214,6 +230,10 @@ export class AdminBookings implements OnInit {
   }
 
   get uniqueHotels(): Array<{ id: string; name: string }> {
+    if (this.isHost) {
+      return this.hotels.map((hotel) => ({ id: hotel.id, name: hotel.name }));
+    }
+
     const map = new Map<string, string>();
     for (const b of this.bookings) {
       if (!map.has(b.hotelId)) map.set(b.hotelId, b.hotelName);
@@ -333,7 +353,23 @@ export class AdminBookings implements OnInit {
   }
 
   formatVND(n: number): string {
-    return new Intl.NumberFormat('vi-VN').format(n) + ' đ';
+    return new Intl.NumberFormat('vi-VN').format(Number.isFinite(n) ? n : 0) + ' đ';
+  }
+
+  getBookingAmount(b: Booking): number {
+    return Number(b.finalPrice ?? b.totalPrice ?? 0);
+  }
+  getGuestName(b: Booking): string {
+    return (b as any)?.guestInfo?.fullName || 'Khách hàng';
+  }
+  getGuestEmail(b: Booking): string {
+    return (b as any)?.guestInfo?.email || '—';
+  }
+  getAdultCount(b: Booking): number {
+    return Number((b as any)?.guests?.adults ?? 0);
+  }
+  getChildCount(b: Booking): number {
+    return Number((b as any)?.guests?.children ?? 0);
   }
   formatDate(iso: string): string {
     return new Date(iso).toLocaleDateString('vi-VN');
@@ -355,35 +391,18 @@ export class AdminBookings implements OnInit {
       from,
       to,
       status: this.filterStatus !== 'all' ? this.filterStatus : undefined,
+      hotelId: this.isHost && this.filterHotel !== 'all' ? this.filterHotel : undefined,
+      scope: this.isHost ? 'host' : 'admin',
     });
     this.message.success('Đang tải file Excel...');
   }
 
-  onExportRevenuePdf() {
-    const from = this.dateRange?.[0]
-      ? this.dateRange[0].toISOString().split('T')[0]
-      : new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-    const to = this.dateRange?.[1]
-      ? this.dateRange[1].toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0];
-
-    this.adminBookingService.exportRevenue({ from, to, format: 'PDF' });
-    this.message.success('Đang tải Revenue PDF...');
-  }
-
-  onExportRevenueExcel() {
-    const from = this.dateRange?.[0]
-      ? this.dateRange[0].toISOString().split('T')[0]
-      : new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-    const to = this.dateRange?.[1]
-      ? this.dateRange[1].toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0];
-
-    this.adminBookingService.exportRevenue({ from, to, format: 'XLSX' });
-    this.message.success('Đang tải Revenue Excel...');
-  }
-
   onConfirmBooking(b: Booking) {
+    if (!this.canConfirmBooking(b)) {
+      this.message.warning('Booking phai duoc thanh toan truoc khi xac nhan.');
+      return;
+    }
+
     this.adminBookingService.confirmBooking(b.id).subscribe({
       next: () => {
         this.message.success(`Booking ${b.id} đã xác nhận`);
@@ -395,13 +414,101 @@ export class AdminBookings implements OnInit {
     });
   }
 
+  canConfirmBooking(b: Booking): boolean {
+    return b.status === 'PENDING' && b.paymentStatus === 'PAID';
+  }
+
+  getConfirmTooltip(b: Booking): string {
+    if (b.status !== 'PENDING') {
+      return 'Chỉ xác nhận booking đang chờ xác nhận';
+    }
+    if (b.paymentStatus !== 'PAID') {
+      return 'Chờ khách thanh toán xong mới có thể xác nhận';
+    }
+    return 'Xác nhận booking';
+  }
+
+  canCheckIn(b: Booking): boolean {
+    return this.isHost && b.status === 'CONFIRMED' && this.isOnOrAfterDate(b.checkIn);
+  }
+
+  canMarkNoShow(b: Booking): boolean {
+    return this.isHost && b.status === 'CONFIRMED' && this.isOnOrAfterDate(b.checkIn);
+  }
+
+  canCheckOut(b: Booking): boolean {
+    return this.isHost && b.status === 'CHECKED_IN' && this.isOnOrAfterDate(b.checkIn);
+  }
+
+  private isOnOrAfterDate(iso?: string | null): boolean {
+    const date = this.toLocalDateOnly(iso);
+    if (!date) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today.getTime() >= date.getTime();
+  }
+
+  private toLocalDateOnly(iso?: string | null): Date | null {
+    if (!iso) return null;
+    const [year, month, day] = iso.split('T')[0].split('-').map(Number);
+    if (!year || !month || !day) return null;
+
+    return new Date(year, month - 1, day);
+  }
+
   onDownloadPdf(b: Booking) {
-    this.adminBookingService.downloadConfirmation(b.id);
+    this.adminBookingService.downloadConfirmation(b.id, this.isHost ? 'host' : 'user');
     this.message.success('Đang tải PDF...');
   }
 
   onDownloadReceipt(b: Booking) {
-    this.adminBookingService.downloadReceipt(b.id);
+    this.adminBookingService.downloadReceipt(b.id, this.isHost ? 'host' : 'user');
     this.message.success('Đang tải Receipt...');
+  }
+
+  onCheckIn(b: Booking) {
+    this.isSubmitting = true;
+    this.adminBookingService.checkIn(b.id).subscribe({
+      next: () => {
+        this.message.success('Da cap nhat khach nhan phong');
+        this.isSubmitting = false;
+        this.loadBookings();
+      },
+      error: (err) => {
+        this.message.error(err?.error?.message || 'Khong the check-in');
+        this.isSubmitting = false;
+      },
+    });
+  }
+
+  onCheckOut(b: Booking) {
+    this.isSubmitting = true;
+    this.adminBookingService.checkOut(b.id).subscribe({
+      next: () => {
+        this.message.success('Da cap nhat khach tra phong');
+        this.isSubmitting = false;
+        this.loadBookings();
+      },
+      error: (err) => {
+        this.message.error(err?.error?.message || 'Khong the check-out');
+        this.isSubmitting = false;
+      },
+    });
+  }
+
+  onNoShow(b: Booking) {
+    this.isSubmitting = true;
+    this.adminBookingService.markNoShow(b.id, 'Host marked guest as no-show').subscribe({
+      next: () => {
+        this.message.success('Da danh dau khach khong den');
+        this.isSubmitting = false;
+        this.loadBookings();
+      },
+      error: (err) => {
+        this.message.error(err?.error?.message || 'Khong the danh dau no-show');
+        this.isSubmitting = false;
+      },
+    });
   }
 }

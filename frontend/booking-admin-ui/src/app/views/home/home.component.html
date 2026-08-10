@@ -1,181 +1,266 @@
 <div class="home-page">
-  <!-- === NAVBAR === -->
-  <app-navbar></app-navbar>
+  <div class="home-shell">
+    <app-navbar></app-navbar>
 
-  <!-- === HERO SECTION === -->
-  <section class="hero">
-    <div class="hero-bg"></div>
-    <div class="hero-overlay"></div>
+    <main>
+      <section class="hero">
+        <div class="hero-media">
+          <video
+            #heroVideo
+            class="hero-video"
+            [class.is-ready]="heroVideoReady"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="auto"
+            (loadeddata)="onHeroVideoReady()"
+            (canplay)="onHeroVideoReady()"
+          >
+            <source src="/videos/home-hero-resort.mp4" type="video/mp4" />
+          </video>
+          <div class="hero-overlay"></div>
 
-    <span class="hero-orb hero-orb-1"></span>
-    <span class="hero-orb hero-orb-2"></span>
-    <span class="hero-orb hero-orb-3"></span>
+          <div class="hero-copy">
+            <div class="hero-badge">
+              <span class="hero-badge-new">New</span>
+              <span>Say hello to SmartBooking stays</span>
+            </div>
+            <h1 class="hero-title">
+              Book your perfect stay instantly
+              <span class="hero-and">and</span>
+              hassle-free
+            </h1>
+            <p class="hero-subtitle">
+              Discover handpicked hotels, resorts, and stays across your favorite destinations. Enjoy
+              exclusive deals, fast booking, secure PayOS checkout, and 24/7 support.
+            </p>
 
-    <div class="hero-container">
-      <div class="hero-content">
-        <div class="hero-badge">
-          <span class="badge-dot"></span>
-          Nền tảng đặt phòng tại Việt Nam
-        </div>
-        <h1 class="hero-title">
-          Khám phá &amp; đặt phòng<br />
-          <span class="hero-accent">khách sạn tuyệt vời</span>
-        </h1>
-        <p class="hero-subtitle">
-          Hơn 10,000+ khách sạn với giá tốt nhất. Đặt phòng nhanh chóng, thanh toán an toàn, hỗ trợ
-          24/7.
-        </p>
-
-        <!-- === SEARCH BAR === -->
-        <div class="search-bar">
-          <div class="search-field">
-            <span class="search-icon" nz-icon nzType="environment" nzTheme="outline"></span>
-            <div class="search-input-wrap">
-              <label>Điểm đến</label>
-              <input
-                type="text"
-                placeholder="Bạn muốn đi đâu?"
-                [(ngModel)]="searchCity"
-                name="searchCity"
-              />
+            <div class="hero-actions">
+              <button class="hero-cta hero-cta-primary" type="button" (click)="onSearchSubmit()">
+                Tìm phòng ngay
+              </button>
+              <a class="hero-cta hero-cta-secondary" routerLink="/hotels">Khám phá khách sạn</a>
             </div>
           </div>
-          <div class="search-field">
-            <span class="search-icon" nz-icon nzType="calendar" nzTheme="outline"></span>
-            <div class="search-input-wrap">
-              <label>Nhận phòng</label>
-              <input type="date" [(ngModel)]="searchCheckIn" name="searchCheckIn" />
-            </div>
-          </div>
-          <div class="search-field">
-            <span class="search-icon" nz-icon nzType="calendar" nzTheme="outline"></span>
-            <div class="search-input-wrap">
-              <label>Trả phòng</label>
-              <input type="date" [(ngModel)]="searchCheckOut" name="searchCheckOut" />
-            </div>
-          </div>
-          <div class="search-field">
-            <span class="search-icon" nz-icon nzType="user" nzTheme="outline"></span>
-            <div class="search-input-wrap">
-              <label>Khách</label>
-              <input
-                type="number"
-                [min]="1"
-                [max]="20"
-                [(ngModel)]="searchGuests"
-                name="searchGuests"
-              />
-            </div>
-          </div>
-          <button class="search-btn" (click)="onSearchSubmit()">
-            <span nz-icon nzType="search"></span>
-            Tìm kiếm
-          </button>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- === FEATURES === -->
-  <section class="features-section">
-    <div class="container">
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon-wrap">
-            <span nz-icon nzType="dollar-circle" nzTheme="fill"></span>
-          </div>
-          <h3>Giá tốt nhất</h3>
-          <p>Cam kết giá rẻ nhất, hoàn tiền chênh lệch nếu tìm thấy rẻ hơn.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-wrap">
-            <span nz-icon nzType="thunderbolt" nzTheme="fill"></span>
-          </div>
-          <h3>Đặt phòng nhanh chóng</h3>
-          <p>Chỉ với 3 bước đơn giản, xác nhận tức thì qua email.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon-wrap">
-            <span nz-icon nzType="customer-service" nzTheme="fill"></span>
-          </div>
-          <h3>Hỗ trợ 24/7</h3>
-          <p>Đội ngũ tư vấn viên luôn sẵn sàng hỗ trợ bạn mọi lúc.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- === POPULAR DESTINATIONS === -->
-  <section class="destinations-section">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Điểm đến phổ biến</h2>
-        <p class="section-subtitle">Khám phá những địa điểm hot nhất hiện nay</p>
-      </div>
-      <div class="destinations-grid">
-        <div class="destination-card" *ngFor="let dest of destinations">
-          <img [src]="dest.image" [alt]="dest.name" />
-          <div class="destination-overlay">
-            <h3>{{ dest.name }}</h3>
-            <p>{{ dest.count }} khách sạn</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- === FEATURED HOTELS === -->
-  <section class="hotels-section">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Khách sạn nổi bật</h2>
-        <p class="section-subtitle">Được đánh giá cao bởi du khách</p>
-      </div>
-      <div class="hotels-grid">
-        <div *ngFor="let hotel of featuredHotels" class="hotel-card" (click)="viewHotel(hotel.id)">
-          <div class="hotel-image">
-            <img [src]="hotel.thumbnail" [alt]="hotel.name" />
-            <div class="hotel-badge" *ngIf="hotel.discountPercent">
-              -{{ hotel.discountPercent }}%
+        <div class="hotel-search-card" (click)="$event.stopPropagation()">
+          <div class="search-bar">
+            <div class="search-field search-field-destination">
+              <span class="search-icon" nz-icon nzType="environment" nzTheme="outline"></span>
+              <div class="search-input-wrap">
+                <label>Điểm đến</label>
+                <input
+                  type="text"
+                  placeholder="Nhập thành phố hoặc tên khách sạn"
+                  [(ngModel)]="searchCity"
+                  name="searchCity"
+                />
+              </div>
+            </div>
+            <div class="search-field">
+              <span class="search-icon" nz-icon nzType="calendar" nzTheme="outline"></span>
+              <div class="search-input-wrap">
+                <label>Nhận phòng</label>
+                <input type="date" [(ngModel)]="searchCheckIn" name="searchCheckIn" />
+              </div>
+            </div>
+            <div class="search-field">
+              <span class="search-icon" nz-icon nzType="calendar" nzTheme="outline"></span>
+              <div class="search-input-wrap">
+                <label>Trả phòng</label>
+                <input type="date" [(ngModel)]="searchCheckOut" name="searchCheckOut" />
+              </div>
             </div>
             <button
-              class="hotel-favorite"
-              aria-label="Yêu thích"
-              (click)="$event.stopPropagation()"
+              class="search-field guest-field"
+              type="button"
+              [class.is-open]="guestPickerOpen"
+              (click)="toggleGuestPicker($event)"
             >
-              <span nz-icon nzType="heart"></span>
+              <span class="search-icon" nz-icon nzType="team" nzTheme="outline"></span>
+              <span class="search-input-wrap">
+                <span class="field-label">Khách</span>
+                <strong>{{ guestSummary }}</strong>
+              </span>
+              <span nz-icon nzType="down" class="guest-chevron"></span>
+            </button>
+            <button class="search-btn" (click)="onSearchSubmit()" aria-label="Tìm kiếm">
+              <span nz-icon nzType="search"></span>
             </button>
           </div>
-          <div class="hotel-info">
-            <div class="hotel-rating">
-              <span class="stars">
-                <span
-                  nz-icon
-                  nzType="star"
-                  nzTheme="fill"
-                  *ngFor="let s of getStars(hotel.starRating)"
-                ></span>
-              </span>
-              <span class="rating-score">{{ hotel.userRating }}</span>
-              <span class="rating-count">({{ hotel.reviewCount }})</span>
+
+          <div class="guest-picker" *ngIf="guestPickerOpen" (click)="keepGuestPickerOpen($event)">
+            <div class="guest-row">
+              <div>
+                <strong>Phòng</strong>
+                <span>Số phòng cần đặt</span>
+              </div>
+              <div class="guest-stepper">
+                <button type="button" (click)="adjustGuestCounter('rooms', -1)" [disabled]="searchRooms <= 1">
+                  <span nz-icon nzType="minus"></span>
+                </button>
+                <strong>{{ searchRooms }}</strong>
+                <button type="button" (click)="adjustGuestCounter('rooms', 1)" [disabled]="searchRooms >= 10">
+                  <span nz-icon nzType="plus"></span>
+                </button>
+              </div>
             </div>
-            <h3 class="hotel-name">{{ hotel.name }}</h3>
-            <p class="hotel-location">
-              <span nz-icon nzType="environment"></span>
-              {{ hotel.city }}
-            </p>
-            <div class="hotel-price">
-              <span class="price-from">Từ</span>
-              <span class="price-value">{{ hotel.pricePerNight | number }}đ</span>
-              <span class="price-unit">/đêm</span>
+            <div class="guest-row">
+              <div>
+                <strong>Người lớn</strong>
+                <span>Từ 18 tuổi trở lên</span>
+              </div>
+              <div class="guest-stepper">
+                <button type="button" (click)="adjustGuestCounter('adults', -1)" [disabled]="searchAdults <= 1">
+                  <span nz-icon nzType="minus"></span>
+                </button>
+                <strong>{{ searchAdults }}</strong>
+                <button type="button" (click)="adjustGuestCounter('adults', 1)" [disabled]="searchAdults >= 20">
+                  <span nz-icon nzType="plus"></span>
+                </button>
+              </div>
+            </div>
+            <div class="guest-row">
+              <div>
+                <strong>Trẻ em</strong>
+                <span>0-17 tuổi</span>
+              </div>
+              <div class="guest-stepper">
+                <button type="button" (click)="adjustGuestCounter('children', -1)" [disabled]="searchChildren <= 0">
+                  <span nz-icon nzType="minus"></span>
+                </button>
+                <strong>{{ searchChildren }}</strong>
+                <button type="button" (click)="adjustGuestCounter('children', 1)" [disabled]="searchChildren >= 10">
+                  <span nz-icon nzType="plus"></span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
+      </section>
 
-  <!-- === FOOTER === -->
+      <section class="features-section">
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon-wrap">
+              <span nz-icon nzType="dollar-circle"></span>
+            </div>
+            <h3>Giá tốt nhất</h3>
+            <p>Cam kết giá rẻ nhất, hoàn tiền chênh lệch nếu tìm thấy rẻ hơn.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon-wrap">
+              <span nz-icon nzType="thunderbolt"></span>
+            </div>
+            <h3>Đặt phòng nhanh chóng</h3>
+            <p>Chỉ với 3 bước đơn giản, xác nhận tức thì qua email.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon-wrap">
+              <span nz-icon nzType="customer-service"></span>
+            </div>
+            <h3>Hỗ trợ 24/7</h3>
+            <p>Đội ngũ tư vấn viên luôn sẵn sàng hỗ trợ bạn mọi lúc.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="destinations-section">
+        <div class="section-header">
+          <h2 class="section-title">Điểm đến phổ biến</h2>
+          <p class="section-subtitle">Khám phá những địa điểm hot nhất hiện nay</p>
+        </div>
+        <div class="destinations-grid">
+          <div class="destination-card" *ngFor="let dest of destinations; trackBy: trackByDestination">
+            <img [src]="dest.image" [alt]="dest.name" />
+            <div class="destination-overlay">
+              <h3>{{ dest.name }}</h3>
+              <p>{{ dest.count }} khách sạn</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="hotels-section">
+        <div class="section-header">
+          <h2 class="section-title">Khách sạn nổi bật</h2>
+          <p class="section-subtitle">Được đánh giá cao bởi du khách</p>
+        </div>
+        <div class="hotels-grid">
+          <div class="hotel-card hotel-card-loading" *ngIf="featuredHotelsLoading">
+            <div class="hotel-info">
+              <h3 class="hotel-name">Đang tải khách sạn...</h3>
+              <p class="hotel-location">Dữ liệu được lấy từ danh sách khách sạn hiện có</p>
+            </div>
+          </div>
+          <div
+            *ngFor="let hotel of featuredHotels; trackBy: trackByHotel"
+            class="hotel-card"
+            (click)="viewHotel(hotel)"
+          >
+            <div class="hotel-image">
+              <img
+                *ngIf="hotel.thumbnail; else noFeaturedHotelImage"
+                [src]="hotel.thumbnail"
+                [alt]="hotel.name"
+              />
+              <ng-template #noFeaturedHotelImage>
+                <div class="hotel-image-empty">
+                  <span nz-icon nzType="picture"></span>
+                </div>
+              </ng-template>
+              <div class="hotel-badge" *ngIf="hotel.discountPercent">
+                -{{ hotel.discountPercent }}%
+              </div>
+              <button
+                class="hotel-favorite"
+                aria-label="Yêu thích"
+                (click)="$event.stopPropagation()"
+              >
+                <span nz-icon nzType="heart"></span>
+              </button>
+            </div>
+            <div class="hotel-info">
+              <div class="hotel-rating">
+                <span class="stars">
+                  <span
+                    nz-icon
+                    nzType="star"
+                    *ngFor="let s of getStars(hotel.starRating); trackBy: trackByIndex"
+                  ></span>
+                </span>
+                <span class="rating-score">{{ hotel.userRating }}</span>
+                <span class="rating-count" *ngIf="hotel.reviewCount">({{ hotel.reviewCount }})</span>
+              </div>
+              <h3 class="hotel-name">{{ hotel.name }}</h3>
+              <p class="hotel-room-name">{{ hotel.roomName }}</p>
+              <p class="hotel-location">
+                <span nz-icon nzType="environment"></span>
+                {{ hotel.city }}
+              </p>
+              <div class="hotel-price">
+                <span class="price-from">Từ</span>
+                <span class="price-value">{{ hotel.pricePerNight | number }}đ</span>
+                <span class="price-unit">/đêm</span>
+              </div>
+            </div>
+          </div>
+          <div class="hotel-card hotel-card-empty" *ngIf="!featuredHotelsLoading && !featuredHotels.length">
+            <div class="hotel-info">
+              <h3 class="hotel-name">Chưa có khách sạn khả dụng</h3>
+              <p class="hotel-location">Hãy tạo khách sạn và phòng đang hoạt động để hiển thị tại đây.</p>
+              <button class="hero-cta hero-cta-secondary" type="button" routerLink="/hotels">
+                Xem danh sách khách sạn
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
   <footer class="footer">
     <div class="container">
       <div class="footer-grid">
@@ -205,7 +290,6 @@
     </div>
   </footer>
 
-  <!-- === FLOAT BUTTON HỖ TRỢ 24/7 === -->
   <div class="support-float" nz-tooltip [nzTooltipTitle]="'Hỗ trợ 24/7'">
     <nz-float-button
       nzType="primary"

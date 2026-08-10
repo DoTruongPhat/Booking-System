@@ -1,0 +1,123 @@
+<div class="audit-page">
+  <section class="page-header">
+    <div>
+      <h1>Audit logs</h1>
+      <p>Admin actions and cross-service business events</p>
+    </div>
+    <button nz-button nzType="default" (click)="loadLogs()" nz-tooltip="Reload">
+      <span nz-icon nzType="reload"></span>
+    </button>
+  </section>
+
+  <section class="filters">
+    <input
+      nz-input
+      placeholder="Event type"
+      [(ngModel)]="eventType"
+      (keyup.enter)="loadLogs()"
+    />
+
+    <nz-select nzAllowClear nzPlaceHolder="Source" [(ngModel)]="source">
+      <nz-option *ngFor="let item of sourceOptions" [nzValue]="item" [nzLabel]="item"></nz-option>
+    </nz-select>
+
+    <input
+      nz-input
+      placeholder="Actor"
+      [(ngModel)]="actorName"
+      (keyup.enter)="loadLogs()"
+    />
+
+    <nz-select nzAllowClear nzPlaceHolder="Entity" [(ngModel)]="entityType">
+      <nz-option *ngFor="let item of entityOptions" [nzValue]="item" [nzLabel]="item"></nz-option>
+    </nz-select>
+
+    <input
+      nz-input
+      placeholder="Entity ID"
+      [(ngModel)]="entityId"
+      (keyup.enter)="loadLogs()"
+    />
+
+    <nz-range-picker [(ngModel)]="dateRange"></nz-range-picker>
+
+    <div class="filter-actions">
+      <button nz-button nzType="primary" (click)="pageIndex = 1; loadLogs()">
+        <span nz-icon nzType="search"></span>
+      </button>
+      <button nz-button nzType="default" (click)="resetFilters()">
+        <span nz-icon nzType="clear"></span>
+      </button>
+    </div>
+  </section>
+
+  <nz-spin [nzSpinning]="isLoading">
+    <nz-table
+      #auditTable
+      [nzData]="logs"
+      [nzFrontPagination]="false"
+      [nzTotal]="total"
+      [nzPageIndex]="pageIndex"
+      [nzPageSize]="pageSize"
+      [nzShowSizeChanger]="true"
+      nzTableLayout="fixed"
+      [nzScroll]="{ x: '1760px' }"
+      (nzPageIndexChange)="onPageIndexChange($event)"
+      (nzPageSizeChange)="onPageSizeChange($event)"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="160px">Time</th>
+          <th nzWidth="180px">Event</th>
+          <th nzWidth="100px">Source</th>
+          <th nzWidth="170px">Actor</th>
+          <th nzWidth="220px">Entity</th>
+          <th nzWidth="300px">Description</th>
+          <th class="ip-column" nzWidth="190px">IP</th>
+          <th nzWidth="220px">Trace</th>
+          <th nzWidth="260px">Metadata</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of auditTable.data">
+          <td>{{ formatDate(log.createdAt) }}</td>
+          <td>
+            <strong>{{ log.eventType || log.action }}</strong>
+          </td>
+          <td>
+            <nz-tag [nzColor]="sourceColor(log.source)">{{ log.source || '-' }}</nz-tag>
+          </td>
+          <td>
+            <div class="actor-name">{{ log.actorName || log.actorExternalId || 'SYSTEM' }}</div>
+            <small>{{ log.actorRole || '-' }}</small>
+          </td>
+          <td>
+            <div>{{ log.entityType || '-' }}</div>
+            <small class="mono">{{ log.entityId || '-' }}</small>
+          </td>
+          <td>
+            <span class="description-cell" [nz-tooltip]="log.description || '-'">
+              {{ log.description || '-' }}
+            </span>
+          </td>
+          <td class="ip-column">
+            <span class="ip-cell" [nz-tooltip]="log.ipAddress || '-'">{{ log.ipAddress || '-' }}</span>
+          </td>
+          <td>
+            <span class="mono">{{ log.traceId || '-' }}</span>
+          </td>
+          <td>
+            <span class="metadata" [nz-tooltip]="compactMetadata(log)">
+              {{ compactMetadata(log) }}
+            </span>
+          </td>
+        </tr>
+        <tr *ngIf="!isLoading && !logs.length">
+          <td colspan="9">
+            <nz-empty nzNotFoundContent="No audit logs"></nz-empty>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-spin>
+</div>

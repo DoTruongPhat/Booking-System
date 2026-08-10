@@ -1,0 +1,104 @@
+<div class="payments-page">
+  <app-navbar></app-navbar>
+
+  <div class="payments-container">
+    <div class="page-header">
+      <h1>Lịch sử thanh toán</h1>
+      <p>Tất cả giao dịch thanh toán của bạn</p>
+    </div>
+
+    <nz-card>
+      <nz-table
+        [nzData]="payments"
+        [nzLoading]="loading"
+        [nzShowPagination]="false"
+        nzSize="middle"
+      >
+        <thead>
+          <tr>
+            <th>Mã thanh toán</th>
+            <th>Phương thức</th>
+            <th nzRight>Số tiền</th>
+            <th>Trạng thái</th>
+            <th>Thời gian</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of payments">
+            <td>
+              <code class="payment-code">{{ p.paymentCode }}</code>
+            </td>
+            <td>
+              <nz-tag [nzColor]="p.method === 'VNPAY' ? 'green' : 'magenta'">
+                {{ getMethodLabel(p.method) }}
+              </nz-tag>
+            </td>
+            <td nzRight>
+              <strong>{{ formatVND(p.amount) }}</strong>
+            </td>
+            <td>
+              <nz-tag [nzColor]="getStatusColor(p.status)">
+                {{ getStatusLabel(p.status) }}
+              </nz-tag>
+            </td>
+            <td>
+              <div>{{ formatDateTime(p.createdAt) }}</div>
+              <div class="text-muted" *ngIf="p.completedAt">
+                Hoàn tất: {{ formatDateTime(p.completedAt) }}
+              </div>
+            </td>
+            <td>
+              <button
+                nz-button
+                nzSize="small"
+                nz-tooltip="Xem booking"
+                (click)="viewBooking(p.bookingId)"
+              >
+                <span nz-icon nzType="eye"></span>
+              </button>
+
+              <button
+                *ngIf="p.status === 'PENDING'"
+                nz-button
+                nzSize="small"
+                nzDanger
+                nz-tooltip="Hủy thanh toán"
+                (click)="cancelPayment(p)"
+                style="margin-left: 8px"
+              >
+                <span nz-icon nzType="close-circle"></span>
+              </button>
+
+              <button
+                *ngIf="p.status === 'FAILED' || p.status === 'EXPIRED' || p.status === 'CANCELLED'"
+                nz-button
+                nzSize="small"
+                nzType="primary"
+                nz-tooltip="Thanh toán lại"
+                (click)="retryPayment(p)"
+                style="margin-left: 8px"
+              >
+                <span nz-icon nzType="reload"></span>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!loading && payments.length === 0">
+            <td colspan="6">
+              <nz-empty nzNotFoundContent="Chưa có giao dịch nào"></nz-empty>
+            </td>
+          </tr>
+        </tbody>
+      </nz-table>
+
+      <div class="pagination-wrapper" *ngIf="total > pageSize">
+        <nz-pagination
+          [nzPageIndex]="pageIndex"
+          [nzTotal]="total"
+          [nzPageSize]="pageSize"
+          (nzPageIndexChange)="onPageChange($event)"
+        ></nz-pagination>
+      </div>
+    </nz-card>
+  </div>
+</div>
