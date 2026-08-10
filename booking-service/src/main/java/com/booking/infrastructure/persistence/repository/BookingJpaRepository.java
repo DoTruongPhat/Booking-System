@@ -20,6 +20,14 @@ public interface BookingJpaRepository extends JpaRepository<BookingEntity, UUID>
     @Query("SELECT b FROM BookingEntity b WHERE b.userId = :userId ORDER BY b.createdAt DESC")
     Page<BookingEntity> findByUserId(@Param("userId") UUID userId, Pageable pageable);
 
+    @Query("SELECT b FROM BookingEntity b " +
+            "WHERE b.userId = :userId " +
+            "AND (:status IS NULL OR b.status = :status) " +
+            "ORDER BY b.createdAt DESC")
+    Page<BookingEntity> findByUserIdAndStatus(@Param("userId") UUID userId,
+                                               @Param("status") String status,
+                                               Pageable pageable);
+
     @Query("SELECT b FROM BookingEntity b WHERE b.hotel.id = :hotelId ORDER BY b.createdAt DESC")
     Page<BookingEntity> findByHotelId(@Param("hotelId") UUID hotelId, Pageable pageable);
 

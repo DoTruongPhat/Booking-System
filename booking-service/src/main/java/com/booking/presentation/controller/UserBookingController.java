@@ -62,11 +62,12 @@ public class UserBookingController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<BookingResponse>>> getMyBookings(
+            @RequestParam(required = false) String status,
             @PageableDefault(size = 10) Pageable pageable) {
 
         UUID userId = SecurityUtils.getCurrentUserId();
         Page<BookingResponse> bookings = queryBookingUseCase
-                .getByUserId(userId, pageable)
+                .getByUserId(userId, status, pageable)
                 .map(mapper::toResponse);
 
         return ResponseEntity.ok(ApiResponse.success(bookings));

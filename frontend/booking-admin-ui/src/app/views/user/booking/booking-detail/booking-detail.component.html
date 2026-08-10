@@ -212,7 +212,16 @@
     </ng-container>
 
     <ng-template #emptyState>
-      <nz-empty nzNotFoundContent="Không tìm thấy đặt phòng"></nz-empty>
+      <div class="retry-empty" *ngIf="loadTimedOut; else notFoundState">
+        <nz-empty nzNotFoundContent="API đang chậm, vui lòng thử tải lại."></nz-empty>
+        <button nz-button nzType="primary" (click)="loadBooking(currentBookingId)">
+          <span nz-icon nzType="reload"></span>
+          Tải lại
+        </button>
+      </div>
+      <ng-template #notFoundState>
+        <nz-empty nzNotFoundContent="Không tìm thấy đặt phòng"></nz-empty>
+      </ng-template>
     </ng-template>
     </ng-container>
   </nz-spin>

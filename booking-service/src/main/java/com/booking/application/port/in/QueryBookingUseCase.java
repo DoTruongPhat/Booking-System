@@ -12,6 +12,8 @@ public interface QueryBookingUseCase {
 
     Page<Booking> getByUserId(UUID userId, Pageable pageable);
 
+    Page<Booking> getByUserId(UUID userId, String status, Pageable pageable);
+
     Page<Booking> getByHotelId(UUID hotelId, Pageable pageable);
 
     Page<Booking> getByHotelId(UUID hotelId, String status, Pageable pageable);

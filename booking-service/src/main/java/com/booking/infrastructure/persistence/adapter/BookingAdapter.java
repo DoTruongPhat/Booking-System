@@ -62,6 +62,11 @@ public class BookingAdapter implements BookingRepositoryPort {
     }
 
     @Override
+    public Page<Booking> findByUserId(UUID userId, String status, Pageable pageable) {
+        return bookingJpaRepository.findByUserIdAndStatus(userId, status, pageable).map(mapper::toDomain);
+    }
+
+    @Override
     public Page<Booking> findByHotelId(UUID hotelId, Pageable pageable) {
         return bookingJpaRepository.findByHotelId(hotelId, pageable).map(mapper::toDomain);
     }

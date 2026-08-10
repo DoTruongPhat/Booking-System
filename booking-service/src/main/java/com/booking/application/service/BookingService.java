@@ -293,6 +293,12 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
 
     @Override
     @Transactional(readOnly = true)
+    public Page<Booking> getByUserId(UUID userId, String status, Pageable pageable) {
+        return bookingRepository.findByUserId(userId, normalizeStatus(status), pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<Booking> getByHotelId(UUID hotelId, Pageable pageable) {
         return bookingRepository.findByHotelId(hotelId, pageable);
     }
@@ -333,6 +339,13 @@ public class BookingService implements CreateBookingUseCase, QueryBookingUseCase
         String prefix = "BK-" + LocalDate.now().toString().replace("-", "");
         long count = bookingRepository.countByBookingCodePrefix(prefix);
         return String.format("%s-%03d", prefix, count + 1);
+    }
+
+    private String normalizeStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        return status.trim().toUpperCase();
     }
 
     @Override

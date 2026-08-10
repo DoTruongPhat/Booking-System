@@ -332,6 +332,13 @@ dl {
   }
 }
 
+.retry-empty {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 52px 0;
+}
+
 :host ::ng-deep {
   .ant-btn-primary {
     background: var(--color-primary);

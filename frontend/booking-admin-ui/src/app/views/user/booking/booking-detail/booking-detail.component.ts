@@ -7,7 +7,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { finalize } from 'rxjs';
+import { catchError, finalize, of, timeout } from 'rxjs';
 
 import { BookingService } from '../../../../core/services/booking.service';
 import {
@@ -47,6 +47,8 @@ export class UserBookingDetailComponent implements OnInit {
 
   booking: Booking | null = null;
   loading = false;
+  loadTimedOut = false;
+  currentBookingId = '';
   progressSteps: BookingProgressStep[] = [];
 
   readonly statusLabels = BOOKING_STATUS_LABELS;
@@ -67,33 +69,44 @@ export class UserBookingDetailComponent implements OnInit {
       return;
     }
 
+    this.currentBookingId = id;
     this.loadBooking(id);
   }
 
   loadBooking(id: string): void {
+    this.currentBookingId = id;
     this.loading = true;
+    this.loadTimedOut = false;
     this.booking = null;
     this.progressSteps = [];
 
     this.bookingService
       .getBookingById(id)
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(
+        timeout(8000),
+        catchError((err) => {
+          this.booking = null;
+          this.progressSteps = [];
+          this.loadTimedOut = err?.name === 'TimeoutError';
+          this.message.error(
+            this.loadTimedOut
+              ? 'API đang chậm, vui lòng thử tải lại.'
+              : 'Không thể tải chi tiết đặt phòng.',
+          );
+          return of(null);
+        }),
+        finalize(() => (this.loading = false)),
+      )
       .subscribe({
-      next: (booking) => {
-        if (!booking?.id) {
-          this.message.warning('Không tìm thấy đặt phòng.');
-          return;
-        }
+        next: (booking) => {
+          if (!booking?.id) {
+            return;
+          }
 
-        this.booking = booking;
-        this.progressSteps = this.buildProgressSteps(booking);
-      },
-      error: () => {
-        this.booking = null;
-        this.progressSteps = [];
-        this.message.error('Không thể tải chi tiết đặt phòng.');
-      },
-    });
+          this.booking = booking;
+          this.progressSteps = this.buildProgressSteps(booking);
+        },
+      });
   }
 
   goBack(): void {
